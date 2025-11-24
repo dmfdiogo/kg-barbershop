@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layout, Button, Form, Select, DatePicker, message, Card, Typography, Spin } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
 import api from '../../services/api';
 import dayjs from 'dayjs';
-
-const { Header, Content } = Layout;
-const { Title } = Typography;
-const { Option } = Select;
 
 const BookingPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -17,11 +11,12 @@ const BookingPage: React.FC = () => {
     const [submitting, setSubmitting] = useState(false);
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+    const [error, setError] = useState('');
 
-    // Form values to trigger availability fetch
+    // Form values
     const [selectedService, setSelectedService] = useState<number | null>(null);
     const [selectedBarber, setSelectedBarber] = useState<number | null>(null);
-    const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string>('');
 
     useEffect(() => {
         const fetchShop = async () => {
@@ -29,7 +24,7 @@ const BookingPage: React.FC = () => {
                 const response = await api.get(`/shops/${slug}`);
                 setShop(response.data);
             } catch (error) {
-                message.error('Failed to load shop details');
+                console.error('Failed to load shop details');
                 navigate('/');
             } finally {
                 setLoading(false);
@@ -42,16 +37,15 @@ const BookingPage: React.FC = () => {
         const fetchAvailability = async () => {
             if (selectedService && selectedBarber && selectedDate) {
                 try {
-                    const dateStr = selectedDate.format('YYYY-MM-DD');
                     const response = await api.get('/appointments/availability', {
                         params: {
                             barberId: selectedBarber,
                             serviceId: selectedService,
-                            date: dateStr
+                            date: selectedDate
                         }
                     });
                     setAvailableSlots(response.data);
-                    setSelectedSlot(null); // Reset selection when params change
+                    setSelectedSlot(null);
                 } catch (error) {
                     console.error('Failed to fetch availability');
                 }
@@ -60,12 +54,14 @@ const BookingPage: React.FC = () => {
         fetchAvailability();
     }, [selectedService, selectedBarber, selectedDate]);
 
-    const onFinish = async () => {
+    const onFinish = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (!selectedSlot) {
-            message.error('Please select a time slot');
+            setError('Please select a time slot');
             return;
         }
         setSubmitting(true);
+        setError('');
         try {
             await api.post('/appointments', {
                 shopId: shop.id,
@@ -73,78 +69,115 @@ const BookingPage: React.FC = () => {
                 serviceId: selectedService,
                 startTime: selectedSlot,
             });
-            message.success('Appointment booked successfully!');
             navigate('/');
         } catch (error: any) {
-            message.error(error.response?.data?.error || 'Booking failed');
+            setError(error.response?.data?.error || 'Booking failed');
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', marginTop: 50 }}><Spin size="large" /></div>;
+    if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
 
     return (
-        <Layout style={{ minHeight: '100vh' }}>
-            <Header style={{ background: '#fff', padding: '0 20px', display: 'flex', alignItems: 'center' }}>
-                <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/')} style={{ marginRight: 20 }} />
-                <Title level={4} style={{ margin: 0 }}>Book at {shop?.name}</Title>
-            </Header>
-            <Content style={{ padding: '20px', maxWidth: 600, margin: '0 auto', width: '100%' }}>
-                <Card>
-                    <Form layout="vertical" onFinish={onFinish}>
-                        <Form.Item label="Select Service" required>
-                            <Select placeholder="Choose a service" onChange={setSelectedService}>
+        <div className="min-h-screen bg-gray-100">
+            <header className="bg-white shadow px-6 py-4 flex items-center">
+                <button
+                    onClick={() => navigate('/')}
+                    className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                    ←
+                </button>
+                <h2 className="text-xl font-bold text-gray-800">Book at {shop?.name}</h2>
+            </header>
+
+            <main className="p-6 max-w-2xl mx-auto">
+                <div className="bg-white rounded-lg shadow-lg p-8">
+                    {error && (
+                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+                            {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={onFinish} className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Select Service</label>
+                            <select
+                                required
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none bg-white"
+                                onChange={(e) => setSelectedService(Number(e.target.value))}
+                                value={selectedService || ''}
+                            >
+                                <option value="">Choose a service</option>
                                 {shop?.services.map((s: any) => (
-                                    <Option key={s.id} value={s.id}>{s.name} - ${s.price} ({s.duration}m)</Option>
+                                    <option key={s.id} value={s.id}>{s.name} - ${s.price} ({s.duration}m)</option>
                                 ))}
-                            </Select>
-                        </Form.Item>
+                            </select>
+                        </div>
 
-                        <Form.Item label="Select Barber" required>
-                            <Select placeholder="Choose a barber" onChange={setSelectedBarber}>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Select Barber</label>
+                            <select
+                                required
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none bg-white"
+                                onChange={(e) => setSelectedBarber(Number(e.target.value))}
+                                value={selectedBarber || ''}
+                            >
+                                <option value="">Choose a barber</option>
                                 {shop?.staff.map((s: any) => (
-                                    <Option key={s.id} value={s.id}>{s.user.name}</Option>
+                                    <option key={s.id} value={s.id}>{s.user.name}</option>
                                 ))}
-                            </Select>
-                        </Form.Item>
+                            </select>
+                        </div>
 
-                        <Form.Item label="Select Date" required>
-                            <DatePicker
-                                style={{ width: '100%' }}
-                                onChange={setSelectedDate}
-                                disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Select Date</label>
+                            <input
+                                type="date"
+                                required
+                                min={dayjs().format('YYYY-MM-DD')}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none"
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                value={selectedDate}
                             />
-                        </Form.Item>
+                        </div>
 
                         {selectedService && selectedBarber && selectedDate && (
-                            <div style={{ marginBottom: 24 }}>
-                                <h4>Available Slots</h4>
+                            <div className="pt-4">
+                                <h4 className="text-lg font-medium text-gray-900 mb-3">Available Slots</h4>
                                 {availableSlots.length === 0 ? (
-                                    <p>No slots available for this date.</p>
+                                    <p className="text-gray-500 italic">No slots available for this date.</p>
                                 ) : (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 10 }}>
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                                         {availableSlots.map(slot => (
-                                            <Button
+                                            <button
                                                 key={slot}
-                                                type={selectedSlot === slot ? 'primary' : 'default'}
+                                                type="button"
                                                 onClick={() => setSelectedSlot(slot)}
+                                                className={`py-2 px-3 rounded text-sm font-medium transition-colors ${selectedSlot === slot
+                                                        ? 'bg-black text-white'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    }`}
                                             >
                                                 {dayjs(slot).format('HH:mm')}
-                                            </Button>
+                                            </button>
                                         ))}
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        <Button type="primary" htmlType="submit" block loading={submitting} size="large" disabled={!selectedSlot}>
-                            Confirm Booking
-                        </Button>
-                    </Form>
-                </Card>
-            </Content>
-        </Layout>
+                        <button
+                            type="submit"
+                            disabled={submitting || !selectedSlot}
+                            className="w-full bg-black text-white py-3 px-4 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg mt-8"
+                        >
+                            {submitting ? 'Booking...' : 'Confirm Booking'}
+                        </button>
+                    </form>
+                </div>
+            </main>
+        </div>
     );
 };
 

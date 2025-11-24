@@ -199,3 +199,154 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response) =
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+export const rescheduleAppointment = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { newStartTime } = req.body;
+        const userId = req.user?.userId;
+        const role = req.user?.role;
+
+        if (!newStartTime) {
+            return res.status(400).json({ error: 'New start time is required' });
+        }
+
+        const appointment = await prisma.appointment.findUnique({
+            where: { id: parseInt(id) },
+            include: { service: true }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        // 1. Permission Check
+        if (role === 'CUSTOMER') {
+            if (appointment.customerId !== userId) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+
+            // 2. 24h Rule Check for Customers
+            const now = new Date();
+            const appointmentTime = new Date(appointment.startTime);
+            const timeDiff = appointmentTime.getTime() - now.getTime();
+            const hoursDiff = timeDiff / (1000 * 3600);
+
+            if (hoursDiff < 24) {
+                return res.status(400).json({ error: 'Cannot reschedule appointments less than 24 hours in advance. Please contact the shop.' });
+            }
+        } else if (role === 'STAFF') {
+            // Check if appointment belongs to this barber
+            const staffProfile = await prisma.staffProfile.findUnique({ where: { userId } });
+            if (!staffProfile || appointment.barberId !== staffProfile.id) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+        }
+        // Admin can reschedule anything (no check needed)
+
+        // 3. Availability Check for New Time
+        const newStart = new Date(newStartTime);
+        const duration = appointment.service.duration;
+        const newEnd = new Date(newStart.getTime() + duration * 60000);
+
+        // Check if new time is in the past
+        if (newStart < new Date()) {
+            return res.status(400).json({ error: 'Cannot reschedule to the past' });
+        }
+
+        // Check against schedule
+        const dayOfWeek = newStart.getDay();
+        const schedules = await prisma.schedule.findMany({
+            where: {
+                barberId: appointment.barberId,
+                dayOfWeek: dayOfWeek,
+                isAvailable: true
+            }
+        });
+
+        if (schedules.length === 0) {
+            return res.status(400).json({ error: 'Barber is not working on this day' });
+        }
+
+        // Check if time is within working hours
+        const isWithinWorkingHours = schedules.some(schedule => {
+            const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
+            const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
+
+            const workStart = new Date(newStart);
+            workStart.setHours(startHour, startMinute, 0, 0);
+
+            const workEnd = new Date(newStart);
+            workEnd.setHours(endHour, endMinute, 0, 0);
+
+            return newStart >= workStart && newEnd <= workEnd;
+        });
+
+        if (!isWithinWorkingHours) {
+            return res.status(400).json({ error: 'Selected time is outside working hours' });
+        }
+
+        // Check for conflicts with other appointments
+        const conflicts = await prisma.appointment.findMany({
+            where: {
+                barberId: appointment.barberId,
+                id: { not: appointment.id }, // Exclude current appointment
+                status: { not: 'CANCELLED' },
+                AND: [
+                    { startTime: { lt: newEnd } },
+                    {
+                        startTime: {
+                            // We need to check end time of existing appointment
+                            // But Prisma doesn't store end time directly.
+                            // We can use raw query or fetch and filter.
+                            // For simplicity, let's fetch potential conflicts based on start time proximity
+                            // and filter in JS, OR assume max service duration.
+                            // Better approach:
+                            // Overlap: (StartA < EndB) and (EndA > StartB)
+                            // We can't easily express EndB in Prisma where clause without a computed column.
+                            // So let's fetch appointments on that day and filter.
+                        }
+                    }
+                ]
+            },
+            include: { service: true }
+        });
+
+        // Refined conflict check
+        // Fetch all appointments for that barber on that day
+        const startOfDay = new Date(newStart); startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(newStart); endOfDay.setHours(23, 59, 59, 999);
+
+        const dayAppointments = await prisma.appointment.findMany({
+            where: {
+                barberId: appointment.barberId,
+                id: { not: appointment.id },
+                status: { not: 'CANCELLED' },
+                startTime: { gte: startOfDay, lte: endOfDay }
+            },
+            include: { service: true }
+        });
+
+        const hasConflict = dayAppointments.some(appt => {
+            const apptStart = new Date(appt.startTime);
+            const apptEnd = new Date(apptStart.getTime() + appt.service.duration * 60000);
+            return (newStart < apptEnd && newEnd > apptStart);
+        });
+
+        if (hasConflict) {
+            return res.status(400).json({ error: 'Selected time slot is not available' });
+        }
+
+        // 4. Update Appointment
+        const updatedAppointment = await prisma.appointment.update({
+            where: { id: parseInt(id) },
+            data: { startTime: newStart }
+        });
+
+        res.json(updatedAppointment);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};

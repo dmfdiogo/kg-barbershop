@@ -1,32 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, List, message, Switch, TimePicker, Button } from 'antd';
-import { LogoutOutlined, ScheduleOutlined } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import dayjs from 'dayjs';
-
-const { Header, Content, Sider } = Layout;
+import RescheduleModal from '../../components/RescheduleModal';
 
 const StaffDashboard: React.FC = () => {
     const { logout, user } = useAuth();
     const [appointments, setAppointments] = useState<any[]>([]);
-
     const [schedules, setSchedules] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState('appointments');
+    const [loading, setLoading] = useState(false);
+    const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+    const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+
+    const fetchAppointments = async () => {
+        try {
+            const response = await api.get('/appointments');
+            setAppointments(response.data);
+        } catch (error) {
+            console.error('Failed to fetch appointments');
+        }
+    };
 
     useEffect(() => {
-        const fetchAppointments = async () => {
-            try {
-                const response = await api.get('/appointments');
-                setAppointments(response.data);
-            } catch (error) {
-                message.error('Failed to fetch appointments');
-            }
-        };
-
         const fetchSchedule = async () => {
             try {
                 const response = await api.get('/schedule');
-                // Initialize with default if empty
                 if (response.data.length === 0) {
                     const defaultSchedule = Array.from({ length: 7 }, (_, i) => ({
                         dayOfWeek: i,
@@ -48,11 +46,16 @@ const StaffDashboard: React.FC = () => {
     }, []);
 
     const handleSaveSchedule = async () => {
+        setLoading(true);
         try {
             await api.post('/schedule', { schedules });
-            message.success('Schedule updated');
+            // Show success message (maybe a toast later)
+            alert('Schedule updated successfully');
         } catch (error) {
-            message.error('Failed to update schedule');
+            console.error('Failed to update schedule');
+            alert('Failed to update schedule');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -62,79 +65,166 @@ const StaffDashboard: React.FC = () => {
         setSchedules(newSchedules);
     };
 
+    const handleRescheduleClick = (appt: any) => {
+        setSelectedAppointment(appt);
+        setIsRescheduleModalOpen(true);
+    };
+
+    const handleRescheduleSuccess = () => {
+        fetchAppointments();
+    };
+
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     return (
-        <Layout style={{ minHeight: '100vh' }}>
-            <Sider collapsible>
-                <div style={{ height: 32, margin: 16, background: 'rgba(255, 255, 255, 0.2)' }} />
-                <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline">
-                    <Menu.Item key="1" icon={<ScheduleOutlined />}>
-                        My Appointments
-                    </Menu.Item>
-                    <Menu.Item key="2" icon={<ScheduleOutlined />}>
-                        Manage Schedule
-                    </Menu.Item>
-                    <Menu.Item key="3" icon={<LogoutOutlined />} onClick={logout}>
-                        Logout
-                    </Menu.Item>
-                </Menu>
-            </Sider>
-            <Layout className="site-layout">
-                <Header style={{ padding: 0, background: '#fff' }}>
-                    <h2 style={{ marginLeft: 20 }}>Staff Dashboard - {user?.name}</h2>
-                </Header>
-                <Content style={{ margin: '0 16px' }}>
-                    <div style={{ padding: 24, minHeight: 360 }}>
-                        <h3>Manage Schedule</h3>
-                        <List
-                            dataSource={schedules}
-                            renderItem={(item, index) => (
-                                <List.Item>
-                                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', width: '100%' }}>
-                                        <div style={{ width: 100 }}>{days[item.dayOfWeek]}</div>
-                                        <Switch
-                                            checked={item.isAvailable}
-                                            onChange={(checked) => updateScheduleItem(index, 'isAvailable', checked)}
-                                        />
-                                        {item.isAvailable && (
-                                            <>
-                                                <TimePicker
-                                                    format="HH:mm"
-                                                    value={dayjs(item.startTime, 'HH:mm')}
-                                                    onChange={(time) => updateScheduleItem(index, 'startTime', time?.format('HH:mm'))}
-                                                />
-                                                <span>to</span>
-                                                <TimePicker
-                                                    format="HH:mm"
-                                                    value={dayjs(item.endTime, 'HH:mm')}
-                                                    onChange={(time) => updateScheduleItem(index, 'endTime', time?.format('HH:mm'))}
-                                                />
-                                            </>
-                                        )}
-                                    </div>
-                                </List.Item>
-                            )}
-                        />
-                        <Button type="primary" onClick={handleSaveSchedule} style={{ marginTop: 20 }}>Save Schedule</Button>
+        <div className="flex h-screen bg-gray-100">
+            {/* Sidebar */}
+            <div className="w-64 bg-gray-900 text-white flex flex-col">
+                <div className="h-16 flex items-center justify-center border-b border-gray-800">
+                    <h1 className="text-xl font-bold">Barber Panel</h1>
+                </div>
+                <nav className="flex-1 p-4 space-y-2">
+                    <button
+                        onClick={() => setActiveTab('appointments')}
+                        className={`w-full flex items-center px-4 py-2 rounded text-left ${activeTab === 'appointments' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    >
+                        <span className="mr-3">📅</span> My Appointments
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('schedule')}
+                        className={`w-full flex items-center px-4 py-2 rounded text-left ${activeTab === 'schedule' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    >
+                        <span className="mr-3">⏰</span> Manage Schedule
+                    </button>
+                </nav>
+                <div className="p-4 border-t border-gray-800">
+                    <button onClick={logout} className="w-full flex items-center px-4 py-2 hover:bg-gray-800 rounded text-left text-red-400">
+                        <span className="mr-3">🚪</span> Logout
+                    </button>
+                </div>
+            </div>
 
-                        <h3 style={{ marginTop: 40 }}>Upcoming Appointments</h3>
-                        <List
-                            itemLayout="horizontal"
-                            dataSource={appointments}
-                            renderItem={(item: any) => (
-                                <List.Item>
-                                    <List.Item.Meta
-                                        title={`${item.service.name} with ${item.customer.name}`}
-                                        description={`${new Date(item.startTime).toLocaleString()} - Status: ${item.status}`}
-                                    />
-                                </List.Item>
-                            )}
-                        />
-                    </div>
-                </Content>
-            </Layout>
-        </Layout>
+            {/* Main Content */}
+            <div className="flex-1 overflow-auto">
+                <header className="bg-white shadow h-16 flex items-center px-6">
+                    <h2 className="text-xl font-semibold text-gray-800">Welcome, {user?.name}</h2>
+                </header>
+
+                <main className="p-6">
+                    {activeTab === 'appointments' && (
+                        <div>
+                            <h3 className="text-lg font-medium text-gray-700 mb-4">Upcoming Appointments</h3>
+                            <div className="bg-white rounded-lg shadow overflow-hidden">
+                                {appointments.length === 0 ? (
+                                    <div className="p-6 text-gray-500">No upcoming appointments.</div>
+                                ) : (
+                                    <ul className="divide-y divide-gray-200">
+                                        {appointments.map((item: any) => (
+                                            <li key={item.id} className="p-6 hover:bg-gray-50">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900">
+                                                            {item.service.name} with {item.customer.name}
+                                                        </p>
+                                                        <p className="text-sm text-gray-500">
+                                                            {new Date(item.startTime).toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center space-x-4">
+                                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                            }`}>
+                                                            {item.status}
+                                                        </span>
+                                                        {item.status !== 'CANCELLED' && (
+                                                            <button
+                                                                onClick={() => handleRescheduleClick(item)}
+                                                                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                                            >
+                                                                Reschedule
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'schedule' && (
+                        <div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-medium text-gray-700">Weekly Schedule</h3>
+                                <button
+                                    onClick={handleSaveSchedule}
+                                    disabled={loading}
+                                    className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition-colors disabled:opacity-50"
+                                >
+                                    {loading ? 'Saving...' : 'Save Schedule'}
+                                </button>
+                            </div>
+
+                            <div className="bg-white rounded-lg shadow overflow-hidden">
+                                <ul className="divide-y divide-gray-200">
+                                    {schedules.map((item, index) => (
+                                        <li key={item.dayOfWeek} className="p-4 flex items-center justify-between hover:bg-gray-50">
+                                            <div className="w-32 font-medium text-gray-900">{days[item.dayOfWeek]}</div>
+
+                                            <div className="flex items-center space-x-4">
+                                                <label className="flex items-center cursor-pointer">
+                                                    <div className="relative">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="sr-only"
+                                                            checked={item.isAvailable}
+                                                            onChange={(e) => updateScheduleItem(index, 'isAvailable', e.target.checked)}
+                                                        />
+                                                        <div className={`block w-10 h-6 rounded-full ${item.isAvailable ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                        <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition ${item.isAvailable ? 'transform translate-x-4' : ''}`}></div>
+                                                    </div>
+                                                    <div className="ml-3 text-gray-700 text-sm font-medium">
+                                                        {item.isAvailable ? 'Available' : 'Off'}
+                                                    </div>
+                                                </label>
+
+                                                {item.isAvailable && (
+                                                    <div className="flex items-center space-x-2">
+                                                        <input
+                                                            type="time"
+                                                            value={item.startTime}
+                                                            onChange={(e) => updateScheduleItem(index, 'startTime', e.target.value)}
+                                                            className="border border-gray-300 rounded px-2 py-1 text-sm"
+                                                        />
+                                                        <span className="text-gray-500">to</span>
+                                                        <input
+                                                            type="time"
+                                                            value={item.endTime}
+                                                            onChange={(e) => updateScheduleItem(index, 'endTime', e.target.value)}
+                                                            className="border border-gray-300 rounded px-2 py-1 text-sm"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+                </main>
+
+                {selectedAppointment && (
+                    <RescheduleModal
+                        appointment={selectedAppointment}
+                        isOpen={isRescheduleModalOpen}
+                        onClose={() => setIsRescheduleModalOpen(false)}
+                        onSuccess={handleRescheduleSuccess}
+                    />
+                )}
+            </div>
+        </div>
     );
 };
 
