@@ -1,54 +1,80 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, message, Typography } from 'antd';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-const { Title } = Typography;
-
 const Login: React.FC = () => {
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate();
     const { login } = useAuth();
 
-    const onFinish = async (values: any) => {
+    const onFinish = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
         setLoading(true);
+        setError('');
+        const formData = new FormData(e.currentTarget);
+        const values = Object.fromEntries(formData.entries());
+
         try {
             const response = await api.post('/auth/login', values);
             login(response.data.token, response.data.user);
-            message.success('Login successful');
             navigate('/');
         } catch (error: any) {
-            message.error(error.response?.data?.error || 'Login failed');
+            setError(error.response?.data?.error || 'Login failed');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' }}>
-            <Card style={{ width: 400 }}>
-                <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                    <Title level={2}>Barber Shop</Title>
-                    <p>Sign in to your account</p>
+        <div className="flex justify-center items-center h-screen bg-gray-100">
+            <div className="w-full max-w-md bg-white shadow-lg rounded-lg p-8">
+                <div className="text-center mb-8">
+                    <h2 className="text-3xl font-bold text-gray-900">Barber Shop</h2>
+                    <p className="text-gray-600 mt-2">Sign in to your account</p>
                 </div>
-                <Form name="login" onFinish={onFinish} layout="vertical">
-                    <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-                        <Input size="large" />
-                    </Form.Item>
-                    <Form.Item name="password" label="Password" rules={[{ required: true }]}>
-                        <Input.Password size="large" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" block size="large" loading={loading} style={{ backgroundColor: 'black', borderColor: 'black' }}>
-                            Log in
-                        </Button>
-                    </Form.Item>
-                    <div style={{ textAlign: 'center' }}>
-                        Or <Link to="/register">register now!</Link>
+
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        {error}
                     </div>
-                </Form>
-            </Card>
+                )}
+
+                <form onSubmit={onFinish} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                            name="email"
+                            type="email"
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none transition-colors"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input
+                            name="password"
+                            type="password"
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none transition-colors"
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 font-medium"
+                    >
+                        {loading ? 'Logging in...' : 'Log in'}
+                    </button>
+
+                    <div className="text-center text-sm text-gray-600">
+                        Or <Link to="/register" className="text-black font-semibold hover:underline">register now!</Link>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };
