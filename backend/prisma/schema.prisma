@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  CUSTOMER
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password_hash String
+  name          String
+  phone         String?
+  role          Role     @default(CUSTOMER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  ownedShops    Shop[]        @relation("ShopOwner")
+  appointments  Appointment[] // As customer
+  staffProfile  StaffProfile?
+}
+
+model Shop {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  ownerId     Int
+  owner       User     @relation("ShopOwner", fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  services    Service[]
+  staff       StaffProfile[]
+  appointments Appointment[]
+}
+
+model StaffProfile {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id])
+  shopId      Int
+  shop        Shop     @relation(fields: [shopId], references: [id])
+  
+  // Relations
+  schedules   Schedule[]
+  appointments Appointment[] // As barber
+}
+
+model Service {
+  id          Int      @id @default(autoincrement())
+  shopId      Int
+  shop        Shop     @relation(fields: [shopId], references: [id])
+  name        String
+  duration    Int      // in minutes
+  price       Decimal
+  
+  appointments Appointment[]
+}
+
+model Appointment {
+  id          Int               @id @default(autoincrement())
+  shopId      Int
+  shop        Shop              @relation(fields: [shopId], references: [id])
+  customerId  Int
+  customer    User              @relation(fields: [customerId], references: [id])
+  barberId    Int
+  barber      StaffProfile      @relation(fields: [barberId], references: [id])
+  serviceId   Int
+  service     Service           @relation(fields: [serviceId], references: [id])
+  startTime   DateTime
+  status      AppointmentStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model Schedule {
+  id          Int          @id @default(autoincrement())
+  barberId    Int
+  barber      StaffProfile @relation(fields: [barberId], references: [id])
+  dayOfWeek   Int          // 0-6 (Sun-Sat)
+  startTime   String       // "09:00"
+  endTime     String       // "17:00"
+  isAvailable Boolean      @default(true)
+}
