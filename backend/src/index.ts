@@ -16,6 +16,7 @@ import serviceRoutes from './routes/serviceRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import scheduleRoutes from './routes/scheduleRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import paymentRoutes from './routes/paymentRoutes';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/shops', shopRoutes);
@@ -23,6 +24,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/payment', paymentRoutes);
 
 app.get('/', (req, res) => {
     res.send('Barber Shop API is running');

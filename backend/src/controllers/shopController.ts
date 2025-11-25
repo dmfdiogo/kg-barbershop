@@ -115,18 +115,23 @@ export const addStaff = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: 'User must have STAFF role' });
         }
 
-        // Check if already assigned
-        // Check if already assigned (including soft deleted? If soft deleted, maybe reactivate?)
-        // For now, let's assume if they are soft deleted, they can be re-added (new profile or update old).
-        // Let's check if they have an active profile.
-        const existingProfile = await prisma.staffProfile.findFirst({
-            where: {
-                userId: userToAdd.id,
-                deletedAt: null
-            }
+        // Check if already assigned (including soft deleted)
+        const existingProfile = await prisma.staffProfile.findUnique({
+            where: { userId: userToAdd.id }
         });
+
         if (existingProfile) {
-            return res.status(400).json({ error: 'Staff already assigned to a shop' });
+            if (existingProfile.deletedAt) {
+                // Reactivate soft-deleted profile
+                const reactivatedProfile = await prisma.staffProfile.update({
+                    where: { id: existingProfile.id },
+                    data: { deletedAt: null, shopId: shopId }, // Ensure shopId is correct (though it should be)
+                    include: { user: true }
+                });
+                return res.json(reactivatedProfile);
+            } else {
+                return res.status(400).json({ error: 'Staff already assigned to a shop' });
+            }
         }
 
         // Create StaffProfile

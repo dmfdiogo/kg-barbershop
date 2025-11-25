@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard';
 import BookingPage from './pages/customer/BookingPage';
 import HistoryPage from './pages/customer/HistoryPage';
 import ManageShop from './pages/admin/ManageShop';
+import PaymentSuccess from './pages/customer/PaymentSuccess';
+import PaymentCancel from './pages/customer/PaymentCancel';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -21,6 +23,8 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/cancel" element={<PaymentCancel />} />
           <Route path="/manage/:slug" element={
             <PrivateRoute>
               <ManageShop />
