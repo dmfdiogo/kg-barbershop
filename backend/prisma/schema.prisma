@@ -61,6 +61,7 @@ model StaffProfile {
   // Relations
   schedules   Schedule[]
   appointments Appointment[] // As barber
+  deletedAt   DateTime?
 }
 
 model Service {
@@ -68,7 +69,10 @@ model Service {
   shopId      Int
   shop        Shop     @relation(fields: [shopId], references: [id])
   name        String
+  description String?
+  imageUrl    String?
   duration    Int      // in minutes
+  bufferTime  Int      @default(0) // in minutes
   price       Decimal
   
   appointments Appointment[]
@@ -98,4 +102,13 @@ model Schedule {
   startTime   String       // "09:00"
   endTime     String       // "17:00"
   isAvailable Boolean      @default(true)
+  breaks      Break[]
+}
+
+model Break {
+  id          Int      @id @default(autoincrement())
+  scheduleId  Int
+  schedule    Schedule @relation(fields: [scheduleId], references: [id])
+  startTime   String   // "12:00"
+  endTime     String   // "13:00"
 }

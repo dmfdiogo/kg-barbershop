@@ -50,7 +50,7 @@ Please answer the following questions to help us define the scope and technical 
 
 ## 7. Design & Branding
 
-- **Theme**: Do you have a color palette or style guide? no, let's focus on the UX only with black and white colors (let's use antd default colors and whole ecosystem)
+- **Theme**: Do you have a color palette or style guide? no, let's focus on the UX only with black and white colors (tailwind)
 - **Logo**: Do you have assets ready? no
 
 Please fill in or answer these questions in the chat!
