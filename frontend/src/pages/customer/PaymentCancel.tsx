@@ -1,15 +1,32 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import api from '../../services/api';
 
 const PaymentCancel: React.FC = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const appointmentId = searchParams.get('appointment_id');
+
+    useEffect(() => {
+        const cancelAppointment = async () => {
+            if (appointmentId) {
+                try {
+                    await api.patch(`/appointments/${appointmentId}/status`, { status: 'CANCELLED' });
+                    console.log('Appointment cancelled due to payment cancellation');
+                } catch (error) {
+                    console.error('Failed to cancel appointment', error);
+                }
+            }
+        };
+        cancelAppointment();
+    }, [appointmentId]);
 
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
             <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
                 <div className="text-yellow-500 text-5xl mb-4">!</div>
                 <h2 className="text-2xl font-bold mb-2">Payment Cancelled</h2>
-                <p className="text-gray-600 mb-6">You cancelled the payment process. Your appointment was created but is pending payment.</p>
+                <p className="text-gray-600 mb-6">You cancelled the payment process. The appointment booking has been cancelled.</p>
                 <div className="space-y-3">
                     <button
                         onClick={() => navigate('/history')}

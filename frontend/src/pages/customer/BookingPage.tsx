@@ -18,6 +18,8 @@ const BookingPage: React.FC = () => {
     const [selectedBarber, setSelectedBarber] = useState<number | null>(null);
     const [selectedDate, setSelectedDate] = useState<string>('');
 
+    const [paymentMethod, setPaymentMethod] = useState<'STRIPE' | 'CASH'>('STRIPE');
+
     useEffect(() => {
         const fetchShop = async () => {
             try {
@@ -69,21 +71,29 @@ const BookingPage: React.FC = () => {
                 barberId: selectedBarber,
                 serviceId: selectedService,
                 startTime: selectedSlot,
+                paymentMethod: paymentMethod,
             });
 
             const appointmentId = response.data.id;
 
-            // Initiate payment
-            try {
-                const paymentResponse = await api.post('/payment/create-checkout-session', {
-                    appointmentId
-                });
+            if (paymentMethod === 'STRIPE') {
+                // Initiate payment
+                try {
+                    const paymentResponse = await api.post('/payment/create-checkout-session', {
+                        appointmentId
+                    });
 
-                // Redirect to Stripe
-                window.location.href = paymentResponse.data.url;
-            } catch (paymentError) {
-                console.error('Payment initiation failed', paymentError);
-                alert('Appointment created but payment failed. Please check your appointments.');
+                    // Redirect to Stripe
+                    window.location.href = paymentResponse.data.url;
+                } catch (paymentError: any) {
+                    console.error('Payment initiation failed', paymentError);
+                    const errorMessage = paymentError.response?.data?.error || 'Payment failed';
+                    alert(`Appointment created but payment failed: ${errorMessage}. Please check your appointments.`);
+                    navigate('/history');
+                }
+            } else {
+                // Cash payment - just redirect to history
+                alert('Appointment booked successfully!');
                 navigate('/history');
             }
         } catch (error: any) {
@@ -204,12 +214,32 @@ const BookingPage: React.FC = () => {
                             </div>
                         )}
 
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div
+                                    onClick={() => setPaymentMethod('STRIPE')}
+                                    className={`border rounded-lg p-4 cursor-pointer text-center transition-all ${paymentMethod === 'STRIPE' ? 'border-black ring-2 ring-black ring-opacity-50 bg-gray-50' : 'border-gray-200 hover:border-gray-400'}`}
+                                >
+                                    <span className="font-bold block">Pay Online</span>
+                                    <span className="text-xs text-gray-500">Credit/Debit Card</span>
+                                </div>
+                                <div
+                                    onClick={() => setPaymentMethod('CASH')}
+                                    className={`border rounded-lg p-4 cursor-pointer text-center transition-all ${paymentMethod === 'CASH' ? 'border-black ring-2 ring-black ring-opacity-50 bg-gray-50' : 'border-gray-200 hover:border-gray-400'}`}
+                                >
+                                    <span className="font-bold block">Pay in Cash</span>
+                                    <span className="text-xs text-gray-500">Pay at the shop</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <button
                             type="submit"
                             disabled={submitting || !selectedSlot}
                             className="w-full bg-black text-white py-3 px-4 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg mt-8"
                         >
-                            {submitting ? 'Booking...' : 'Confirm Booking'}
+                            {submitting ? 'Booking...' : (paymentMethod === 'STRIPE' ? 'Proceed to Payment' : 'Confirm Booking')}
                         </button>
                     </form>
                 </div>
