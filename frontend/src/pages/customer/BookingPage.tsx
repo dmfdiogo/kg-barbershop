@@ -63,14 +63,32 @@ const BookingPage: React.FC = () => {
         setSubmitting(true);
         setError('');
         try {
-            await api.post('/appointments', {
+            // Create appointment
+            const response = await api.post('/appointments', {
                 shopId: shop.id,
                 barberId: selectedBarber,
                 serviceId: selectedService,
                 startTime: selectedSlot,
             });
-            navigate('/');
+
+            const appointmentId = response.data.id;
+
+            // Initiate payment
+            try {
+                const paymentResponse = await api.post('/payment/create-checkout-session', {
+                    appointmentId
+                });
+
+                // Redirect to Stripe
+                window.location.href = paymentResponse.data.url;
+            } catch (paymentError) {
+                console.error('Payment initiation failed', paymentError);
+                alert('Appointment created but payment failed. Please check your appointments.');
+                navigate('/history');
+            }
         } catch (error: any) {
+            console.error('Booking failed', error);
+            alert('Failed to book appointment');
             setError(error.response?.data?.error || 'Booking failed');
         } finally {
             setSubmitting(false);
