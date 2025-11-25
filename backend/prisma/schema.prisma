@@ -91,6 +91,7 @@ model Appointment {
   startTime   DateTime
   status      AppointmentStatus @default(PENDING)
   paymentStatus PaymentStatus   @default(PENDING)
+  paymentMethod PaymentMethod?
   stripeSessionId String?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
@@ -100,6 +101,11 @@ enum PaymentStatus {
   PENDING
   PAID
   FAILED
+}
+
+enum PaymentMethod {
+  STRIPE
+  CASH
 }
 
 model Schedule {

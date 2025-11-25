@@ -49,7 +49,7 @@ export const createCheckoutSession = async (req: AuthRequest, res: Response) => 
             ],
             mode: 'payment',
             success_url: `${process.env.FRONTEND_URL || 'http://localhost:5101'}/payment/success?session_id={CHECKOUT_SESSION_ID}&appointment_id=${appointmentId}`,
-            cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5101'}/payment/cancel`,
+            cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5101'}/payment/cancel?appointment_id=${appointmentId}`,
         });
 
         // Update appointment with session ID
@@ -59,9 +59,9 @@ export const createCheckoutSession = async (req: AuthRequest, res: Response) => 
         });
 
         res.json({ url: session.url });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Stripe error:', error);
-        res.status(500).json({ error: 'Failed to create checkout session' });
+        res.status(500).json({ error: error.message || 'Failed to create checkout session' });
     }
 };
 

@@ -78,13 +78,18 @@ const HistoryPage: React.FC = () => {
                                     </div>
                                     <div className="mt-4 md:mt-0 flex flex-col md:flex-row items-end md:items-center gap-4">
                                         <div className="flex items-center">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${appt.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                                                appt.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-red-100 text-red-800'
-                                                }`}>
-                                                {appt.status}
-                                            </span>
-                                            <div className="ml-4 text-right">
+                                            <div className="flex flex-col items-end mr-4">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${appt.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                                                    appt.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-red-100 text-red-800'
+                                                    }`}>
+                                                    {appt.status}
+                                                </span>
+                                                <span className="text-xs text-gray-500 mt-1">
+                                                    {appt.paymentMethod} - {appt.paymentStatus}
+                                                </span>
+                                            </div>
+                                            <div className="text-right">
                                                 <p className="font-bold text-gray-900">${appt.service.price}</p>
                                                 <p className="text-xs text-gray-500">{appt.service.duration} mins</p>
                                             </div>
@@ -95,8 +100,8 @@ const HistoryPage: React.FC = () => {
                                                 onClick={() => handleRescheduleClick(appt)}
                                                 disabled={!canReschedule}
                                                 className={`px-4 py-2 rounded text-sm font-medium transition-colors ${canReschedule
-                                                        ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                                        : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                                    ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                                    : 'bg-gray-50 text-gray-400 cursor-not-allowed'
                                                     }`}
                                                 title={!canReschedule ? "Cannot reschedule less than 24h in advance" : ""}
                                             >

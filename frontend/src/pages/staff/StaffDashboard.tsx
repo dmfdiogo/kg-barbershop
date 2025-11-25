@@ -150,6 +150,9 @@ const StaffDashboard: React.FC = () => {
                                                                 <p className="text-sm text-gray-500">
                                                                     {new Date(item.startTime).toLocaleString()}
                                                                 </p>
+                                                                <p className="text-xs text-gray-400 mt-1">
+                                                                    Payment: {item.paymentMethod} - {item.paymentStatus}
+                                                                </p>
                                                             </div>
                                                             <div className="flex items-center space-x-4">
                                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'

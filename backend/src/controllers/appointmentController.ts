@@ -24,6 +24,8 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
                 serviceId,
                 startTime: new Date(startTime),
                 status: AppointmentStatus.PENDING,
+                paymentMethod: req.body.paymentMethod || 'CASH', // Default to CASH if not provided? Or make it required.
+                // Actually, if we are here, we should know the method.
             },
         });
 
@@ -236,15 +238,46 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response) =
         const { id } = req.params;
         const { status } = req.body;
         const userId = req.user?.userId;
+        const role = req.user?.role;
 
-        // TODO: Add authorization check (only admin/staff/owner of appointment)
+        const appointment = await prisma.appointment.findUnique({
+            where: { id: parseInt(id) },
+            include: { shop: true }
+        });
 
-        const appointment = await prisma.appointment.update({
+        if (!appointment) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        // Authorization Check
+        if (role === 'CUSTOMER') {
+            if (appointment.customerId !== userId) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+            // Customers can only cancel
+            if (status !== 'CANCELLED') {
+                return res.status(403).json({ error: 'Customers can only cancel appointments' });
+            }
+        } else if (role === 'STAFF') {
+            // Staff can update appointments for their shop (or just their own? Let's say shop)
+            // Ideally check if staff belongs to the shop of the appointment
+            const staffProfile = await prisma.staffProfile.findUnique({ where: { userId } });
+            if (!staffProfile || staffProfile.shopId !== appointment.shopId) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+        } else if (role === 'ADMIN') {
+            // Admin check: owner of the shop
+            if (appointment.shop.ownerId !== userId) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+        }
+
+        const updatedAppointment = await prisma.appointment.update({
             where: { id: parseInt(id) },
             data: { status },
         });
 
-        res.json(appointment);
+        res.json(updatedAppointment);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
