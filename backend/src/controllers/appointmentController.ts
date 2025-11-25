@@ -81,6 +81,15 @@ export const getAvailability = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: 'Missing required parameters' });
         }
 
+        // Check if barber exists and is not deleted
+        const barberProfile = await prisma.staffProfile.findUnique({
+            where: { id: Number(barberId) }
+        });
+
+        if (!barberProfile || barberProfile.deletedAt) {
+            return res.status(404).json({ error: 'Barber not found or no longer available' });
+        }
+
         // Parse date as local time to ensure getDay() returns the correct day relative to the server's timezone
         const selectedDate = new Date(`${date}T00:00:00`);
         const dayOfWeek = selectedDate.getDay();
@@ -91,19 +100,21 @@ export const getAvailability = async (req: AuthRequest, res: Response) => {
                 barberId: Number(barberId),
                 dayOfWeek: dayOfWeek,
                 isAvailable: true
-            }
+            },
+            include: { breaks: true }
         });
 
         if (schedules.length === 0) {
             return res.json([]); // No working hours
         }
 
-        // 2. Get Service Duration
+        // 2. Get Service Duration and Buffer
         const service = await prisma.service.findUnique({ where: { id: Number(serviceId) } });
         if (!service) {
             return res.status(404).json({ error: 'Service not found' });
         }
         const duration = service.duration; // in minutes
+        const bufferTime = service.bufferTime || 0; // in minutes
 
         // 3. Get Existing Appointments
         // Start of day
@@ -125,7 +136,7 @@ export const getAvailability = async (req: AuthRequest, res: Response) => {
                 }
             },
             include: {
-                service: { select: { duration: true } } // Include service to get duration for existing appointments
+                service: { select: { duration: true, bufferTime: true } } // Include bufferTime
             }
         });
 
@@ -143,28 +154,68 @@ export const getAvailability = async (req: AuthRequest, res: Response) => {
             const endTime = new Date(selectedDate);
             endTime.setHours(endHour, endMinute, 0, 0);
 
-            // Define slot interval (e.g., 15 minutes, or service duration if it's the smallest unit)
-            // For simplicity, let's use a fixed interval for generating potential slots, e.g., 15 minutes
+            // Define slot interval (e.g., 15 minutes)
             const slotGenerationInterval = 15; // minutes
+
+            // The slot must accommodate the service duration.
+            // The buffer time is added AFTER the service, so the slot itself is just duration.
+            // However, the effective block is duration + buffer.
+            // But wait, if I book at 10:00, I occupy 10:00 - 10:30. The buffer is 10:30 - 10:45.
+            // So the next slot can start at 10:45.
+            // When checking if *this* slot is valid, we need to ensure it doesn't overlap with existing appointments (including their buffers).
+            // AND that the appointment + its buffer doesn't overlap with existing appointments.
 
             while (currentSlot.getTime() + duration * 60000 <= endTime.getTime()) {
                 const potentialSlotStart = new Date(currentSlot);
-                const potentialSlotEnd = new Date(potentialSlotStart.getTime() + duration * 60000); // End time of the potential appointment
+                const potentialSlotEnd = new Date(potentialSlotStart.getTime() + duration * 60000); // End time of the actual service
+                const potentialSlotEndWithBuffer = new Date(potentialSlotEnd.getTime() + bufferTime * 60000); // End time including buffer
 
                 // Check if this potential slot overlaps with any existing appointments
                 const isBusy = appointments.some(appt => {
                     const apptStart = new Date(appt.startTime);
-                    const apptEnd = new Date(apptStart.getTime() + (appt.service?.duration || 0) * 60000);
+                    // Existing appointment blocks: duration + its buffer
+                    const apptDuration = appt.service?.duration || 0;
+                    const apptBuffer = appt.service?.bufferTime || 0;
+                    const apptEndWithBuffer = new Date(apptStart.getTime() + (apptDuration + apptBuffer) * 60000);
 
-                    // Overlap condition: (StartA < EndB) and (EndA > StartB)
-                    return (potentialSlotStart.getTime() < apptEnd.getTime()) && (potentialSlotEnd.getTime() > apptStart.getTime());
+                    // Overlap condition:
+                    // 1. New appointment (with buffer) starts before existing ends (with buffer)
+                    // 2. New appointment (with buffer) ends after existing starts
+                    // Actually, strictly speaking:
+                    // The new appointment's SERVICE time cannot overlap with existing SERVICE time.
+                    // AND the new appointment's BUFFER cannot overlap with existing SERVICE time.
+                    // AND the existing BUFFER cannot overlap with new SERVICE time.
+                    // Buffers CAN overlap with other Buffers? Probably yes, but let's keep it simple: Block the whole chunk.
+
+                    // Simplified: Treat "Appointment + Buffer" as the blocked block.
+                    // Overlap: (NewStart < ExistingEndWithBuffer) && (NewEndWithBuffer > ExistingStart)
+
+                    return (potentialSlotStart.getTime() < apptEndWithBuffer.getTime()) && (potentialSlotEndWithBuffer.getTime() > apptStart.getTime());
+                });
+
+                // Check if potential slot overlaps with any breaks
+                const isBreak = schedule.breaks.some(brk => {
+                    const [breakStartHour, breakStartMinute] = brk.startTime.split(':').map(Number);
+                    const [breakEndHour, breakEndMinute] = brk.endTime.split(':').map(Number);
+
+                    const breakStart = new Date(selectedDate);
+                    breakStart.setHours(breakStartHour, breakStartMinute, 0, 0);
+
+                    const breakEnd = new Date(selectedDate);
+                    breakEnd.setHours(breakEndHour, breakEndMinute, 0, 0);
+
+                    // Overlap condition: (SlotStart < BreakEnd) and (SlotEnd > BreakStart)
+                    // Should buffer overlap with break? Maybe. Let's say yes, buffer can be during break?
+                    // No, usually buffer is for cleaning.
+                    // Let's be safe: Service + Buffer cannot overlap with Break.
+                    return (potentialSlotStart.getTime() < breakEnd.getTime()) && (potentialSlotEndWithBuffer.getTime() > breakStart.getTime());
                 });
 
                 // Also check if the potential slot is in the past
                 const now = new Date();
                 const isInPast = potentialSlotStart.getTime() < now.getTime();
 
-                if (!isBusy && !isInPast) {
+                if (!isBusy && !isBreak && !isInPast) {
                     slots.push(potentialSlotStart.toISOString());
                 }
 

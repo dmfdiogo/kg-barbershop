@@ -101,18 +101,37 @@ const BookingPage: React.FC = () => {
 
                     <form onSubmit={onFinish} className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Select Service</label>
-                            <select
-                                required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none bg-white"
-                                onChange={(e) => setSelectedService(Number(e.target.value))}
-                                value={selectedService || ''}
-                            >
-                                <option value="">Choose a service</option>
+                            <label className="block text-sm font-medium text-gray-700 mb-3">Select Service</label>
+                            <div className="grid grid-cols-1 gap-4">
                                 {shop?.services.map((s: any) => (
-                                    <option key={s.id} value={s.id}>{s.name} - ${s.price} ({s.duration}m)</option>
+                                    <div
+                                        key={s.id}
+                                        onClick={() => setSelectedService(s.id)}
+                                        className={`border rounded-lg p-4 cursor-pointer transition-all flex ${selectedService === s.id ? 'border-black ring-2 ring-black ring-opacity-50' : 'border-gray-200 hover:border-gray-400'}`}
+                                    >
+                                        {s.imageUrl && (
+                                            <img
+                                                src={s.imageUrl}
+                                                alt={s.name}
+                                                className="w-24 h-24 object-cover rounded-md mr-4"
+                                                onError={(e) => {
+                                                    e.currentTarget.style.display = 'none';
+                                                }}
+                                            />
+                                        )}
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start">
+                                                <h4 className="font-bold text-gray-900">{s.name}</h4>
+                                                <span className="font-medium text-gray-900">${s.price}</span>
+                                            </div>
+                                            <p className="text-sm text-gray-500 mt-1">{s.duration} mins</p>
+                                            {s.description && (
+                                                <p className="text-sm text-gray-600 mt-2">{s.description}</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 ))}
-                            </select>
+                            </div>
                         </div>
 
                         <div>
@@ -155,8 +174,8 @@ const BookingPage: React.FC = () => {
                                                 type="button"
                                                 onClick={() => setSelectedSlot(slot)}
                                                 className={`py-2 px-3 rounded text-sm font-medium transition-colors ${selectedSlot === slot
-                                                        ? 'bg-black text-white'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    ? 'bg-black text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                     }`}
                                             >
                                                 {dayjs(slot).format('HH:mm')}

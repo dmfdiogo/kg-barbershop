@@ -41,6 +41,7 @@ export const getShopBySlug = async (req: AuthRequest, res: Response) => {
             include: {
                 services: true,
                 staff: {
+                    where: { deletedAt: null },
                     include: {
                         user: {
                             select: { name: true }
@@ -77,7 +78,12 @@ export const getShops = async (req: AuthRequest, res: Response) => {
             where: whereClause,
             include: {
                 owner: { select: { name: true } },
-                _count: { select: { services: true, staff: true } }
+                _count: {
+                    select: {
+                        services: true,
+                        staff: { where: { deletedAt: null } }
+                    }
+                }
             }
         });
 
@@ -110,7 +116,15 @@ export const addStaff = async (req: AuthRequest, res: Response) => {
         }
 
         // Check if already assigned
-        const existingProfile = await prisma.staffProfile.findUnique({ where: { userId: userToAdd.id } });
+        // Check if already assigned (including soft deleted? If soft deleted, maybe reactivate?)
+        // For now, let's assume if they are soft deleted, they can be re-added (new profile or update old).
+        // Let's check if they have an active profile.
+        const existingProfile = await prisma.staffProfile.findFirst({
+            where: {
+                userId: userToAdd.id,
+                deletedAt: null
+            }
+        });
         if (existingProfile) {
             return res.status(400).json({ error: 'Staff already assigned to a shop' });
         }
@@ -125,6 +139,106 @@ export const addStaff = async (req: AuthRequest, res: Response) => {
         });
 
         res.json(staffProfile);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const updateShop = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { name, slug } = req.body;
+        const userId = req.user?.userId;
+
+        const shop = await prisma.shop.findUnique({ where: { id: parseInt(id) } });
+        if (!shop || shop.ownerId !== userId) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        const updatedShop = await prisma.shop.update({
+            where: { id: parseInt(id) },
+            data: { name, slug }
+        });
+
+        res.json(updatedShop);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const deleteShop = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user?.userId;
+
+        const shop = await prisma.shop.findUnique({ where: { id: parseInt(id) } });
+        if (!shop || shop.ownerId !== userId) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        // Delete shop (Prisma should cascade if configured, but let's see. 
+        // If not, we might need to delete related records first. 
+        // Assuming cascade delete is NOT set up in schema for simplicity unless we checked.
+        // Let's try deleting. If it fails due to FK constraints, we'll know.)
+        // Actually, for a robust implementation, let's delete related data or rely on cascade.
+        // Checking schema... we didn't explicitly set onDelete: Cascade.
+        // So we should delete related data.
+
+        // Delete appointments
+        await prisma.appointment.deleteMany({ where: { shopId: parseInt(id) } });
+        // Delete services
+        await prisma.service.deleteMany({ where: { shopId: parseInt(id) } });
+        // Delete staff profiles
+        await prisma.staffProfile.deleteMany({ where: { shopId: parseInt(id) } });
+
+        await prisma.shop.delete({ where: { id: parseInt(id) } });
+
+        res.json({ message: 'Shop deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const removeStaff = async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params; // StaffProfile ID
+        const userId = req.user?.userId;
+
+        const staffProfile = await prisma.staffProfile.findUnique({
+            where: { id: parseInt(id) },
+            include: { shop: true }
+        });
+
+        if (!staffProfile) {
+            return res.status(404).json({ error: 'Staff not found' });
+        }
+
+        if (staffProfile.shop.ownerId !== userId) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
+        // Delete appointments for this staff? Or keep them?
+        // Probably should keep them or reassign? For now, let's delete future appointments?
+        // Or just delete the profile and let appointments hang (bad).
+        // Let's set appointments barberId to null? No, it's required.
+        // Let's delete future appointments.
+
+        await prisma.appointment.deleteMany({
+            where: {
+                barberId: parseInt(id),
+                startTime: { gte: new Date() }
+            }
+        });
+
+        await prisma.staffProfile.update({
+            where: { id: parseInt(id) },
+            data: { deletedAt: new Date() }
+        });
+
+        res.json({ message: 'Staff removed successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });

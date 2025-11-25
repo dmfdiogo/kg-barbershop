@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const ManageShop: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -10,6 +11,10 @@ const ManageShop: React.FC = () => {
     const [isServiceModalVisible, setIsServiceModalVisible] = useState(false);
     const [isStaffModalVisible, setIsStaffModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const [editingService, setEditingService] = useState<any>(null);
+    const [deleteServiceId, setDeleteServiceId] = useState<number | null>(null);
+    const [removeStaffId, setRemoveStaffId] = useState<number | null>(null);
 
     const fetchShop = async () => {
         try {
@@ -24,20 +29,37 @@ const ManageShop: React.FC = () => {
         fetchShop();
     }, [slug]);
 
-    const handleAddService = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleCreateOrUpdateService = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
         const formData = new FormData(e.currentTarget);
         const values = Object.fromEntries(formData.entries());
 
         try {
-            await api.post('/services', { ...values, shopId: shop.id });
+            if (editingService) {
+                await api.put(`/services/${editingService.id}`, values);
+            } else {
+                await api.post('/services', { ...values, shopId: shop.id });
+            }
             setIsServiceModalVisible(false);
+            setEditingService(null);
             fetchShop();
         } catch (error) {
-            console.error('Failed to add service');
+            console.error('Failed to save service');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const confirmDeleteService = async () => {
+        if (deleteServiceId) {
+            try {
+                await api.delete(`/services/${deleteServiceId}`);
+                fetchShop();
+            } catch (error) {
+                console.error('Failed to delete service');
+            }
+            setDeleteServiceId(null);
         }
     };
 
@@ -56,6 +78,28 @@ const ManageShop: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const confirmRemoveStaff = async () => {
+        if (removeStaffId) {
+            try {
+                await api.delete(`/shops/staff/${removeStaffId}`);
+                fetchShop();
+            } catch (error) {
+                console.error('Failed to remove staff');
+            }
+            setRemoveStaffId(null);
+        }
+    };
+
+    const openCreateServiceModal = () => {
+        setEditingService(null);
+        setIsServiceModalVisible(true);
+    };
+
+    const openEditServiceModal = (service: any) => {
+        setEditingService(service);
+        setIsServiceModalVisible(true);
     };
 
     return (
@@ -92,7 +136,7 @@ const ManageShop: React.FC = () => {
                         {activeTab === 'services' && (
                             <div>
                                 <button
-                                    onClick={() => setIsServiceModalVisible(true)}
+                                    onClick={openCreateServiceModal}
                                     className="mb-4 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition-colors"
                                 >
                                     + Add Service
@@ -104,6 +148,7 @@ const ManageShop: React.FC = () => {
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration (min)</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price ($)</th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
@@ -112,6 +157,20 @@ const ManageShop: React.FC = () => {
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{service.name}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.duration}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.price}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <button
+                                                            onClick={() => openEditServiceModal(service)}
+                                                            className="text-blue-600 hover:text-blue-900 mr-4"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setDeleteServiceId(service.id)}
+                                                            className="text-red-600 hover:text-red-900"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -134,6 +193,7 @@ const ManageShop: React.FC = () => {
                                             <tr>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-gray-200">
@@ -141,6 +201,14 @@ const ManageShop: React.FC = () => {
                                                 <tr key={staff.id}>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{staff.user.name}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.user.email}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <button
+                                                            onClick={() => setRemoveStaffId(staff.id)}
+                                                            className="text-red-600 hover:text-red-900"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -157,13 +225,14 @@ const ManageShop: React.FC = () => {
             {isServiceModalVisible && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-xl font-bold mb-4">Add Service</h3>
-                        <form onSubmit={handleAddService} className="space-y-4">
+                        <h3 className="text-xl font-bold mb-4">{editingService ? 'Edit Service' : 'Add Service'}</h3>
+                        <form onSubmit={handleCreateOrUpdateService} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
                                 <input
                                     name="name"
                                     required
+                                    defaultValue={editingService?.name}
                                     className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
                                 />
                             </div>
@@ -174,6 +243,17 @@ const ManageShop: React.FC = () => {
                                     type="number"
                                     min="1"
                                     required
+                                    defaultValue={editingService?.duration}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Buffer Time (minutes)</label>
+                                <input
+                                    name="bufferTime"
+                                    type="number"
+                                    min="0"
+                                    defaultValue={editingService?.bufferTime || 0}
                                     className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
                                 />
                             </div>
@@ -184,6 +264,26 @@ const ManageShop: React.FC = () => {
                                     type="number"
                                     min="0"
                                     required
+                                    defaultValue={editingService?.price}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea
+                                    name="description"
+                                    rows={3}
+                                    defaultValue={editingService?.description}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                                <input
+                                    name="imageUrl"
+                                    type="url"
+                                    placeholder="https://example.com/image.jpg"
+                                    defaultValue={editingService?.imageUrl}
                                     className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
                                 />
                             </div>
@@ -200,7 +300,7 @@ const ManageShop: React.FC = () => {
                                     disabled={loading}
                                     className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
                                 >
-                                    {loading ? 'Adding...' : 'Add'}
+                                    {loading ? (editingService ? 'Saving...' : 'Adding...') : (editingService ? 'Save Changes' : 'Add')}
                                 </button>
                             </div>
                         </form>
@@ -244,6 +344,26 @@ const ManageShop: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmationModal
+                isOpen={!!deleteServiceId}
+                onClose={() => setDeleteServiceId(null)}
+                onConfirm={confirmDeleteService}
+                title="Delete Service"
+                message="Are you sure you want to delete this service?"
+                confirmText="Delete"
+                isDangerous={true}
+            />
+
+            <ConfirmationModal
+                isOpen={!!removeStaffId}
+                onClose={() => setRemoveStaffId(null)}
+                onConfirm={confirmRemoveStaff}
+                title="Remove Staff"
+                message="Are you sure you want to remove this staff member from the shop?"
+                confirmText="Remove"
+                isDangerous={true}
+            />
         </div>
     );
 };
