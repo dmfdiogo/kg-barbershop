@@ -28,55 +28,55 @@ const Register: React.FC = () => {
     };
 
     return (
-        <div className="flex justify-center items-center h-screen bg-gray-100">
-            <div className="w-full max-w-md bg-white shadow-lg rounded-lg p-8">
+        <div className="min-h-screen flex items-center justify-center bg-dark-bg">
+            <div className="w-full max-w-md bg-dark-card p-8 shadow-none sm:shadow-xl rounded-none sm:rounded-xl border-0 sm:border border-gray-800 min-h-screen sm:min-h-0 flex flex-col justify-center">
                 <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-gray-900">Barber Shop</h2>
-                    <p className="text-gray-600 mt-2">Create a new account</p>
+                    <h2 className="text-3xl font-bold text-primary">Barber Shop</h2>
+                    <p className="text-text-secondary mt-2">Create a new account</p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    <div className="bg-red-900/20 border border-red-800 text-red-400 px-4 py-3 rounded-lg mb-4">
                         {error}
                     </div>
                 )}
 
                 <form onSubmit={onFinish} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Name</label>
                         <input
                             name="name"
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none transition-colors"
+                            className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Email</label>
                         <input
                             name="email"
                             type="email"
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none transition-colors"
+                            className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Password</label>
                         <input
                             name="password"
                             type="password"
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none transition-colors"
+                            className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">I am a...</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">I am a...</label>
                         <select
                             name="role"
                             defaultValue="CUSTOMER"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none transition-colors bg-white"
+                            className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
                         >
                             <option value="CUSTOMER">Customer</option>
                             <option value="STAFF">Barber (Staff)</option>
@@ -87,13 +87,13 @@ const Register: React.FC = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 font-medium"
+                        className="w-full bg-primary text-black py-3 px-4 rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50 font-bold shadow-lg hover:shadow-primary/20"
                     >
                         {loading ? 'Registering...' : 'Register'}
                     </button>
 
-                    <div className="text-center text-sm text-gray-600">
-                        Already have an account? <Link to="/login" className="text-black font-semibold hover:underline">Log in</Link>
+                    <div className="text-center text-sm text-text-secondary">
+                        Already have an account? <Link to="/login" className="text-primary font-semibold hover:underline">Log in</Link>
                     </div>
                 </form>
             </div>

@@ -24,14 +24,14 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl">
-                <h3 className="text-xl font-bold mb-2 text-gray-900">{title}</h3>
-                <p className="text-gray-600 mb-6">{message}</p>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
+            <div className="bg-dark-card rounded-xl p-6 w-full max-w-sm shadow-2xl border border-gray-800">
+                <h3 className="text-xl font-bold mb-2 text-white">{title}</h3>
+                <p className="text-text-secondary mb-6">{message}</p>
                 <div className="flex justify-end space-x-3">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                        className="px-4 py-2 text-text-secondary hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
                     >
                         {cancelText}
                     </button>
@@ -40,7 +40,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                             onConfirm();
                             onClose();
                         }}
-                        className={`px-4 py-2 text-white rounded transition-colors ${isDangerous ? 'bg-red-600 hover:bg-red-700' : 'bg-black hover:bg-gray-800'
+                        className={`px-4 py-2 text-white rounded-lg transition-colors font-medium shadow-lg ${isDangerous ? 'bg-red-600 hover:bg-red-700 shadow-red-900/20' : 'bg-primary text-black hover:bg-yellow-400 shadow-primary/20'
                             }`}
                     >
                         {confirmText}

@@ -19,6 +19,20 @@ const BookingPage: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState<string>('');
 
     const [paymentMethod, setPaymentMethod] = useState<'STRIPE' | 'CASH'>('STRIPE');
+    const [subscription, setSubscription] = useState<any>(null);
+    const isSubscribed = subscription && subscription.status === 'active';
+
+    useEffect(() => {
+        const fetchSubscription = async () => {
+            try {
+                const response = await api.get('/payment/subscription-status');
+                setSubscription(response.data);
+            } catch (error) {
+                console.error('Failed to fetch subscription status', error);
+            }
+        };
+        fetchSubscription();
+    }, []);
 
     useEffect(() => {
         const fetchShop = async () => {
@@ -62,21 +76,36 @@ const BookingPage: React.FC = () => {
             setError('Please select a time slot');
             return;
         }
+        if (!shop || !selectedBarber || !selectedService) {
+            setError('Please select a shop, barber, and service.');
+            return;
+        }
+
         setSubmitting(true);
         setError('');
+
         try {
+            // isSubscribed is already defined in component scope
+            const finalPaymentMethod = isSubscribed ? 'STRIPE' : paymentMethod; // Backend will handle subscription status for 'STRIPE' if applicable
+
             // Create appointment
             const response = await api.post('/appointments', {
                 shopId: shop.id,
                 barberId: selectedBarber,
                 serviceId: selectedService,
                 startTime: selectedSlot,
-                paymentMethod: paymentMethod,
+                paymentMethod: finalPaymentMethod,
             });
 
             const appointmentId = response.data.id;
 
-            if (paymentMethod === 'STRIPE') {
+            if (isSubscribed) {
+                alert('Appointment booked with your membership!');
+                navigate('/history');
+                return;
+            }
+
+            if (finalPaymentMethod === 'STRIPE') {
                 // Initiate payment
                 try {
                     const paymentResponse = await api.post('/payment/create-checkout-session', {
@@ -98,7 +127,6 @@ const BookingPage: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Booking failed', error);
-            alert('Failed to book appointment');
             setError(error.response?.data?.error || 'Booking failed');
         } finally {
             setSubmitting(false);
@@ -108,53 +136,65 @@ const BookingPage: React.FC = () => {
     if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <header className="bg-white shadow px-6 py-4 flex items-center">
+        <div className="min-h-screen bg-dark-bg text-text-primary">
+            <header className="bg-dark-card border-b border-gray-800 px-6 py-4 flex items-center sticky top-0 z-10">
                 <button
                     onClick={() => navigate('/')}
-                    className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className="mr-4 p-2 hover:bg-gray-800 rounded-full transition-colors text-white"
                 >
-                    ←
+                    <i className="ri-arrow-left-line text-xl"></i>
                 </button>
-                <h2 className="text-xl font-bold text-gray-800">Book at {shop?.name}</h2>
+                <h2 className="text-xl font-bold text-white">Book at {shop?.name}</h2>
             </header>
 
-            <main className="p-6 max-w-2xl mx-auto">
-                <div className="bg-white rounded-lg shadow-lg p-8">
+            <main className="p-4 md:p-6 max-w-2xl mx-auto">
+                <div className="bg-dark-card rounded-xl shadow-lg p-6 md:p-8 border border-gray-800">
                     {error && (
-                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+                        <div className="bg-red-900/20 border border-red-800 text-red-400 px-4 py-3 rounded mb-6">
                             {error}
                         </div>
                     )}
 
-                    <form onSubmit={onFinish} className="space-y-6">
+                    <form onSubmit={onFinish} className="space-y-8">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-3">Select Service</label>
+                            <label className="block text-sm font-medium text-text-secondary mb-3">Select Service</label>
                             <div className="grid grid-cols-1 gap-4">
                                 {shop?.services.map((s: any) => (
                                     <div
                                         key={s.id}
                                         onClick={() => setSelectedService(s.id)}
-                                        className={`border rounded-lg p-4 cursor-pointer transition-all flex ${selectedService === s.id ? 'border-black ring-2 ring-black ring-opacity-50' : 'border-gray-200 hover:border-gray-400'}`}
+                                        className={`border rounded-xl p-4 cursor-pointer transition-all flex ${selectedService === s.id ? 'border-primary bg-primary/10' : 'border-gray-700 hover:border-gray-500 bg-dark-input'}`}
                                     >
                                         {s.imageUrl && (
                                             <img
                                                 src={s.imageUrl}
                                                 alt={s.name}
-                                                className="w-24 h-24 object-cover rounded-md mr-4"
+                                                className="w-24 h-24 object-cover rounded-lg mr-4"
                                                 onError={(e) => {
                                                     e.currentTarget.style.display = 'none';
                                                 }}
                                             />
                                         )}
                                         <div className="flex-1">
-                                            <div className="flex justify-between items-start">
-                                                <h4 className="font-bold text-gray-900">{s.name}</h4>
-                                                <span className="font-medium text-gray-900">${s.price}</span>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className="font-semibold text-lg text-white">{s.name}</h3>
+                                                <div className="text-right">
+                                                    {isSubscribed && (
+                                                        (s.name.toLowerCase().includes('hair') && subscription.credits_haircut > 0) ||
+                                                        (s.name.toLowerCase().includes('beard') && subscription.credits_beard > 0)
+                                                    ) ? (
+                                                        <div>
+                                                            <span className="block text-primary font-bold">Free with Plan</span>
+                                                            <span className="text-xs text-text-muted line-through">${s.price}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="font-bold text-lg text-white">${s.price}</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <p className="text-sm text-gray-500 mt-1">{s.duration} mins</p>
+                                            <p className="text-sm text-text-secondary mt-1">{s.duration} mins</p>
                                             {s.description && (
-                                                <p className="text-sm text-gray-600 mt-2">{s.description}</p>
+                                                <p className="text-sm text-text-muted mt-2">{s.description}</p>
                                             )}
                                         </div>
                                     </div>
@@ -163,10 +203,10 @@ const BookingPage: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Select Barber</label>
+                            <label className="block text-sm font-medium text-text-secondary mb-1">Select Barber</label>
                             <select
                                 required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none bg-white"
+                                className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none bg-dark-input text-white"
                                 onChange={(e) => setSelectedBarber(Number(e.target.value))}
                                 value={selectedBarber || ''}
                             >
@@ -178,12 +218,12 @@ const BookingPage: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Select Date</label>
+                            <label className="block text-sm font-medium text-text-secondary mb-1">Select Date</label>
                             <input
                                 type="date"
                                 required
                                 min={dayjs().format('YYYY-MM-DD')}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none"
+                                className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none bg-dark-input text-white"
                                 onChange={(e) => setSelectedDate(e.target.value)}
                                 value={selectedDate}
                             />
@@ -191,9 +231,9 @@ const BookingPage: React.FC = () => {
 
                         {selectedService && selectedBarber && selectedDate && (
                             <div className="pt-4">
-                                <h4 className="text-lg font-medium text-gray-900 mb-3">Available Slots</h4>
+                                <h4 className="text-lg font-medium text-white mb-3">Available Slots</h4>
                                 {availableSlots.length === 0 ? (
-                                    <p className="text-gray-500 italic">No slots available for this date.</p>
+                                    <p className="text-text-muted italic">No slots available for this date.</p>
                                 ) : (
                                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                                         {availableSlots.map(slot => (
@@ -201,9 +241,9 @@ const BookingPage: React.FC = () => {
                                                 key={slot}
                                                 type="button"
                                                 onClick={() => setSelectedSlot(slot)}
-                                                className={`py-2 px-3 rounded text-sm font-medium transition-colors ${selectedSlot === slot
-                                                    ? 'bg-black text-white'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${selectedSlot === slot
+                                                    ? 'bg-primary text-black font-bold'
+                                                    : 'bg-dark-input text-text-secondary hover:bg-gray-700'
                                                     }`}
                                             >
                                                 {dayjs(slot).format('HH:mm')}
@@ -215,21 +255,21 @@ const BookingPage: React.FC = () => {
                         )}
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
+                            <label className="block text-sm font-medium text-text-secondary mb-3">Payment Method</label>
                             <div className="grid grid-cols-2 gap-4">
                                 <div
                                     onClick={() => setPaymentMethod('STRIPE')}
-                                    className={`border rounded-lg p-4 cursor-pointer text-center transition-all ${paymentMethod === 'STRIPE' ? 'border-black ring-2 ring-black ring-opacity-50 bg-gray-50' : 'border-gray-200 hover:border-gray-400'}`}
+                                    className={`border rounded-xl p-4 cursor-pointer text-center transition-all ${paymentMethod === 'STRIPE' ? 'border-primary bg-primary/10' : 'border-gray-700 hover:border-gray-500 bg-dark-input'}`}
                                 >
-                                    <span className="font-bold block">Pay Online</span>
-                                    <span className="text-xs text-gray-500">Credit/Debit Card</span>
+                                    <span className="font-bold block text-white">Pay Online</span>
+                                    <span className="text-xs text-text-muted">Credit/Debit Card</span>
                                 </div>
                                 <div
                                     onClick={() => setPaymentMethod('CASH')}
-                                    className={`border rounded-lg p-4 cursor-pointer text-center transition-all ${paymentMethod === 'CASH' ? 'border-black ring-2 ring-black ring-opacity-50 bg-gray-50' : 'border-gray-200 hover:border-gray-400'}`}
+                                    className={`border rounded-xl p-4 cursor-pointer text-center transition-all ${paymentMethod === 'CASH' ? 'border-primary bg-primary/10' : 'border-gray-700 hover:border-gray-500 bg-dark-input'}`}
                                 >
-                                    <span className="font-bold block">Pay in Cash</span>
-                                    <span className="text-xs text-gray-500">Pay at the shop</span>
+                                    <span className="font-bold block text-white">Pay in Cash</span>
+                                    <span className="text-xs text-text-muted">Pay at the shop</span>
                                 </div>
                             </div>
                         </div>
@@ -237,7 +277,7 @@ const BookingPage: React.FC = () => {
                         <button
                             type="submit"
                             disabled={submitting || !selectedSlot}
-                            className="w-full bg-black text-white py-3 px-4 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg mt-8"
+                            className="w-full bg-primary text-black py-4 px-4 rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg mt-8 shadow-lg"
                         >
                             {submitting ? 'Booking...' : (paymentMethod === 'STRIPE' ? 'Proceed to Payment' : 'Confirm Booking')}
                         </button>

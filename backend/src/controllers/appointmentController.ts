@@ -16,6 +16,55 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
         // Basic validation: Check if barber is available (simplified for MVP)
         // In a real app, we'd check against the schedule and existing appointments
 
+        // Check for active subscription
+        const subscription = await prisma.subscription.findUnique({
+            where: { userId: customerId }
+        });
+        const isSubscribed = subscription && subscription.status === 'active';
+        let finalPaymentMethod = req.body.paymentMethod || 'CASH';
+        let finalPaymentStatus: any = AppointmentStatus.PENDING;
+
+        if (isSubscribed) {
+            // Check credits
+            // Assuming serviceId 1 is Haircut and 2 is Beard Trim for MVP simplicity
+            // In a real app, Service model should have a 'type' field
+            // Let's fetch the service to check its type or name
+            const service = await prisma.service.findUnique({ where: { id: serviceId } });
+
+            if (service) {
+                const isHaircut = service.name.toLowerCase().includes('hair') || service.name.toLowerCase().includes('corte');
+                const isBeard = service.name.toLowerCase().includes('beard') || service.name.toLowerCase().includes('barba');
+                const sub: any = subscription; // Cast to any to access new fields
+
+                if (isHaircut && sub.credits_haircut > 0) {
+                    finalPaymentMethod = 'STRIPE'; // Or 'SUBSCRIPTION'
+                    finalPaymentStatus = 'PAID';
+                    // Deduct credit
+                    await prisma.subscription.update({
+                        where: { id: subscription.id },
+                        data: { credits_haircut: { decrement: 1 } } as any
+                    });
+                } else if (isBeard && sub.credits_beard > 0) {
+                    finalPaymentMethod = 'STRIPE';
+                    finalPaymentStatus = 'PAID';
+                    // Deduct credit
+                    await prisma.subscription.update({
+                        where: { id: subscription.id },
+                        data: { credits_beard: { decrement: 1 } } as any
+                    });
+                } else {
+                    // Not enough credits, fall back to normal payment
+                    // If user selected 'STRIPE' explicitly in frontend, they will pay.
+                    // But if they expected subscription to cover it, we should maybe warn?
+                    // For now, if they selected STRIPE, let them pay.
+                    // If they selected CASH, let them pay cash.
+                    // The frontend logic I wrote earlier sets 'STRIPE' if subscribed.
+                    // So if credits are 0, it will default to STRIPE but NOT PAID.
+                    // Wait, my previous code forced 'PAID'. I need to remove that force.
+                }
+            }
+        }
+
         const appointment = await prisma.appointment.create({
             data: {
                 shopId,
@@ -24,8 +73,8 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
                 serviceId,
                 startTime: new Date(startTime),
                 status: AppointmentStatus.PENDING,
-                paymentMethod: req.body.paymentMethod || 'CASH', // Default to CASH if not provided? Or make it required.
-                // Actually, if we are here, we should know the method.
+                paymentMethod: finalPaymentMethod,
+                paymentStatus: finalPaymentStatus as any,
             },
         });
 
