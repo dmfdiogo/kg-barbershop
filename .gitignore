@@ -51,3 +51,5 @@ backend/prisma/migrations/**/migration.sql
 # Temporary files
 *.tmp
 .cache/
+
+old-docs/
