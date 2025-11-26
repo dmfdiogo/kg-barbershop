@@ -45,7 +45,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ appointments, onSelectEvent
     };
 
     return (
-        <div className="h-[600px] bg-white p-4 rounded-lg shadow">
+        <div className="h-[600px] bg-dark-card p-4 rounded-xl shadow-lg border border-gray-800 text-gray-900">
             <Calendar
                 localizer={localizer}
                 events={events}
@@ -58,6 +58,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ appointments, onSelectEvent
                 views={['month', 'week', 'day']}
                 step={15}
                 timeslots={4}
+                className="bg-white rounded-lg p-2" // Keep calendar white for readability for now, or customize heavily later
             />
         </div>
     );

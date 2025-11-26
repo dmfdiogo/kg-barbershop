@@ -22,21 +22,23 @@ const PaymentCancel: React.FC = () => {
     }, [appointmentId]);
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-            <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-                <div className="text-yellow-500 text-5xl mb-4">!</div>
-                <h2 className="text-2xl font-bold mb-2">Payment Cancelled</h2>
-                <p className="text-gray-600 mb-6">You cancelled the payment process. The appointment booking has been cancelled.</p>
-                <div className="space-y-3">
+        <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
+            <div className="bg-dark-card p-8 rounded-xl shadow-2xl max-w-md w-full text-center border border-gray-800">
+                <div className="text-yellow-500 text-5xl mb-4">
+                    <i className="ri-error-warning-fill"></i>
+                </div>
+                <h2 className="text-2xl font-bold mb-2 text-white">Payment Cancelled</h2>
+                <p className="text-text-secondary mb-8">You cancelled the payment process. The appointment booking has been cancelled.</p>
+                <div className="space-y-4">
                     <button
                         onClick={() => navigate('/history')}
-                        className="block w-full bg-black text-white px-6 py-2 rounded hover:bg-gray-800 transition-colors"
+                        className="block w-full bg-primary text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-400 transition-colors shadow-lg shadow-primary/20"
                     >
                         View My Appointments
                     </button>
                     <button
                         onClick={() => navigate(-1)}
-                        className="block w-full border border-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-50 transition-colors"
+                        className="block w-full border border-gray-700 text-text-secondary px-6 py-3 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
                     >
                         Try Again
                     </button>

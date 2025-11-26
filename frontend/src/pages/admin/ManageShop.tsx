@@ -103,29 +103,29 @@ const ManageShop: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <header className="bg-white shadow px-6 py-4 flex items-center">
+        <div className="min-h-screen bg-dark-bg text-text-primary">
+            <header className="bg-dark-card border-b border-gray-800 px-6 py-4 flex items-center sticky top-0 z-10">
                 <button
                     onClick={() => navigate('/')}
-                    className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className="mr-4 p-2 hover:bg-gray-800 rounded-full transition-colors text-white"
                 >
-                    ←
+                    <i className="ri-arrow-left-line text-xl"></i>
                 </button>
-                <h2 className="text-xl font-bold text-gray-800">Manage {shop?.name}</h2>
+                <h2 className="text-xl font-bold text-white">Manage {shop?.name}</h2>
             </header>
 
-            <main className="p-6">
-                <div className="bg-white rounded-lg shadow overflow-hidden">
+            <main className="p-4 md:p-6">
+                <div className="bg-dark-card rounded-xl shadow-lg overflow-hidden border border-gray-800">
                     {/* Tabs */}
-                    <div className="flex border-b">
+                    <div className="flex border-b border-gray-800">
                         <button
-                            className={`px-6 py-3 font-medium ${activeTab === 'services' ? 'border-b-2 border-black text-black' : 'text-gray-500 hover:text-black'}`}
+                            className={`px-6 py-4 font-bold transition-colors ${activeTab === 'services' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary hover:text-white hover:bg-gray-800'}`}
                             onClick={() => setActiveTab('services')}
                         >
                             Services
                         </button>
                         <button
-                            className={`px-6 py-3 font-medium ${activeTab === 'staff' ? 'border-b-2 border-black text-black' : 'text-gray-500 hover:text-black'}`}
+                            className={`px-6 py-4 font-bold transition-colors ${activeTab === 'staff' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary hover:text-white hover:bg-gray-800'}`}
                             onClick={() => setActiveTab('staff')}
                         >
                             Staff
@@ -137,36 +137,36 @@ const ManageShop: React.FC = () => {
                             <div>
                                 <button
                                     onClick={openCreateServiceModal}
-                                    className="mb-4 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition-colors"
+                                    className="mb-6 bg-primary text-black font-bold px-4 py-2 rounded hover:bg-yellow-400 transition-colors shadow-lg hover:shadow-primary/20"
                                 >
                                     + Add Service
                                 </button>
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
+                                <div className="overflow-x-auto rounded-lg border border-gray-800">
+                                    <table className="min-w-full divide-y divide-gray-800">
+                                        <thead className="bg-gray-900">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration (min)</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price ($)</th>
-                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Name</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Duration (min)</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Price ($)</th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        <tbody className="bg-dark-card divide-y divide-gray-800">
                                             {shop?.services?.map((service: any) => (
-                                                <tr key={service.id}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{service.name}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.duration}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.price}</td>
+                                                <tr key={service.id} className="hover:bg-gray-800/50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{service.name}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{service.duration}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{service.price}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                         <button
                                                             onClick={() => openEditServiceModal(service)}
-                                                            className="text-blue-600 hover:text-blue-900 mr-4"
+                                                            className="text-primary hover:text-yellow-300 mr-4 transition-colors"
                                                         >
                                                             Edit
                                                         </button>
                                                         <button
                                                             onClick={() => setDeleteServiceId(service.id)}
-                                                            className="text-red-600 hover:text-red-900"
+                                                            className="text-red-500 hover:text-red-400 transition-colors"
                                                         >
                                                             Delete
                                                         </button>
@@ -183,28 +183,28 @@ const ManageShop: React.FC = () => {
                             <div>
                                 <button
                                     onClick={() => setIsStaffModalVisible(true)}
-                                    className="mb-4 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition-colors"
+                                    className="mb-6 bg-primary text-black font-bold px-4 py-2 rounded hover:bg-yellow-400 transition-colors shadow-lg hover:shadow-primary/20"
                                 >
                                     + Add Staff
                                 </button>
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
+                                <div className="overflow-x-auto rounded-lg border border-gray-800">
+                                    <table className="min-w-full divide-y divide-gray-800">
+                                        <thead className="bg-gray-900">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Name</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Email</th>
+                                                <th className="px-6 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
+                                        <tbody className="bg-dark-card divide-y divide-gray-800">
                                             {shop?.staff?.map((staff: any) => (
-                                                <tr key={staff.id}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{staff.user.name}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.user.email}</td>
+                                                <tr key={staff.id} className="hover:bg-gray-800/50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{staff.user.name}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{staff.user.email}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                         <button
                                                             onClick={() => setRemoveStaffId(staff.id)}
-                                                            className="text-red-600 hover:text-red-900"
+                                                            className="text-red-500 hover:text-red-400 transition-colors"
                                                         >
                                                             Remove
                                                         </button>
@@ -214,7 +214,7 @@ const ManageShop: React.FC = () => {
                                         </tbody>
                                     </table>
                                 </div>
-                                <p className="mt-4 text-sm text-gray-500">Note: User must already be registered as 'Staff' to be added.</p>
+                                <p className="mt-4 text-sm text-text-muted">Note: User must already be registered as 'Staff' to be added.</p>
                             </div>
                         )}
                     </div>
@@ -223,82 +223,82 @@ const ManageShop: React.FC = () => {
 
             {/* Service Modal */}
             {isServiceModalVisible && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-xl font-bold mb-4">{editingService ? 'Edit Service' : 'Add Service'}</h3>
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
+                    <div className="bg-dark-card rounded-xl p-6 w-full max-w-md border border-gray-800 shadow-2xl">
+                        <h3 className="text-xl font-bold mb-4 text-white">{editingService ? 'Edit Service' : 'Add Service'}</h3>
                         <form onSubmit={handleCreateOrUpdateService} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Service Name</label>
                                 <input
                                     name="name"
                                     required
                                     defaultValue={editingService?.name}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
+                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Duration (minutes)</label>
                                 <input
                                     name="duration"
                                     type="number"
                                     min="1"
                                     required
                                     defaultValue={editingService?.duration}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
+                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Buffer Time (minutes)</label>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Buffer Time (minutes)</label>
                                 <input
                                     name="bufferTime"
                                     type="number"
                                     min="0"
                                     defaultValue={editingService?.bufferTime || 0}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
+                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Price ($)</label>
                                 <input
                                     name="price"
                                     type="number"
                                     min="0"
                                     required
                                     defaultValue={editingService?.price}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
+                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Description</label>
                                 <textarea
                                     name="description"
                                     rows={3}
                                     defaultValue={editingService?.description}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
+                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Image URL</label>
                                 <input
                                     name="imageUrl"
                                     type="url"
                                     placeholder="https://example.com/image.jpg"
                                     defaultValue={editingService?.imageUrl}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
+                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
                                 />
                             </div>
                             <div className="flex justify-end space-x-3 mt-6">
                                 <button
                                     type="button"
                                     onClick={() => setIsServiceModalVisible(false)}
-                                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                                    className="px-4 py-2 text-text-secondary hover:bg-gray-800 rounded transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
+                                    className="px-4 py-2 bg-primary text-black font-bold rounded hover:bg-yellow-400 transition-colors"
                                 >
                                     {loading ? (editingService ? 'Saving...' : 'Adding...') : (editingService ? 'Save Changes' : 'Add')}
                                 </button>
@@ -310,32 +310,32 @@ const ManageShop: React.FC = () => {
 
             {/* Staff Modal */}
             {isStaffModalVisible && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h3 className="text-xl font-bold mb-4">Add Staff</h3>
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
+                    <div className="bg-dark-card rounded-xl p-6 w-full max-w-md border border-gray-800 shadow-2xl">
+                        <h3 className="text-xl font-bold mb-4 text-white">Add Staff</h3>
                         <form onSubmit={handleAddStaff} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Staff Email</label>
+                                <label className="block text-sm font-medium text-text-secondary mb-1">Staff Email</label>
                                 <input
                                     name="email"
                                     type="email"
                                     required
                                     placeholder="Enter email of registered staff member"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-black focus:border-black outline-none"
+                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
                                 />
                             </div>
                             <div className="flex justify-end space-x-3 mt-6">
                                 <button
                                     type="button"
                                     onClick={() => setIsStaffModalVisible(false)}
-                                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                                    className="px-4 py-2 text-text-secondary hover:bg-gray-800 rounded transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
+                                    className="px-4 py-2 bg-primary text-black font-bold rounded hover:bg-yellow-400 transition-colors"
                                 >
                                     {loading ? 'Adding...' : 'Add'}
                                 </button>

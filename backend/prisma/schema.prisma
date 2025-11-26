@@ -34,6 +34,22 @@ model User {
   ownedShops    Shop[]        @relation("ShopOwner")
   appointments  Appointment[] // As customer
   staffProfile  StaffProfile?
+  subscription  Subscription?
+}
+
+model Subscription {
+  id                   Int      @id @default(autoincrement())
+  userId               Int      @unique
+  user                 User     @relation(fields: [userId], references: [id])
+  stripeSubscriptionId String   @unique
+  status               String   // active, past_due, canceled, etc.
+  currentPeriodEnd     DateTime
+  planId               String
+  credits_haircut      Int      @default(0)
+  credits_beard        Int      @default(0)
+  last_reset_date      DateTime @default(now())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model Shop {

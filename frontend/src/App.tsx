@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Register from './pages/Register';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import Layout from './components/Layout';
 
 import Dashboard from './pages/Dashboard';
 import BookingPage from './pages/customer/BookingPage';
@@ -10,6 +11,7 @@ import HistoryPage from './pages/customer/HistoryPage';
 import ManageShop from './pages/admin/ManageShop';
 import PaymentSuccess from './pages/customer/PaymentSuccess';
 import PaymentCancel from './pages/customer/PaymentCancel';
+import PlansPage from './pages/customer/PlansPage';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -25,24 +27,40 @@ const App: React.FC = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/cancel" element={<PaymentCancel />} />
+          <Route path="/plans" element={<PlansPage />} />
           <Route path="/manage/:slug" element={
             <PrivateRoute>
-              <ManageShop />
+              <Layout>
+                <ManageShop />
+              </Layout>
             </PrivateRoute>
           } />
           <Route path="/book/:slug" element={
             <PrivateRoute>
-              <BookingPage />
+              <Layout showNav={false}>
+                <BookingPage />
+              </Layout>
             </PrivateRoute>
           } />
           <Route path="/history" element={
             <PrivateRoute>
-              <HistoryPage />
+              <Layout>
+                <HistoryPage />
+              </Layout>
+            </PrivateRoute>
+          } />
+          <Route path="/plans" element={
+            <PrivateRoute>
+              <Layout>
+                <PlansPage />
+              </Layout>
             </PrivateRoute>
           } />
           <Route path="/" element={
             <PrivateRoute>
-              <Dashboard />
+              <Layout>
+                <Dashboard />
+              </Layout>
             </PrivateRoute>
           } />
         </Routes>
@@ -52,3 +70,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

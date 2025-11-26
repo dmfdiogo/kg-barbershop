@@ -70,40 +70,37 @@ const RescheduleModal: React.FC<RescheduleModalProps> = ({ appointment, isOpen, 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-gray-900">Reschedule Appointment</h3>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+        <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 backdrop-blur-sm">
+            <div className="bg-dark-card rounded-xl shadow-2xl p-6 w-full max-w-md mx-4 border border-gray-800">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-white">Reschedule Appointment</h3>
+                    <button onClick={onClose} className="text-text-secondary hover:text-white transition-colors">
+                        <i className="ri-close-line text-2xl"></i>
+                    </button>
                 </div>
 
-                <div className="mb-4">
-                    <p className="text-sm text-gray-600">
-                        Current: <span className="font-medium">{dayjs(appointment.startTime).format('MMM D, HH:mm')}</span>
+                <div className="mb-6 space-y-2">
+                    <p className="text-sm text-text-secondary">
+                        Current: <span className="font-medium text-white">{dayjs(appointment.startTime).format('MMM D, HH:mm')}</span>
                     </p>
-                    <p className="text-sm text-gray-600">
-                        Service: <span className="font-medium">{appointment.service.name}</span> ({appointment.service.duration}m)
+                    <p className="text-sm text-text-secondary">
+                        Service: <span className="font-medium text-white">{appointment.service.name}</span> ({appointment.service.duration}m)
                     </p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
+                    <div className="bg-red-900/20 border border-red-800 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
                         {error}
                     </div>
                 )}
 
-                <div className="space-y-4">
+                <div className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Select New Date</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-2">Select New Date</label>
                         <input
                             type="date"
-                            min={dayjs().add(1, 'day').format('YYYY-MM-DD')} // Enforce > 24h rule visually? Or just allow any future date and let backend validate? 
-                            // Backend validates 24h rule for the *existing* appointment, not the new one.
-                            // But for the new one, it must be in the future.
-                            // Let's just use tomorrow as min for simplicity, or today if we want to allow same-day rescheduling (if backend allows).
-                            // Backend says: "Cannot reschedule appointments less than 24 hours in advance" -> This refers to the OLD appointment time vs NOW.
-                            // It doesn't restrict the NEW time, other than it being in the future and available.
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-black focus:border-black outline-none"
+                            min={dayjs().add(1, 'day').format('YYYY-MM-DD')}
+                            className="w-full px-4 py-2 border border-gray-700 rounded-lg bg-dark-input text-white focus:ring-primary focus:border-primary outline-none transition-colors"
                             onChange={(e) => setSelectedDate(e.target.value)}
                             value={selectedDate}
                         />
@@ -111,20 +108,20 @@ const RescheduleModal: React.FC<RescheduleModalProps> = ({ appointment, isOpen, 
 
                     {selectedDate && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Available Slots</label>
+                            <label className="block text-sm font-medium text-text-secondary mb-3">Available Slots</label>
                             {loading ? (
-                                <div className="text-center text-gray-500 text-sm">Loading slots...</div>
+                                <div className="text-center text-text-muted text-sm py-4">Loading slots...</div>
                             ) : availableSlots.length === 0 ? (
-                                <p className="text-gray-500 text-sm italic">No slots available.</p>
+                                <p className="text-text-muted text-sm italic py-2">No slots available.</p>
                             ) : (
-                                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                                <div className="grid grid-cols-3 gap-3 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                                     {availableSlots.map(slot => (
                                         <button
                                             key={slot}
                                             onClick={() => setSelectedSlot(slot)}
-                                            className={`py-1 px-2 rounded text-xs font-medium transition-colors ${selectedSlot === slot
-                                                    ? 'bg-black text-white'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${selectedSlot === slot
+                                                ? 'bg-primary text-black shadow-lg shadow-primary/20'
+                                                : 'bg-gray-800 text-text-secondary hover:bg-gray-700 hover:text-white'
                                                 }`}
                                         >
                                             {dayjs(slot).format('HH:mm')}
@@ -138,7 +135,7 @@ const RescheduleModal: React.FC<RescheduleModalProps> = ({ appointment, isOpen, 
                     <button
                         onClick={handleReschedule}
                         disabled={submitting || !selectedSlot}
-                        className="w-full bg-black text-white py-2 px-4 rounded hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold mt-4"
+                        className="w-full bg-primary text-black py-3 px-4 rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg hover:shadow-primary/20 mt-2"
                     >
                         {submitting ? 'Confirming...' : 'Confirm Reschedule'}
                     </button>

@@ -8,6 +8,11 @@ const app = express();
 const port = process.env.PORT || 5100;
 
 app.use(cors());
+
+// Webhook route must be registered BEFORE express.json() to get raw body
+import { handleStripeWebhook } from './controllers/webhookController';
+app.post('/api/webhooks', express.raw({ type: 'application/json' }), handleStripeWebhook);
+
 app.use(express.json());
 
 import authRoutes from './routes/authRoutes';
