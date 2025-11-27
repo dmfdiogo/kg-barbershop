@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import api from '../../services/api';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import { DESIGN } from '../../theme/design';
+import PageHeader from '../../components/PageHeader';
 
 const ManageShop: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
-    const navigate = useNavigate();
     const [shop, setShop] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('services');
     const [isServiceModalVisible, setIsServiceModalVisible] = useState(false);
@@ -103,19 +104,11 @@ const ManageShop: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-dark-bg text-text-primary">
-            <header className="bg-dark-card border-b border-gray-800 px-6 py-4 flex items-center sticky top-0 z-10">
-                <button
-                    onClick={() => navigate('/')}
-                    className="mr-4 p-2 hover:bg-gray-800 rounded-full transition-colors text-white"
-                >
-                    <i className="ri-arrow-left-line text-xl"></i>
-                </button>
-                <h2 className="text-xl font-bold text-white">Manage {shop?.name}</h2>
-            </header>
+        <div className={DESIGN.layout.pageContainer}>
+            <PageHeader title={`Manage ${shop?.name}`} showBack />
 
             <main className="p-4 md:p-6">
-                <div className="bg-dark-card rounded-xl shadow-lg overflow-hidden border border-gray-800">
+                <div className={`${DESIGN.card.base} overflow-hidden`}>
                     {/* Tabs */}
                     <div className="flex border-b border-gray-800">
                         <button
@@ -137,7 +130,7 @@ const ManageShop: React.FC = () => {
                             <div>
                                 <button
                                     onClick={openCreateServiceModal}
-                                    className="mb-6 bg-primary text-black font-bold px-4 py-2 rounded hover:bg-yellow-400 transition-colors shadow-lg hover:shadow-primary/20"
+                                    className={`mb-6 ${DESIGN.button.primary}`}
                                 >
                                     + Add Service
                                 </button>
@@ -183,7 +176,7 @@ const ManageShop: React.FC = () => {
                             <div>
                                 <button
                                     onClick={() => setIsStaffModalVisible(true)}
-                                    className="mb-6 bg-primary text-black font-bold px-4 py-2 rounded hover:bg-yellow-400 transition-colors shadow-lg hover:shadow-primary/20"
+                                    className={`mb-6 ${DESIGN.button.primary}`}
                                 >
                                     + Add Staff
                                 </button>
@@ -214,7 +207,7 @@ const ManageShop: React.FC = () => {
                                         </tbody>
                                     </table>
                                 </div>
-                                <p className="mt-4 text-sm text-text-muted">Note: User must already be registered as 'Staff' to be added.</p>
+                                <p className={`mt-4 ${DESIGN.text.body} ${DESIGN.text.muted}`}>Note: User must already be registered as 'Staff' to be added.</p>
                             </div>
                         )}
                     </div>
@@ -224,81 +217,94 @@ const ManageShop: React.FC = () => {
             {/* Service Modal */}
             {isServiceModalVisible && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
-                    <div className="bg-dark-card rounded-xl p-6 w-full max-w-md border border-gray-800 shadow-2xl">
-                        <h3 className="text-xl font-bold mb-4 text-white">{editingService ? 'Edit Service' : 'Add Service'}</h3>
+                    <div className={`${DESIGN.card.base} p-6 w-full max-w-md shadow-2xl`}>
+                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>{editingService ? 'Edit Service' : 'Add Service'}</h3>
                         <form onSubmit={handleCreateOrUpdateService} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Service Name</label>
+                                <label className={DESIGN.text.label}>Service Name</label>
                                 <input
                                     name="name"
                                     required
                                     defaultValue={editingService?.name}
-                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
+                                    className={DESIGN.input.base}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Duration (minutes)</label>
+                                <label className={DESIGN.text.label}>Service Type</label>
+                                <select
+                                    name="type"
+                                    required
+                                    defaultValue={editingService?.type || 'OTHER'}
+                                    className={DESIGN.input.select}
+                                >
+                                    <option value="OTHER">Other</option>
+                                    <option value="HAIRCUT">Haircut</option>
+                                    <option value="BEARD">Beard Trim</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className={DESIGN.text.label}>Duration (minutes)</label>
                                 <input
                                     name="duration"
                                     type="number"
                                     min="1"
                                     required
                                     defaultValue={editingService?.duration}
-                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
+                                    className={DESIGN.input.base}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Buffer Time (minutes)</label>
+                                <label className={DESIGN.text.label}>Buffer Time (minutes)</label>
                                 <input
                                     name="bufferTime"
                                     type="number"
                                     min="0"
                                     defaultValue={editingService?.bufferTime || 0}
-                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
+                                    className={DESIGN.input.base}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Price ($)</label>
+                                <label className={DESIGN.text.label}>Price ($)</label>
                                 <input
                                     name="price"
                                     type="number"
                                     min="0"
                                     required
                                     defaultValue={editingService?.price}
-                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
+                                    className={DESIGN.input.base}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Description</label>
+                                <label className={DESIGN.text.label}>Description</label>
                                 <textarea
                                     name="description"
                                     rows={3}
                                     defaultValue={editingService?.description}
-                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
+                                    className={DESIGN.input.base}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Image URL</label>
+                                <label className={DESIGN.text.label}>Image URL</label>
                                 <input
                                     name="imageUrl"
                                     type="url"
                                     placeholder="https://example.com/image.jpg"
                                     defaultValue={editingService?.imageUrl}
-                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
+                                    className={DESIGN.input.base}
                                 />
                             </div>
                             <div className="flex justify-end space-x-3 mt-6">
                                 <button
                                     type="button"
                                     onClick={() => setIsServiceModalVisible(false)}
-                                    className="px-4 py-2 text-text-secondary hover:bg-gray-800 rounded transition-colors"
+                                    className={DESIGN.button.secondary}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="px-4 py-2 bg-primary text-black font-bold rounded hover:bg-yellow-400 transition-colors"
+                                    className={DESIGN.button.primary}
                                 >
                                     {loading ? (editingService ? 'Saving...' : 'Adding...') : (editingService ? 'Save Changes' : 'Add')}
                                 </button>
@@ -311,31 +317,31 @@ const ManageShop: React.FC = () => {
             {/* Staff Modal */}
             {isStaffModalVisible && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
-                    <div className="bg-dark-card rounded-xl p-6 w-full max-w-md border border-gray-800 shadow-2xl">
-                        <h3 className="text-xl font-bold mb-4 text-white">Add Staff</h3>
+                    <div className={`${DESIGN.card.base} p-6 w-full max-w-md shadow-2xl`}>
+                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>Add Staff</h3>
                         <form onSubmit={handleAddStaff} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Staff Email</label>
+                                <label className={DESIGN.text.label}>Staff Email</label>
                                 <input
                                     name="email"
                                     type="email"
                                     required
                                     placeholder="Enter email of registered staff member"
-                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
+                                    className={DESIGN.input.base}
                                 />
                             </div>
                             <div className="flex justify-end space-x-3 mt-6">
                                 <button
                                     type="button"
                                     onClick={() => setIsStaffModalVisible(false)}
-                                    className="px-4 py-2 text-text-secondary hover:bg-gray-800 rounded transition-colors"
+                                    className={DESIGN.button.secondary}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="px-4 py-2 bg-primary text-black font-bold rounded hover:bg-yellow-400 transition-colors"
+                                    className={DESIGN.button.primary}
                                 >
                                     {loading ? 'Adding...' : 'Add'}
                                 </button>

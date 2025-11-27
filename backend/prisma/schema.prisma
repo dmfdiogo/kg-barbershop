@@ -45,11 +45,21 @@ model Subscription {
   status               String   // active, past_due, canceled, etc.
   currentPeriodEnd     DateTime
   planId               String
-  credits_haircut      Int      @default(0)
-  credits_beard        Int      @default(0)
   last_reset_date      DateTime @default(now())
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+
+  benefits             SubscriptionBenefit[]
+}
+
+model SubscriptionBenefit {
+  id             Int          @id @default(autoincrement())
+  subscriptionId Int
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  serviceType    String       // e.g., "HAIRCUT", "BEARD"
+  remaining      Int          // Current balance
+  resetAmount    Int          // Amount to reset to monthly
+  updatedAt      DateTime     @updatedAt
 }
 
 model Shop {
@@ -80,6 +90,12 @@ model StaffProfile {
   deletedAt   DateTime?
 }
 
+enum ServiceType {
+  HAIRCUT
+  BEARD
+  OTHER
+}
+
 model Service {
   id          Int      @id @default(autoincrement())
   shopId      Int
@@ -87,6 +103,7 @@ model Service {
   name        String
   description String?
   imageUrl    String?
+  type        ServiceType @default(OTHER)
   duration    Int      // in minutes
   bufferTime  Int      @default(0) // in minutes
   price       Decimal

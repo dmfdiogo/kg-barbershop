@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import api from '../../services/api';
 
 const PaymentSuccess: React.FC = () => {
@@ -9,55 +10,67 @@ const PaymentSuccess: React.FC = () => {
     const sessionId = searchParams.get('session_id');
     const appointmentId = searchParams.get('appointment_id');
 
+    const type = searchParams.get('type');
+
     useEffect(() => {
         const verifyPayment = async () => {
-
             if (!sessionId) {
                 setStatus('error');
                 return;
             }
 
-            try {
-                const type = searchParams.get('type');
-                if (type === 'subscription') {
-                    // Poll for verification (max 5 attempts)
-                    let attempts = 0;
-                    const maxAttempts = 5;
+            let attempts = 0;
+            const maxAttempts = 10; // 20 seconds total
 
-                    const checkStatus = async () => {
-                        try {
-                            const response = await api.post('/payment/verify-subscription', { sessionId });
-                            if (response.data.status === 'success') {
-                                setStatus('success');
-                            } else if (attempts < maxAttempts) {
-                                attempts++;
-                                setTimeout(checkStatus, 2000); // Retry every 2 seconds
-                            } else {
-                                // If still pending after retries, show success anyway but maybe with a note?
-                                // Or just show success because we know Stripe redirect happened.
-                                // Let's show success but log it.
-                                console.log('Subscription verification timed out, but assuming success from redirect');
-                                setStatus('success');
-                            }
-                        } catch (e) {
-                            console.error('Verification error', e);
+            const checkStatus = async () => {
+                try {
+                    let response;
+
+                    if (type === 'subscription') {
+                        // For subscriptions, we need to check if the DB has been updated by the webhook
+                        // We use a POST request as verifySubscription expects sessionId in body
+                        response = await api.post('/payment/verify-subscription', { sessionId });
+
+                        if (response.data.status === 'success') {
+                            setStatus('success');
+                        } else if (response.data.status === 'pending' && attempts < maxAttempts) {
+                            attempts++;
+                            setTimeout(checkStatus, 2000);
+                        } else if (attempts >= maxAttempts) {
+                            console.log('Subscription verification timed out');
                             setStatus('error');
                         }
-                    };
+                    } else {
+                        // For one-time payments
+                        response = await api.get(`/payment/verify-session/${sessionId}`);
 
-                    checkStatus();
-                } else {
-                    await api.post('/payment/success', { sessionId, appointmentId });
-                    setStatus('success');
+                        if (response.data.payment_status === 'paid') {
+                            setStatus('success');
+                        } else if (attempts < maxAttempts) {
+                            attempts++;
+                            setTimeout(checkStatus, 2000);
+                        } else {
+                            setStatus('error');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Verification error', e);
+                    if (axios.isAxiosError(e) && (e.response?.status === 403 || e.response?.status === 404)) {
+                        setStatus('error');
+                    } else if (attempts < maxAttempts) {
+                        attempts++;
+                        setTimeout(checkStatus, 2000);
+                    } else {
+                        setStatus('error');
+                    }
                 }
-            } catch (error) {
-                console.error('Payment verification failed', error);
-                setStatus('error');
-            }
+            };
+
+            checkStatus();
         };
 
         verifyPayment();
-    }, [sessionId, appointmentId, searchParams]);
+    }, [sessionId, appointmentId, searchParams, type]);
 
     return (
         <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">

@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import dayjs from 'dayjs';
 import RescheduleModal from '../../components/RescheduleModal';
+import { DESIGN } from '../../theme/design';
+import { formatDateTime } from '../../utils/date';
+
+import PageHeader from '../../components/PageHeader';
 
 const HistoryPage: React.FC = () => {
     const navigate = useNavigate();
@@ -36,27 +40,18 @@ const HistoryPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-dark-bg text-text-primary">
-            <header className="bg-dark-card border-b border-gray-800 px-6 py-4 flex items-center sticky top-0 z-10">
-                <button
-                    onClick={() => navigate('/')}
-                    className="mr-4 p-2 hover:bg-gray-800 rounded-full transition-colors text-white"
-                >
-                    <i className="ri-arrow-left-line text-xl"></i>
-                </button>
-                <h2 className="text-xl font-bold text-white">My Appointments</h2>
-
-            </header>
+        <div className={DESIGN.layout.pageContainer}>
+            <PageHeader title="My Appointments" showBack />
 
             <main className="p-4 md:p-6 max-w-4xl mx-auto">
                 {loading ? (
-                    <div className="text-center py-10 text-text-secondary">Loading...</div>
+                    <div className={`text-center py-10 ${DESIGN.text.body}`}>Loading...</div>
                 ) : appointments.length === 0 ? (
-                    <div className="text-center py-10 bg-dark-card rounded-xl shadow border border-gray-800">
-                        <p className="text-text-secondary mb-4">You haven't booked any appointments yet.</p>
+                    <div className={`text-center py-10 ${DESIGN.card.base}`}>
+                        <p className={`${DESIGN.text.body} mb-4`}>You haven't booked any appointments yet.</p>
                         <button
                             onClick={() => navigate('/')}
-                            className="bg-primary text-black font-bold px-4 py-2 rounded hover:bg-yellow-400 transition-colors"
+                            className={DESIGN.button.primary}
                         >
                             Find a Shop
                         </button>
@@ -69,30 +64,30 @@ const HistoryPage: React.FC = () => {
                             const canReschedule = isFuture && hoursDiff >= 24;
 
                             return (
-                                <div key={appt.id} className="bg-dark-card p-6 rounded-xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center border border-gray-800">
+                                <div key={appt.id} className={`${DESIGN.card.base} p-6 flex flex-col md:flex-row justify-between items-start md:items-center`}>
                                     <div>
                                         <h3 className="text-lg font-bold text-white">{appt.shop.name}</h3>
-                                        <p className="text-text-secondary">{appt.service.name} with {appt.barber.user.name}</p>
-                                        <p className="text-sm text-text-muted mt-1">
-                                            {dayjs(appt.startTime).format('MMMM D, YYYY [at] h:mm A')}
+                                        <p className={DESIGN.text.body}>{appt.service.name} with {appt.barber.user.name}</p>
+                                        <p className={`text-sm ${DESIGN.text.muted} mt-1`}>
+                                            {formatDateTime(appt.startTime)}
                                         </p>
                                     </div>
                                     <div className="mt-4 md:mt-0 flex flex-col md:flex-row items-end md:items-center gap-4">
                                         <div className="flex items-center">
                                             <div className="flex flex-col items-end mr-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${appt.status === 'CONFIRMED' ? 'bg-green-900/30 text-green-400' :
-                                                    appt.status === 'PENDING' ? 'bg-yellow-900/30 text-yellow-400' :
-                                                        'bg-red-900/30 text-red-400'
+                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${appt.status === 'CONFIRMED' ? DESIGN.badge.success :
+                                                    appt.status === 'PENDING' ? DESIGN.badge.warning :
+                                                        DESIGN.badge.error
                                                     }`}>
                                                     {appt.status}
                                                 </span>
-                                                <span className="text-xs text-text-muted mt-1">
+                                                <span className={`text-xs ${DESIGN.text.muted} mt-1`}>
                                                     {appt.paymentMethod} - {appt.paymentStatus}
                                                 </span>
                                             </div>
                                             <div className="text-right">
                                                 <p className="font-bold text-white">${appt.service.price}</p>
-                                                <p className="text-xs text-text-muted">{appt.service.duration} mins</p>
+                                                <p className={`text-xs ${DESIGN.text.muted}`}>{appt.service.duration} mins</p>
                                             </div>
                                         </div>
 

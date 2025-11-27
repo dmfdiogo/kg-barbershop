@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import { DESIGN } from '../../theme/design';
 
 const AdminDashboard: React.FC = () => {
     const { logout, user } = useAuth();
@@ -13,6 +14,9 @@ const AdminDashboard: React.FC = () => {
     const [activeView, setActiveView] = useState('shops'); // 'shops' | 'analytics'
     const [popularBarbers, setPopularBarbers] = useState<any[]>([]);
     const [peakHours, setPeakHours] = useState<any[]>([]);
+    const [revenueData, setRevenueData] = useState<any[]>([]);
+    const [statusStats, setStatusStats] = useState<any[]>([]);
+    const [retentionStats, setRetentionStats] = useState<any[]>([]);
     const navigate = useNavigate();
 
     const [editingShop, setEditingShop] = useState<any>(null);
@@ -29,12 +33,18 @@ const AdminDashboard: React.FC = () => {
 
     const fetchAnalytics = async () => {
         try {
-            const [barbersRes, hoursRes] = await Promise.all([
+            const [barbersRes, hoursRes, revenueRes, statusRes, retentionRes] = await Promise.all([
                 api.get('/analytics/popular-barbers'),
-                api.get('/analytics/peak-hours')
+                api.get('/analytics/peak-hours'),
+                api.get('/analytics/revenue'),
+                api.get('/analytics/status'),
+                api.get('/analytics/retention')
             ]);
             setPopularBarbers(barbersRes.data);
             setPeakHours(hoursRes.data);
+            setRevenueData(revenueRes.data);
+            setStatusStats(statusRes.data);
+            setRetentionStats(retentionRes.data);
         } catch (error) {
             console.error('Failed to fetch analytics');
         }
@@ -95,9 +105,9 @@ const AdminDashboard: React.FC = () => {
     };
 
     return (
-        <div className="flex h-screen bg-dark-bg text-text-primary">
+        <div className={DESIGN.layout.pageContainer}>
             {/* Sidebar */}
-            <div className="w-64 bg-dark-card border-r border-gray-800 flex flex-col">
+            <div className="w-64 bg-dark-card border-r border-gray-800 flex flex-col hidden md:flex">
                 <div className="h-16 flex items-center justify-center border-b border-gray-800">
                     <h1 className="text-xl font-bold text-primary">Admin Panel</h1>
                 </div>
@@ -125,11 +135,11 @@ const AdminDashboard: React.FC = () => {
             {/* Main Content */}
             <div className="flex-1 overflow-auto">
                 <header className="bg-dark-card shadow-md border-b border-gray-800 h-16 flex items-center justify-between px-6 sticky top-0 z-10">
-                    <h2 className="text-xl font-semibold text-white">Welcome, {user?.name}</h2>
+                    <h2 className={DESIGN.text.subHeader}>Welcome, {user?.name}</h2>
                     {activeView === 'shops' && (
                         <button
                             onClick={openCreateModal}
-                            className="bg-primary text-black font-bold px-4 py-2 rounded hover:bg-yellow-400 transition-colors shadow-lg hover:shadow-primary/20"
+                            className={DESIGN.button.primary}
                         >
                             + Create Shop
                         </button>
@@ -139,10 +149,10 @@ const AdminDashboard: React.FC = () => {
                 <main className="p-6">
                     {activeView === 'shops' ? (
                         <>
-                            <h3 className="text-lg font-medium text-text-secondary mb-4">Your Shops</h3>
+                            <h3 className={`${DESIGN.text.subHeader} text-lg mb-4`}>Your Shops</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {shops.map(shop => (
-                                    <div key={shop.id} className="bg-dark-card p-6 rounded-xl shadow-lg border border-gray-800 hover:border-primary/50 transition-all">
+                                    <div key={shop.id} className={`${DESIGN.card.base} ${DESIGN.card.padding} ${DESIGN.card.hover}`}>
                                         <div className="flex justify-between items-start mb-4">
                                             <h4 className="text-xl font-bold text-white">{shop.name}</h4>
                                             <div className="flex space-x-2">
@@ -166,10 +176,10 @@ const AdminDashboard: React.FC = () => {
                                                 </button>
                                             </div>
                                         </div>
-                                        <div className="space-y-2 text-text-secondary">
-                                            <p><span className="font-medium text-text-muted">URL:</span> {shop.slug}</p>
-                                            <p><span className="font-medium text-text-muted">Services:</span> {shop._count?.services || 0}</p>
-                                            <p><span className="font-medium text-text-muted">Staff:</span> {shop._count?.staff || 0}</p>
+                                        <div className={`space-y-2 ${DESIGN.text.body}`}>
+                                            <p><span className={`font-medium ${DESIGN.text.muted}`}>URL:</span> {shop.slug}</p>
+                                            <p><span className={`font-medium ${DESIGN.text.muted}`}>Services:</span> {shop._count?.services || 0}</p>
+                                            <p><span className={`font-medium ${DESIGN.text.muted}`}>Staff:</span> {shop._count?.staff || 0}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -177,11 +187,36 @@ const AdminDashboard: React.FC = () => {
                         </>
                     ) : (
                         <div className="space-y-8">
-                            <h3 className="text-lg font-medium text-text-secondary mb-4">Analytics Dashboard</h3>
+                            <h3 className={`${DESIGN.text.subHeader} text-lg mb-4`}>Analytics Dashboard</h3>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Revenue Chart */}
+                                <div className={`${DESIGN.card.base} ${DESIGN.card.padding} lg:col-span-2`}>
+                                    <h4 className="text-lg font-bold mb-4 text-white">Revenue Over Time</h4>
+                                    <div className="h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={revenueData}>
+                                                <defs>
+                                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#F7B500" stopOpacity={0.8} />
+                                                        <stop offset="95%" stopColor="#F7B500" stopOpacity={0} />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                                <XAxis dataKey="date" stroke="#9CA3AF" />
+                                                <YAxis stroke="#9CA3AF" />
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6' }}
+                                                    itemStyle={{ color: '#F3F4F6' }}
+                                                />
+                                                <Area type="monotone" dataKey="amount" stroke="#F7B500" fillOpacity={1} fill="url(#colorRevenue)" name="Revenue ($)" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
                                 {/* Popular Barbers Chart */}
-                                <div className="bg-dark-card p-6 rounded-xl shadow border border-gray-800">
+                                <div className={`${DESIGN.card.base} ${DESIGN.card.padding}`}>
                                     <h4 className="text-lg font-bold mb-4 text-white">Most Popular Barbers</h4>
                                     <div className="h-80">
                                         <ResponsiveContainer width="100%" height="100%">
@@ -200,8 +235,68 @@ const AdminDashboard: React.FC = () => {
                                     </div>
                                 </div>
 
+                                {/* Appointment Status Chart */}
+                                <div className={`${DESIGN.card.base} ${DESIGN.card.padding}`}>
+                                    <h4 className="text-lg font-bold mb-4 text-white">Appointment Status</h4>
+                                    <div className="h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={statusStats}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={60}
+                                                    outerRadius={80}
+                                                    fill="#8884d8"
+                                                    paddingAngle={5}
+                                                    dataKey="value"
+                                                >
+                                                    {statusStats.map((_: any, index: number) => (
+                                                        <Cell key={`cell-${index}`} fill={['#10B981', '#EF4444', '#F59E0B'][index % 3]} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6' }}
+                                                    itemStyle={{ color: '#F3F4F6' }}
+                                                />
+                                                <Legend />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                {/* Customer Retention Chart */}
+                                <div className={`${DESIGN.card.base} ${DESIGN.card.padding}`}>
+                                    <h4 className="text-lg font-bold mb-4 text-white">Customer Retention</h4>
+                                    <div className="h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={retentionStats}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={60}
+                                                    outerRadius={80}
+                                                    fill="#8884d8"
+                                                    paddingAngle={5}
+                                                    dataKey="value"
+                                                >
+                                                    {retentionStats.map((_: any, index: number) => (
+                                                        <Cell key={`cell-${index}`} fill={['#3B82F6', '#F7B500'][index % 2]} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#1F2937', borderColor: '#374151', color: '#F3F4F6' }}
+                                                    itemStyle={{ color: '#F3F4F6' }}
+                                                />
+                                                <Legend />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
                                 {/* Peak Hours Chart */}
-                                <div className="bg-dark-card p-6 rounded-xl shadow border border-gray-800">
+                                <div className={`${DESIGN.card.base} ${DESIGN.card.padding} lg:col-span-2`}>
                                     <h4 className="text-lg font-bold mb-4 text-white">Peak Hours</h4>
                                     <div className="h-80">
                                         <ResponsiveContainer width="100%" height="100%">
@@ -228,20 +323,20 @@ const AdminDashboard: React.FC = () => {
             {/* Modal */}
             {isModalVisible && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
-                    <div className="bg-dark-card rounded-xl p-6 w-full max-w-md border border-gray-800 shadow-2xl">
-                        <h3 className="text-xl font-bold mb-4 text-white">{editingShop ? 'Edit Shop' : 'Create New Shop'}</h3>
+                    <div className={`${DESIGN.card.base} p-6 w-full max-w-md shadow-2xl`}>
+                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>{editingShop ? 'Edit Shop' : 'Create New Shop'}</h3>
                         <form onSubmit={handleCreateOrUpdateShop} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">Shop Name</label>
+                                <label className={DESIGN.text.label}>Shop Name</label>
                                 <input
                                     name="name"
                                     required
                                     defaultValue={editingShop?.name}
-                                    className="w-full px-3 py-2 border border-gray-700 rounded bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
+                                    className={DESIGN.input.base}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">URL Slug</label>
+                                <label className={DESIGN.text.label}>URL Slug</label>
                                 <div className="flex">
                                     <span className="inline-flex items-center px-3 rounded-l border border-r-0 border-gray-700 bg-gray-800 text-text-muted text-sm">
                                         app.com/
@@ -250,7 +345,7 @@ const AdminDashboard: React.FC = () => {
                                         name="slug"
                                         required
                                         defaultValue={editingShop?.slug}
-                                        className="flex-1 px-3 py-2 border border-gray-700 rounded-r bg-dark-input text-white focus:ring-primary focus:border-primary outline-none"
+                                        className={`${DESIGN.input.base} rounded-l-none`}
                                     />
                                 </div>
                             </div>
@@ -258,14 +353,14 @@ const AdminDashboard: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => setIsModalVisible(false)}
-                                    className="px-4 py-2 text-text-secondary hover:bg-gray-800 rounded transition-colors"
+                                    className={DESIGN.button.secondary}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="px-4 py-2 bg-primary text-black font-bold rounded hover:bg-yellow-400 transition-colors"
+                                    className={DESIGN.button.primary}
                                 >
                                     {loading ? (editingShop ? 'Saving...' : 'Creating...') : (editingShop ? 'Save Changes' : 'Create')}
                                 </button>

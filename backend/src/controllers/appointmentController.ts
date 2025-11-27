@@ -4,6 +4,8 @@ import { AuthRequest } from '../middleware/authMiddleware';
 
 const prisma = new PrismaClient();
 
+import { subscriptionService } from '../services/subscriptionService';
+
 export const createAppointment = async (req: AuthRequest, res: Response) => {
     try {
         const { shopId, barberId, serviceId, startTime } = req.body;
@@ -16,71 +18,66 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
         // Basic validation: Check if barber is available (simplified for MVP)
         // In a real app, we'd check against the schedule and existing appointments
 
-        // Check for active subscription
-        const subscription = await prisma.subscription.findUnique({
-            where: { userId: customerId }
-        });
-        const isSubscribed = subscription && subscription.status === 'active';
         let finalPaymentMethod = req.body.paymentMethod || 'CASH';
         let finalPaymentStatus: any = AppointmentStatus.PENDING;
 
-        if (isSubscribed) {
-            // Check credits
-            // Assuming serviceId 1 is Haircut and 2 is Beard Trim for MVP simplicity
-            // In a real app, Service model should have a 'type' field
-            // Let's fetch the service to check its type or name
-            const service = await prisma.service.findUnique({ where: { id: serviceId } });
+        // Start Transaction
+        const appointment = await prisma.$transaction(async (tx) => {
+            // Check for active subscription
+            const subscription = await tx.subscription.findUnique({
+                where: { userId: customerId },
+                include: { benefits: true }
+            });
+            const isSubscribed = subscription && (subscription.status === 'active' || subscription.status === 'canceled_at_period_end');
 
-            if (service) {
-                const isHaircut = service.name.toLowerCase().includes('hair') || service.name.toLowerCase().includes('corte');
-                const isBeard = service.name.toLowerCase().includes('beard') || service.name.toLowerCase().includes('barba');
-                const sub: any = subscription; // Cast to any to access new fields
+            if (isSubscribed) {
+                // Check credits
+                const service = await tx.service.findUnique({ where: { id: serviceId } });
 
-                if (isHaircut && sub.credits_haircut > 0) {
-                    finalPaymentMethod = 'STRIPE'; // Or 'SUBSCRIPTION'
-                    finalPaymentStatus = 'PAID';
-                    // Deduct credit
-                    await prisma.subscription.update({
-                        where: { id: subscription.id },
-                        data: { credits_haircut: { decrement: 1 } } as any
-                    });
-                } else if (isBeard && sub.credits_beard > 0) {
-                    finalPaymentMethod = 'STRIPE';
-                    finalPaymentStatus = 'PAID';
-                    // Deduct credit
-                    await prisma.subscription.update({
-                        where: { id: subscription.id },
-                        data: { credits_beard: { decrement: 1 } } as any
-                    });
-                } else {
-                    // Not enough credits, fall back to normal payment
-                    // If user selected 'STRIPE' explicitly in frontend, they will pay.
-                    // But if they expected subscription to cover it, we should maybe warn?
-                    // For now, if they selected STRIPE, let them pay.
-                    // If they selected CASH, let them pay cash.
-                    // The frontend logic I wrote earlier sets 'STRIPE' if subscribed.
-                    // So if credits are 0, it will default to STRIPE but NOT PAID.
-                    // Wait, my previous code forced 'PAID'. I need to remove that force.
+                if (service) {
+                    // Use explicit service type
+                    let serviceType = '';
+                    if (service.type === 'HAIRCUT') serviceType = 'HAIRCUT';
+                    else if (service.type === 'BEARD') serviceType = 'BEARD';
+
+                    if (serviceType) {
+                        // Check if user has credit for this service type
+                        const hasCredit = await subscriptionService.hasCredit(customerId, serviceType);
+
+                        // If user has credit, we deduct it. 
+                        // Note: In the original logic, it seemed to auto-apply if credits existed.
+                        // We will keep that logic: if credits exist, use them.
+                        if (hasCredit) {
+                            finalPaymentMethod = 'STRIPE'; // Or 'SUBSCRIPTION' - keeping 'STRIPE' for compatibility with frontend enum
+                            finalPaymentStatus = 'PAID';
+
+                            // Deduct credit atomically using the SAME transaction
+                            await subscriptionService.deductCredit(customerId, serviceType, tx);
+                        }
+                    }
                 }
             }
-        }
 
-        const appointment = await prisma.appointment.create({
-            data: {
-                shopId,
-                customerId,
-                barberId,
-                serviceId,
-                startTime: new Date(startTime),
-                status: AppointmentStatus.PENDING,
-                paymentMethod: finalPaymentMethod,
-                paymentStatus: finalPaymentStatus as any,
-            },
+            return await tx.appointment.create({
+                data: {
+                    shopId,
+                    customerId,
+                    barberId,
+                    serviceId,
+                    startTime: new Date(startTime),
+                    status: AppointmentStatus.PENDING,
+                    paymentMethod: finalPaymentMethod,
+                    paymentStatus: finalPaymentStatus as any,
+                },
+            });
         });
 
         res.status(201).json(appointment);
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
+        if (error.message.includes('Insufficient credits')) {
+            return res.status(400).json({ error: error.message });
+        }
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -141,9 +138,10 @@ export const getAvailability = async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ error: 'Barber not found or no longer available' });
         }
 
-        // Parse date as local time to ensure getDay() returns the correct day relative to the server's timezone
-        const selectedDate = new Date(`${date}T00:00:00`);
-        const dayOfWeek = selectedDate.getDay();
+        // Parse date as UTC to ensure consistency regardless of server timezone
+        // The frontend sends YYYY-MM-DD. We treat this as UTC midnight.
+        const selectedDate = new Date(`${date}T00:00:00Z`);
+        const dayOfWeek = selectedDate.getUTCDay();
 
         // 1. Get Barber's Schedule for that day
         const schedules = await prisma.schedule.findMany({
@@ -168,12 +166,12 @@ export const getAvailability = async (req: AuthRequest, res: Response) => {
         const bufferTime = service.bufferTime || 0; // in minutes
 
         // 3. Get Existing Appointments
-        // Start of day
+        // Start of day (UTC)
         const startOfDay = new Date(selectedDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        // End of day
+        startOfDay.setUTCHours(0, 0, 0, 0);
+        // End of day (UTC)
         const endOfDay = new Date(selectedDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        endOfDay.setUTCHours(23, 59, 59, 999);
 
         const appointments = await prisma.appointment.findMany({
             where: {
@@ -200,21 +198,13 @@ export const getAvailability = async (req: AuthRequest, res: Response) => {
             const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
 
             let currentSlot = new Date(selectedDate);
-            currentSlot.setHours(startHour, startMinute, 0, 0);
+            currentSlot.setUTCHours(startHour, startMinute, 0, 0);
 
             const endTime = new Date(selectedDate);
-            endTime.setHours(endHour, endMinute, 0, 0);
+            endTime.setUTCHours(endHour, endMinute, 0, 0);
 
             // Define slot interval (e.g., 15 minutes)
             const slotGenerationInterval = 15; // minutes
-
-            // The slot must accommodate the service duration.
-            // The buffer time is added AFTER the service, so the slot itself is just duration.
-            // However, the effective block is duration + buffer.
-            // But wait, if I book at 10:00, I occupy 10:00 - 10:30. The buffer is 10:30 - 10:45.
-            // So the next slot can start at 10:45.
-            // When checking if *this* slot is valid, we need to ensure it doesn't overlap with existing appointments (including their buffers).
-            // AND that the appointment + its buffer doesn't overlap with existing appointments.
 
             while (currentSlot.getTime() + duration * 60000 <= endTime.getTime()) {
                 const potentialSlotStart = new Date(currentSlot);
@@ -229,18 +219,6 @@ export const getAvailability = async (req: AuthRequest, res: Response) => {
                     const apptBuffer = appt.service?.bufferTime || 0;
                     const apptEndWithBuffer = new Date(apptStart.getTime() + (apptDuration + apptBuffer) * 60000);
 
-                    // Overlap condition:
-                    // 1. New appointment (with buffer) starts before existing ends (with buffer)
-                    // 2. New appointment (with buffer) ends after existing starts
-                    // Actually, strictly speaking:
-                    // The new appointment's SERVICE time cannot overlap with existing SERVICE time.
-                    // AND the new appointment's BUFFER cannot overlap with existing SERVICE time.
-                    // AND the existing BUFFER cannot overlap with new SERVICE time.
-                    // Buffers CAN overlap with other Buffers? Probably yes, but let's keep it simple: Block the whole chunk.
-
-                    // Simplified: Treat "Appointment + Buffer" as the blocked block.
-                    // Overlap: (NewStart < ExistingEndWithBuffer) && (NewEndWithBuffer > ExistingStart)
-
                     return (potentialSlotStart.getTime() < apptEndWithBuffer.getTime()) && (potentialSlotEndWithBuffer.getTime() > apptStart.getTime());
                 });
 
@@ -250,15 +228,11 @@ export const getAvailability = async (req: AuthRequest, res: Response) => {
                     const [breakEndHour, breakEndMinute] = brk.endTime.split(':').map(Number);
 
                     const breakStart = new Date(selectedDate);
-                    breakStart.setHours(breakStartHour, breakStartMinute, 0, 0);
+                    breakStart.setUTCHours(breakStartHour, breakStartMinute, 0, 0);
 
                     const breakEnd = new Date(selectedDate);
-                    breakEnd.setHours(breakEndHour, breakEndMinute, 0, 0);
+                    breakEnd.setUTCHours(breakEndHour, breakEndMinute, 0, 0);
 
-                    // Overlap condition: (SlotStart < BreakEnd) and (SlotEnd > BreakStart)
-                    // Should buffer overlap with break? Maybe. Let's say yes, buffer can be during break?
-                    // No, usually buffer is for cleaning.
-                    // Let's be safe: Service + Buffer cannot overlap with Break.
                     return (potentialSlotStart.getTime() < breakEnd.getTime()) && (potentialSlotEndWithBuffer.getTime() > breakStart.getTime());
                 });
 

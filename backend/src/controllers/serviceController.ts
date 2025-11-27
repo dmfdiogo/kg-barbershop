@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 export const createService = async (req: AuthRequest, res: Response) => {
     try {
-        const { shopId, name, duration, price, description, imageUrl, bufferTime } = req.body;
+        const { shopId, name, duration, price, description, imageUrl, bufferTime, type } = req.body;
         const userId = req.user?.userId;
 
         // Verify ownership
@@ -23,7 +23,8 @@ export const createService = async (req: AuthRequest, res: Response) => {
                 price: parseFloat(price),
                 description,
                 imageUrl,
-                bufferTime: bufferTime ? parseInt(bufferTime) : 0
+                bufferTime: bufferTime ? parseInt(bufferTime) : 0,
+                type: type || 'OTHER'
             },
         });
 
@@ -51,7 +52,7 @@ export const getServicesByShop = async (req: AuthRequest, res: Response) => {
 export const updateService = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const { name, duration, price, description, imageUrl, bufferTime } = req.body;
+        const { name, duration, price, description, imageUrl, bufferTime, type } = req.body;
         const userId = req.user?.userId;
 
         const service = await prisma.service.findUnique({
@@ -71,7 +72,8 @@ export const updateService = async (req: AuthRequest, res: Response) => {
                 price: price ? parseFloat(price) : undefined,
                 description,
                 imageUrl,
-                bufferTime: bufferTime !== undefined ? parseInt(bufferTime) : undefined
+                bufferTime: bufferTime !== undefined ? parseInt(bufferTime) : undefined,
+                type: type || undefined
             }
         });
 
