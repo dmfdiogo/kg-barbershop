@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import RescheduleModal from '../../components/RescheduleModal';
+import { DESIGN } from '../../theme/design';
+import { formatDateTime } from '../../utils/date';
 import CalendarView from '../../components/CalendarView';
 
 const StaffDashboard: React.FC = () => {
@@ -79,9 +81,9 @@ const StaffDashboard: React.FC = () => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     return (
-        <div className="flex h-screen bg-dark-bg text-text-primary">
+        <div className={DESIGN.layout.pageContainer}>
             {/* Sidebar */}
-            <div className="w-64 bg-dark-card border-r border-gray-800 flex flex-col">
+            <div className="w-64 bg-dark-card border-r border-gray-800 flex flex-col hidden md:flex">
                 <div className="h-16 flex items-center justify-center border-b border-gray-800">
                     <h1 className="text-xl font-bold text-primary">Barber Panel</h1>
                 </div>
@@ -109,7 +111,7 @@ const StaffDashboard: React.FC = () => {
             {/* Main Content */}
             <div className="flex-1 overflow-auto">
                 <header className="bg-dark-card shadow-md border-b border-gray-800 h-16 flex items-center px-6 sticky top-0 z-10">
-                    <h2 className="text-xl font-semibold text-white">Welcome, {user?.name}</h2>
+                    <h2 className={DESIGN.text.subHeader}>Welcome, {user?.name}</h2>
                 </header>
 
                 <main className="p-6">
@@ -117,7 +119,7 @@ const StaffDashboard: React.FC = () => {
                         <div>
                             <div>
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-medium text-text-secondary">Upcoming Appointments</h3>
+                                    <h3 className={`${DESIGN.text.subHeader} text-lg`}>Upcoming Appointments</h3>
                                     <div className="flex space-x-2 bg-dark-card rounded-lg p-1 border border-gray-800">
                                         <button
                                             onClick={() => setViewMode('list')}
@@ -135,9 +137,9 @@ const StaffDashboard: React.FC = () => {
                                 </div>
 
                                 {viewMode === 'list' ? (
-                                    <div className="bg-dark-card rounded-xl shadow-lg overflow-hidden border border-gray-800">
+                                    <div className={`${DESIGN.card.base} overflow-hidden`}>
                                         {appointments.length === 0 ? (
-                                            <div className="p-8 text-center text-text-muted">No upcoming appointments.</div>
+                                            <div className={`p-8 text-center ${DESIGN.text.muted}`}>No upcoming appointments.</div>
                                         ) : (
                                             <ul className="divide-y divide-gray-800">
                                                 {appointments.map((item: any) => (
@@ -145,18 +147,17 @@ const StaffDashboard: React.FC = () => {
                                                         <div className="flex justify-between items-center">
                                                             <div>
                                                                 <p className="text-lg font-bold text-white">
-                                                                    {item.service.name} <span className="text-text-muted font-normal">with</span> {item.customer.name}
+                                                                    {item.service.name} <span className={`${DESIGN.text.muted} font-normal`}>with</span> {item.customer.name}
                                                                 </p>
                                                                 <p className="text-sm text-primary mt-1">
-                                                                    {new Date(item.startTime).toLocaleString()}
+                                                                    {formatDateTime(item.startTime)}
                                                                 </p>
-                                                                <p className="text-xs text-text-muted mt-1">
+                                                                <p className={`text-xs ${DESIGN.text.muted} mt-1`}>
                                                                     Payment: <span className="text-text-secondary">{item.paymentMethod}</span> - <span className={item.paymentStatus === 'PAID' ? 'text-green-400' : 'text-yellow-400'}>{item.paymentStatus}</span>
                                                                 </p>
                                                             </div>
                                                             <div className="flex items-center space-x-4">
-                                                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${item.status === 'CONFIRMED' ? 'bg-green-900/30 text-green-400 border border-green-800' : 'bg-yellow-900/30 text-yellow-400 border border-yellow-800'
-                                                                    }`}>
+                                                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${item.status === 'CONFIRMED' ? DESIGN.badge.success : DESIGN.badge.warning}`}>
                                                                     {item.status}
                                                                 </span>
                                                                 {item.status !== 'CANCELLED' && (
@@ -175,7 +176,7 @@ const StaffDashboard: React.FC = () => {
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="bg-dark-card rounded-xl shadow-lg p-4 border border-gray-800">
+                                    <div className={`${DESIGN.card.base} p-4`}>
                                         <CalendarView
                                             appointments={appointments}
                                             onSelectEvent={(appt) => handleRescheduleClick(appt)}
@@ -189,17 +190,17 @@ const StaffDashboard: React.FC = () => {
                     {activeTab === 'schedule' && (
                         <div>
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-medium text-text-secondary">Weekly Schedule</h3>
+                                <h3 className={`${DESIGN.text.subHeader} text-lg`}>Weekly Schedule</h3>
                                 <button
                                     onClick={handleSaveSchedule}
                                     disabled={loading}
-                                    className="bg-primary text-black font-bold px-6 py-2 rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50 shadow-lg hover:shadow-primary/20"
+                                    className={`${DESIGN.button.primary} disabled:opacity-50`}
                                 >
                                     {loading ? 'Saving...' : 'Save Schedule'}
                                 </button>
                             </div>
 
-                            <div className="bg-dark-card rounded-xl shadow-lg overflow-hidden border border-gray-800">
+                            <div className={`${DESIGN.card.base} overflow-hidden`}>
                                 <ul className="divide-y divide-gray-800">
                                     {schedules.map((item, index) => (
                                         <li key={item.dayOfWeek} className="p-6 flex flex-col hover:bg-gray-800/30 transition-colors">
@@ -218,7 +219,7 @@ const StaffDashboard: React.FC = () => {
                                                             <div className={`block w-12 h-7 rounded-full transition-colors ${item.isAvailable ? 'bg-primary' : 'bg-gray-700'}`}></div>
                                                             <div className={`dot absolute left-1 top-1 bg-black w-5 h-5 rounded-full transition-transform ${item.isAvailable ? 'transform translate-x-5' : ''}`}></div>
                                                         </div>
-                                                        <div className={`ml-3 text-sm font-medium transition-colors ${item.isAvailable ? 'text-primary' : 'text-text-muted'}`}>
+                                                        <div className={`ml-3 text-sm font-medium transition-colors ${item.isAvailable ? 'text-primary' : DESIGN.text.muted}`}>
                                                             {item.isAvailable ? 'Available' : 'Off'}
                                                         </div>
                                                     </label>
@@ -229,14 +230,14 @@ const StaffDashboard: React.FC = () => {
                                                                 type="time"
                                                                 value={item.startTime}
                                                                 onChange={(e) => updateScheduleItem(index, 'startTime', e.target.value)}
-                                                                className="bg-dark-input border border-gray-700 rounded px-2 py-1 text-sm text-white focus:ring-primary focus:border-primary outline-none"
+                                                                className={DESIGN.input.base}
                                                             />
-                                                            <span className="text-text-muted">to</span>
+                                                            <span className={DESIGN.text.muted}>to</span>
                                                             <input
                                                                 type="time"
                                                                 value={item.endTime}
                                                                 onChange={(e) => updateScheduleItem(index, 'endTime', e.target.value)}
-                                                                className="bg-dark-input border border-gray-700 rounded px-2 py-1 text-sm text-white focus:ring-primary focus:border-primary outline-none"
+                                                                className={DESIGN.input.base}
                                                             />
                                                         </div>
                                                     )}
@@ -245,7 +246,7 @@ const StaffDashboard: React.FC = () => {
 
                                             {item.isAvailable && (
                                                 <div className="mt-4 ml-32 pl-4 border-l-2 border-gray-800">
-                                                    <div className="text-sm font-medium text-text-secondary mb-2">Breaks</div>
+                                                    <div className={`text-sm font-medium ${DESIGN.text.body} mb-2`}>Breaks</div>
                                                     {item.breaks && item.breaks.map((brk: any, breakIndex: number) => (
                                                         <div key={breakIndex} className="flex items-center space-x-2 mb-2">
                                                             <input
@@ -256,9 +257,9 @@ const StaffDashboard: React.FC = () => {
                                                                     newBreaks[breakIndex] = { ...newBreaks[breakIndex], startTime: e.target.value };
                                                                     updateScheduleItem(index, 'breaks', newBreaks);
                                                                 }}
-                                                                className="bg-dark-input border border-gray-700 rounded px-2 py-1 text-xs text-white focus:ring-primary focus:border-primary outline-none"
+                                                                className={`${DESIGN.input.base} py-1 text-xs`}
                                                             />
-                                                            <span className="text-text-muted text-xs">to</span>
+                                                            <span className={`${DESIGN.text.muted} text-xs`}>to</span>
                                                             <input
                                                                 type="time"
                                                                 value={brk.endTime}
@@ -267,7 +268,7 @@ const StaffDashboard: React.FC = () => {
                                                                     newBreaks[breakIndex] = { ...newBreaks[breakIndex], endTime: e.target.value };
                                                                     updateScheduleItem(index, 'breaks', newBreaks);
                                                                 }}
-                                                                className="bg-dark-input border border-gray-700 rounded px-2 py-1 text-xs text-white focus:ring-primary focus:border-primary outline-none"
+                                                                className={`${DESIGN.input.base} py-1 text-xs`}
                                                             />
                                                             <button
                                                                 onClick={() => {

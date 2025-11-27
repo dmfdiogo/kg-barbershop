@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import dayjs from 'dayjs';
+import { DESIGN } from '../../theme/design';
+import { formatTime } from '../../utils/date';
+
+import PageHeader from '../../components/PageHeader';
 
 const BookingPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -20,7 +24,24 @@ const BookingPage: React.FC = () => {
 
     const [paymentMethod, setPaymentMethod] = useState<'STRIPE' | 'CASH'>('STRIPE');
     const [subscription, setSubscription] = useState<any>(null);
-    const isSubscribed = subscription && subscription.status === 'active';
+    const isSubscribed = subscription && (subscription.status === 'active' || subscription.status === 'canceled_at_period_end');
+
+    // Check if selected service is covered by subscription
+    const isServiceCovered = () => {
+        if (!isSubscribed || !selectedService || !shop) return false;
+        const service = shop.services.find((s: any) => s.id === selectedService);
+        if (!service) return false;
+
+        if (service.type === 'HAIRCUT') {
+            return (subscription.credits_haircut || 0) > 0;
+        }
+        if (service.type === 'BEARD') {
+            return (subscription.credits_beard || 0) > 0;
+        }
+        return false;
+    };
+
+    const coveredByPlan = isServiceCovered();
 
     useEffect(() => {
         const fetchSubscription = async () => {
@@ -85,8 +106,9 @@ const BookingPage: React.FC = () => {
         setError('');
 
         try {
-            // isSubscribed is already defined in component scope
-            const finalPaymentMethod = isSubscribed ? 'STRIPE' : paymentMethod; // Backend will handle subscription status for 'STRIPE' if applicable
+            // If covered by plan, force STRIPE method (backend handles credit deduction)
+            // or we could use a specific 'SUBSCRIPTION' method if backend supported it explicitly
+            const finalPaymentMethod = coveredByPlan ? 'STRIPE' : paymentMethod;
 
             // Create appointment
             const response = await api.post('/appointments', {
@@ -99,7 +121,7 @@ const BookingPage: React.FC = () => {
 
             const appointmentId = response.data.id;
 
-            if (isSubscribed) {
+            if (coveredByPlan) {
                 alert('Appointment booked with your membership!');
                 navigate('/history');
                 return;
@@ -136,40 +158,37 @@ const BookingPage: React.FC = () => {
     if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
 
     return (
-        <div className="min-h-screen bg-dark-bg text-text-primary">
-            <header className="bg-dark-card border-b border-gray-800 px-6 py-4 flex items-center sticky top-0 z-10">
-                <button
-                    onClick={() => navigate('/')}
-                    className="mr-4 p-2 hover:bg-gray-800 rounded-full transition-colors text-white"
-                >
-                    <i className="ri-arrow-left-line text-xl"></i>
-                </button>
-                <h2 className="text-xl font-bold text-white">Book at {shop?.name}</h2>
-            </header>
+        <div className={DESIGN.layout.pageContainer}>
+            <PageHeader title={`Book at ${shop?.name}`} showBack />
 
             <main className="p-4 md:p-6 max-w-2xl mx-auto">
-                <div className="bg-dark-card rounded-xl shadow-lg p-6 md:p-8 border border-gray-800">
+                <div className={`${DESIGN.card.base} ${DESIGN.card.padding}`}>
                     {error && (
-                        <div className="bg-red-900/20 border border-red-800 text-red-400 px-4 py-3 rounded mb-6">
+                        <div className={`${DESIGN.badge.error} px-4 py-3 rounded mb-6`}>
                             {error}
                         </div>
                     )}
 
                     <form onSubmit={onFinish} className="space-y-8">
                         <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-3">Select Service</label>
+                            <label className={DESIGN.text.label}>Select Service</label>
                             <div className="grid grid-cols-1 gap-4">
-                                {shop?.services.map((s: any) => (
-                                    <div
+                                {shop?.services.map((s: any) => {
+                                    const isCovered = isSubscribed && (
+                                        (s.type === 'HAIRCUT' && (subscription.credits_haircut || 0) > 0) ||
+                                        (s.type === 'BEARD' && (subscription.credits_beard || 0) > 0)
+                                    );
+
+                                    return (<div
                                         key={s.id}
                                         onClick={() => setSelectedService(s.id)}
-                                        className={`border rounded-xl p-4 cursor-pointer transition-all flex ${selectedService === s.id ? 'border-primary bg-primary/10' : 'border-gray-700 hover:border-gray-500 bg-dark-input'}`}
+                                        className={`${DESIGN.selectionCard.base} ${selectedService === s.id ? DESIGN.selectionCard.selected : DESIGN.selectionCard.unselected}`}
                                     >
                                         {s.imageUrl && (
                                             <img
                                                 src={s.imageUrl}
                                                 alt={s.name}
-                                                className="w-24 h-24 object-cover rounded-lg mr-4"
+                                                className="w-24 h-24 object-cover rounded-lg"
                                                 onError={(e) => {
                                                     e.currentTarget.style.display = 'none';
                                                 }}
@@ -179,10 +198,7 @@ const BookingPage: React.FC = () => {
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className="font-semibold text-lg text-white">{s.name}</h3>
                                                 <div className="text-right">
-                                                    {isSubscribed && (
-                                                        (s.name.toLowerCase().includes('hair') && subscription.credits_haircut > 0) ||
-                                                        (s.name.toLowerCase().includes('beard') && subscription.credits_beard > 0)
-                                                    ) ? (
+                                                    {isCovered ? (
                                                         <div>
                                                             <span className="block text-primary font-bold">Free with Plan</span>
                                                             <span className="text-xs text-text-muted line-through">${s.price}</span>
@@ -192,21 +208,22 @@ const BookingPage: React.FC = () => {
                                                     )}
                                                 </div>
                                             </div>
-                                            <p className="text-sm text-text-secondary mt-1">{s.duration} mins</p>
+                                            <p className={`text-sm ${DESIGN.text.body} mt-1`}>{s.duration} mins</p>
                                             {s.description && (
-                                                <p className="text-sm text-text-muted mt-2">{s.description}</p>
+                                                <p className={`text-sm ${DESIGN.text.muted} mt-2`}>{s.description}</p>
                                             )}
                                         </div>
                                     </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Select Barber</label>
+                            <label className={DESIGN.text.label}>Select Barber</label>
                             <select
                                 required
-                                className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none bg-dark-input text-white"
+                                className={DESIGN.input.select}
                                 onChange={(e) => setSelectedBarber(Number(e.target.value))}
                                 value={selectedBarber || ''}
                             >
@@ -218,12 +235,12 @@ const BookingPage: React.FC = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-1">Select Date</label>
+                            <label className={DESIGN.text.label}>Select Date</label>
                             <input
                                 type="date"
                                 required
                                 min={dayjs().format('YYYY-MM-DD')}
-                                className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none bg-dark-input text-white"
+                                className={DESIGN.input.base}
                                 onChange={(e) => setSelectedDate(e.target.value)}
                                 value={selectedDate}
                             />
@@ -231,9 +248,9 @@ const BookingPage: React.FC = () => {
 
                         {selectedService && selectedBarber && selectedDate && (
                             <div className="pt-4">
-                                <h4 className="text-lg font-medium text-white mb-3">Available Slots</h4>
+                                <h4 className={`${DESIGN.text.subHeader} text-lg mb-3`}>Available Slots</h4>
                                 {availableSlots.length === 0 ? (
-                                    <p className="text-text-muted italic">No slots available for this date.</p>
+                                    <p className={`${DESIGN.text.muted} italic`}>No slots available for this date.</p>
                                 ) : (
                                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                                         {availableSlots.map(slot => (
@@ -246,7 +263,7 @@ const BookingPage: React.FC = () => {
                                                     : 'bg-dark-input text-text-secondary hover:bg-gray-700'
                                                     }`}
                                             >
-                                                {dayjs(slot).format('HH:mm')}
+                                                {formatTime(slot)}
                                             </button>
                                         ))}
                                     </div>
@@ -255,31 +272,41 @@ const BookingPage: React.FC = () => {
                         )}
 
                         <div>
-                            <label className="block text-sm font-medium text-text-secondary mb-3">Payment Method</label>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div
-                                    onClick={() => setPaymentMethod('STRIPE')}
-                                    className={`border rounded-xl p-4 cursor-pointer text-center transition-all ${paymentMethod === 'STRIPE' ? 'border-primary bg-primary/10' : 'border-gray-700 hover:border-gray-500 bg-dark-input'}`}
-                                >
-                                    <span className="font-bold block text-white">Pay Online</span>
-                                    <span className="text-xs text-text-muted">Credit/Debit Card</span>
+                            <label className={DESIGN.text.label}>Payment Method</label>
+                            {coveredByPlan ? (
+                                <div className={`${DESIGN.card.base} bg-primary/10 border-primary border p-4 flex items-center`}>
+                                    <i className="ri-vip-crown-fill text-2xl text-primary mr-4"></i>
+                                    <div>
+                                        <h4 className="font-bold text-white">Covered by Membership</h4>
+                                        <p className="text-sm text-gray-400">1 credit will be deducted from your balance.</p>
+                                    </div>
                                 </div>
-                                <div
-                                    onClick={() => setPaymentMethod('CASH')}
-                                    className={`border rounded-xl p-4 cursor-pointer text-center transition-all ${paymentMethod === 'CASH' ? 'border-primary bg-primary/10' : 'border-gray-700 hover:border-gray-500 bg-dark-input'}`}
-                                >
-                                    <span className="font-bold block text-white">Pay in Cash</span>
-                                    <span className="text-xs text-text-muted">Pay at the shop</span>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div
+                                        onClick={() => setPaymentMethod('STRIPE')}
+                                        className={`${DESIGN.selectionCard.base} flex-col text-center justify-center ${paymentMethod === 'STRIPE' ? DESIGN.selectionCard.selected : DESIGN.selectionCard.unselected}`}
+                                    >
+                                        <span className="font-bold block text-white">Pay Online</span>
+                                        <span className={`text-xs ${DESIGN.text.muted}`}>Credit/Debit Card</span>
+                                    </div>
+                                    <div
+                                        onClick={() => setPaymentMethod('CASH')}
+                                        className={`${DESIGN.selectionCard.base} flex-col text-center justify-center ${paymentMethod === 'CASH' ? DESIGN.selectionCard.selected : DESIGN.selectionCard.unselected}`}
+                                    >
+                                        <span className="font-bold block text-white">Pay in Cash</span>
+                                        <span className={`text-xs ${DESIGN.text.muted}`}>Pay at the shop</span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         <button
                             type="submit"
                             disabled={submitting || !selectedSlot}
-                            className="w-full bg-primary text-black py-4 px-4 rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg mt-8 shadow-lg"
+                            className={`w-full ${DESIGN.button.primary} text-lg mt-8`}
                         >
-                            {submitting ? 'Booking...' : (paymentMethod === 'STRIPE' ? 'Proceed to Payment' : 'Confirm Booking')}
+                            {submitting ? 'Booking...' : (coveredByPlan ? 'Book with Membership' : (paymentMethod === 'STRIPE' ? 'Proceed to Payment' : 'Confirm Booking'))}
                         </button>
                     </form>
                 </div>

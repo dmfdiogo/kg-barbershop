@@ -27,7 +27,7 @@ export const createSubscriptionSession = async (req: AuthRequest, res: Response)
             where: { userId }
         });
 
-        if (existingSubscription && existingSubscription.status === 'active') {
+        if (existingSubscription && existingSubscription.status !== 'canceled') {
             return res.status(400).json({ error: 'User already has an active subscription' });
         }
 
@@ -42,6 +42,7 @@ export const createSubscriptionSession = async (req: AuthRequest, res: Response)
             mode: 'subscription',
             success_url: `${process.env.FRONTEND_URL || 'http://localhost:5101'}/payment/success?session_id={CHECKOUT_SESSION_ID}&type=subscription`,
             cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5101'}/plans`,
+            client_reference_id: String(userId),
         });
 
         res.json({ url: session.url });
@@ -60,10 +61,25 @@ export const getSubscriptionStatus = async (req: AuthRequest, res: Response) => 
         }
 
         const subscription = await prisma.subscription.findUnique({
-            where: { userId }
+            where: { userId },
+            include: { benefits: true }
         });
 
-        res.json(subscription);
+        if (!subscription) {
+            return res.json(null);
+        }
+
+        // Map benefits to flat structure for frontend
+        const haircutBenefit = subscription.benefits.find(b => b.serviceType === 'HAIRCUT');
+        const beardBenefit = subscription.benefits.find(b => b.serviceType === 'BEARD');
+
+        const response = {
+            ...subscription,
+            credits_haircut: haircutBenefit ? haircutBenefit.remaining : 0,
+            credits_beard: beardBenefit ? beardBenefit.remaining : 0,
+        };
+
+        res.json(response);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });

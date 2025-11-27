@@ -50,6 +50,7 @@ export const createCheckoutSession = async (req: AuthRequest, res: Response) => 
             mode: 'payment',
             success_url: `${process.env.FRONTEND_URL || 'http://localhost:5101'}/payment/success?session_id={CHECKOUT_SESSION_ID}&appointment_id=${appointmentId}`,
             cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5101'}/payment/cancel?appointment_id=${appointmentId}`,
+            client_reference_id: String(userId),
         });
 
         // Update appointment with session ID
@@ -84,5 +85,34 @@ export const handlePaymentSuccess = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error('Payment verification error:', error);
         res.status(500).json({ error: 'Failed to verify payment' });
+    }
+};
+
+export const verifySession = async (req: AuthRequest, res: Response) => {
+    try {
+        const { sessionId } = req.params;
+        const userId = req.user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+        // Security Check: Ensure the session belongs to the requesting user
+        // We assume client_reference_id was set during session creation.
+        // If not set, we might need another way, but for now let's enforce it.
+        if (session.client_reference_id && session.client_reference_id !== String(userId)) {
+            return res.status(403).json({ error: 'Unauthorized access to this session' });
+        }
+
+        res.json({
+            status: session.status,
+            payment_status: session.payment_status,
+            customer_email: session.customer_details?.email
+        });
+    } catch (error: any) {
+        console.error('Verify session error:', error);
+        res.status(500).json({ error: error.message || 'Failed to verify session' });
     }
 };

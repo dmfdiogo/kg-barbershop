@@ -106,3 +106,155 @@ export const getPeakHours = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+export const getRevenueAnalytics = async (req: AuthRequest, res: Response) => {
+    try {
+        const { shopId, period = 'daily' } = req.query; // period: 'daily' | 'monthly'
+        const userId = req.user?.userId;
+
+        let whereClause: any = {};
+        if (shopId) {
+            const shop = await prisma.shop.findUnique({ where: { id: Number(shopId) } });
+            if (!shop || shop.ownerId !== userId) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+            whereClause = { shopId: Number(shopId) };
+        } else {
+            const shops = await prisma.shop.findMany({ where: { ownerId: userId } });
+            const shopIds = shops.map(s => s.id);
+            whereClause = { shopId: { in: shopIds } };
+        }
+
+        // Get appointments with service details for price
+        const appointments = await prisma.appointment.findMany({
+            where: {
+                ...whereClause,
+                status: 'COMPLETED', // Only count completed appointments for revenue
+                startTime: {
+                    gte: new Date(new Date().setMonth(new Date().getMonth() - 6)) // Last 6 months
+                }
+            },
+            include: {
+                service: {
+                    select: { price: true }
+                }
+            },
+            orderBy: { startTime: 'asc' }
+        });
+
+        // Group by date
+        const revenueMap = new Map<string, number>();
+
+        appointments.forEach(appt => {
+            const date = new Date(appt.startTime);
+            let key = '';
+            if (period === 'monthly') {
+                key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+            } else {
+                key = date.toISOString().split('T')[0]; // YYYY-MM-DD
+            }
+
+            const current = revenueMap.get(key) || 0;
+            revenueMap.set(key, current + Number(appt.service.price));
+        });
+
+        const data = Array.from(revenueMap.entries()).map(([date, amount]) => ({
+            date,
+            amount
+        }));
+
+        res.json(data);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const getAppointmentStatusStats = async (req: AuthRequest, res: Response) => {
+    try {
+        const { shopId } = req.query;
+        const userId = req.user?.userId;
+
+        let whereClause: any = {};
+        if (shopId) {
+            const shop = await prisma.shop.findUnique({ where: { id: Number(shopId) } });
+            if (!shop || shop.ownerId !== userId) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+            whereClause = { shopId: Number(shopId) };
+        } else {
+            const shops = await prisma.shop.findMany({ where: { ownerId: userId } });
+            const shopIds = shops.map(s => s.id);
+            whereClause = { shopId: { in: shopIds } };
+        }
+
+        const stats = await prisma.appointment.groupBy({
+            by: ['status'],
+            where: whereClause,
+            _count: {
+                id: true
+            }
+        });
+
+        const data = stats.map(stat => ({
+            name: stat.status,
+            value: stat._count.id
+        }));
+
+        res.json(data);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const getCustomerRetention = async (req: AuthRequest, res: Response) => {
+    try {
+        const { shopId } = req.query;
+        const userId = req.user?.userId;
+
+        let whereClause: any = {};
+        if (shopId) {
+            const shop = await prisma.shop.findUnique({ where: { id: Number(shopId) } });
+            if (!shop || shop.ownerId !== userId) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+            whereClause = { shopId: Number(shopId) };
+        } else {
+            const shops = await prisma.shop.findMany({ where: { ownerId: userId } });
+            const shopIds = shops.map(s => s.id);
+            whereClause = { shopId: { in: shopIds } };
+        }
+
+        // Get all customer IDs who have appointments
+        const appointments = await prisma.appointment.groupBy({
+            by: ['customerId'],
+            where: {
+                ...whereClause,
+                status: 'COMPLETED'
+            },
+            _count: {
+                id: true
+            }
+        });
+
+        let newCustomers = 0;
+        let returningCustomers = 0;
+
+        appointments.forEach(appt => {
+            if (appt._count.id > 1) {
+                returningCustomers++;
+            } else {
+                newCustomers++;
+            }
+        });
+
+        res.json([
+            { name: 'New Customers', value: newCustomers },
+            { name: 'Returning Customers', value: returningCustomers }
+        ]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
