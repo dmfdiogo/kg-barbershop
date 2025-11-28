@@ -46,17 +46,17 @@ const HistoryPage: React.FC = () => {
     });
 
     return (
-        <PageLayout title="My Appointments" showBack className="p-4 md:p-6 w-full">
+        <PageLayout title="Meus Agendamentos" showBack className="p-4 md:p-6 w-full">
             {loading ? (
-                <div className={`text-center py-10 ${DESIGN.text.body}`}>Loading...</div>
+                <div className={`text-center py-10 ${DESIGN.text.body}`}>Carregando...</div>
             ) : appointments.length === 0 ? (
                 <div className={`text-center py-10 ${DESIGN.card.base}`}>
-                    <p className={`${DESIGN.text.body} mb-4`}>You haven't booked any appointments yet.</p>
+                    <p className={`${DESIGN.text.body} mb-4`}>Você ainda não agendou nenhum horário.</p>
                     <button
                         onClick={() => navigate('/')}
                         className={DESIGN.button.primary}
                     >
-                        Find a Shop
+                        Encontrar Barbearia
                     </button>
                 </div>
             ) : (
@@ -76,10 +76,12 @@ const HistoryPage: React.FC = () => {
                                             appt.status === 'PENDING' ? DESIGN.badge.warning :
                                                 DESIGN.badge.error
                                             }`}>
-                                            {appt.status}
+                                            {appt.status === 'CONFIRMED' ? 'CONFIRMADO' :
+                                                appt.status === 'PENDING' ? 'PENDENTE' :
+                                                    appt.status === 'CANCELLED' ? 'CANCELADO' : appt.status}
                                         </span>
                                         <span className={`text-[10px] ${DESIGN.text.muted} mt-1`}>
-                                            {appt.paymentMethod} • {appt.paymentStatus}
+                                            {appt.paymentMethod === 'SUBSCRIPTION' ? 'ASSINATURA' : appt.paymentMethod} • {appt.paymentStatus === 'PAID' ? 'PAGO' : appt.paymentStatus === 'PENDING' ? 'PENDENTE' : appt.paymentStatus}
                                         </span>
                                     </div>
                                 </div>
@@ -112,9 +114,9 @@ const HistoryPage: React.FC = () => {
                                                 ? 'bg-dark-input text-white hover:bg-gray-700 border border-amber-500'
                                                 : 'bg-transparent text-gray-600 cursor-not-allowed'
                                                 }`}
-                                            title={!canReschedule ? "Cannot reschedule less than 1h in advance" : ""}
+                                            title={!canReschedule ? "Não é possível reagendar com menos de 1h de antecedência" : ""}
                                         >
-                                            Reschedule
+                                            Reagendar
                                         </button>
                                     )}
                                 </div>
@@ -126,7 +128,7 @@ const HistoryPage: React.FC = () => {
                         onClick={() => setShowPast(!showPast)}
                         className={`w-full py-3 text-sm font-medium transition-colors ${DESIGN.text.muted} hover:text-white border border-dashed border-amber-400/10 rounded-xl hover:border-gray-600`}
                     >
-                        {showPast ? 'Hide Past Appointments' : 'Show Past Appointments'}
+                        {showPast ? 'Ocultar Agendamentos Passados' : 'Mostrar Agendamentos Passados'}
                     </button>
                 </div>
             )}

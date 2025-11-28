@@ -77,7 +77,7 @@ const PaymentSuccess: React.FC = () => {
             <div className="bg-dark-card p-8 rounded-xl shadow-2xl max-w-md w-full text-center border border-amber-400/10">
                 {status === 'loading' && (
                     <div>
-                        <h2 className="text-2xl font-bold mb-4 text-white">Verifying Payment...</h2>
+                        <h2 className="text-2xl font-bold mb-4 text-white">Verificando Pagamento...</h2>
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
                     </div>
                 )}
@@ -86,13 +86,13 @@ const PaymentSuccess: React.FC = () => {
                         <div className="text-green-400 text-5xl mb-4">
                             <i className="ri-checkbox-circle-fill"></i>
                         </div>
-                        <h2 className="text-2xl font-bold mb-2 text-white">Payment Successful!</h2>
-                        <p className="text-text-secondary mb-8">Your appointment has been confirmed.</p>
+                        <h2 className="text-2xl font-bold mb-2 text-white">Pagamento Realizado com Sucesso!</h2>
+                        <p className="text-text-secondary mb-8">Seu agendamento foi confirmado.</p>
                         <button
                             onClick={() => navigate('/history')}
                             className="bg-primary text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-400 transition-colors shadow-lg shadow-primary/20 w-full"
                         >
-                            View My Appointments
+                            Ver Meus Agendamentos
                         </button>
                     </div>
                 )}
@@ -101,13 +101,13 @@ const PaymentSuccess: React.FC = () => {
                         <div className="text-red-500 text-5xl mb-4">
                             <i className="ri-close-circle-fill"></i>
                         </div>
-                        <h2 className="text-2xl font-bold mb-2 text-white">Something went wrong</h2>
-                        <p className="text-text-secondary mb-8">We couldn't verify your payment. Please check your appointments status.</p>
+                        <h2 className="text-2xl font-bold mb-2 text-white">Algo deu errado</h2>
+                        <p className="text-text-secondary mb-8">Não conseguimos verificar seu pagamento. Por favor, verifique o status dos seus agendamentos.</p>
                         <button
                             onClick={() => navigate('/history')}
                             className="bg-primary text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-400 transition-colors shadow-lg shadow-primary/20 w-full"
                         >
-                            Go to Appointments
+                            Ir para Agendamentos
                         </button>
                     </div>
                 )}

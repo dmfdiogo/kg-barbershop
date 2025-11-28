@@ -32,7 +32,7 @@ const Register: React.FC = () => {
             <div className="w-full max-w-md bg-dark-card p-8 shadow-none sm:shadow-xl rounded-none sm:rounded-xl border-0 sm:border border-amber-400/10 min-h-screen sm:min-h-0 flex flex-col justify-center">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-primary">Barber Shop</h2>
-                    <p className="text-text-secondary mt-2">Create a new account</p>
+                    <p className="text-text-secondary mt-2">Crie uma nova conta</p>
                 </div>
 
                 {error && (
@@ -43,7 +43,7 @@ const Register: React.FC = () => {
 
                 <form onSubmit={onFinish} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Name</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Nome</label>
                         <input
                             name="name"
                             required
@@ -52,7 +52,7 @@ const Register: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Email</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">E-mail</label>
                         <input
                             name="email"
                             type="email"
@@ -62,7 +62,7 @@ const Register: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Password</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Senha</label>
                         <input
                             name="password"
                             type="password"
@@ -72,15 +72,15 @@ const Register: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">I am a...</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Eu sou um...</label>
                         <select
                             name="role"
                             defaultValue="CUSTOMER"
                             className="w-full px-4 py-3 border border-amber-500 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
                         >
-                            <option value="CUSTOMER">Customer</option>
-                            <option value="STAFF">Barber (Staff)</option>
-                            <option value="ADMIN">Shop Owner (Admin)</option>
+                            <option value="CUSTOMER">Cliente</option>
+                            <option value="STAFF">Barbeiro (Funcionário)</option>
+                            <option value="ADMIN">Dono da Barbearia (Admin)</option>
                         </select>
                     </div>
 
@@ -89,11 +89,11 @@ const Register: React.FC = () => {
                         disabled={loading}
                         className="w-full bg-primary text-black py-3 px-4 rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50 font-bold shadow-lg hover:shadow-primary/20"
                     >
-                        {loading ? 'Registering...' : 'Register'}
+                        {loading ? 'Registrando...' : 'Registrar'}
                     </button>
 
                     <div className="text-center text-sm text-text-secondary">
-                        Already have an account? <Link to="/login" className="text-primary font-semibold hover:underline">Log in</Link>
+                        Já tem uma conta? <Link to="/login" className="text-primary font-semibold hover:underline">Entrar</Link>
                     </div>
                 </form>
             </div>

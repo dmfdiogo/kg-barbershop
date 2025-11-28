@@ -120,7 +120,7 @@ const ManageShop: React.FC = () => {
 
     return (
         <PageLayout
-            title={`Manage ${shop?.name}`}
+            title={`Gerenciar ${shop?.name}`}
             showBack
             className="p-4 md:p-6 pb-24"
         >
@@ -132,7 +132,7 @@ const ManageShop: React.FC = () => {
                             className={`mb-6 ${DESIGN.button.primary} w-full md:w-auto flex items-center justify-center gap-2`}
                         >
                             <i className="ri-add-line"></i>
-                            Add Service
+                            Adicionar Serviço
                         </button>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {shop?.services?.map((service: any) => (
@@ -140,7 +140,7 @@ const ManageShop: React.FC = () => {
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
                                             <h4 className="font-bold text-white text-lg">{service.name}</h4>
-                                            <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded uppercase tracking-wider">{service.type || 'OTHER'}</span>
+                                            <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded uppercase tracking-wider">{service.type || 'OUTRO'}</span>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-xl font-bold text-white">${service.price}</p>
@@ -156,14 +156,14 @@ const ManageShop: React.FC = () => {
                                         <button
                                             onClick={() => openEditServiceModal(service)}
                                             className="p-2 text-text-secondary hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                                            title="Edit"
+                                            title="Editar"
                                         >
                                             <i className="ri-pencil-line text-lg"></i>
                                         </button>
                                         <button
                                             onClick={() => setDeleteServiceId(service.id)}
                                             className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
-                                            title="Delete"
+                                            title="Excluir"
                                         >
                                             <i className="ri-delete-bin-line text-lg"></i>
                                         </button>
@@ -174,7 +174,7 @@ const ManageShop: React.FC = () => {
                         {(!shop?.services || shop.services.length === 0) && (
                             <div className="text-center py-12 text-text-muted">
                                 <i className="ri-scissors-cut-line text-4xl mb-2 block opacity-50"></i>
-                                <p>No services added yet.</p>
+                                <p>Nenhum serviço adicionado ainda.</p>
                             </div>
                         )}
                     </div>
@@ -187,7 +187,7 @@ const ManageShop: React.FC = () => {
                             className={`mb-6 ${DESIGN.button.primary} w-full md:w-auto flex items-center justify-center gap-2`}
                         >
                             <i className="ri-user-add-line"></i>
-                            Add Staff
+                            Adicionar Equipe
                         </button>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {shop?.staff?.map((staff: any) => (
@@ -204,7 +204,7 @@ const ManageShop: React.FC = () => {
                                     <button
                                         onClick={() => setRemoveStaffId(staff.id)}
                                         className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
-                                        title="Remove"
+                                        title="Remover"
                                     >
                                         <i className="ri-user-unfollow-line text-lg"></i>
                                     </button>
@@ -214,10 +214,10 @@ const ManageShop: React.FC = () => {
                         {(!shop?.staff || shop.staff.length === 0) && (
                             <div className="text-center py-12 text-text-muted">
                                 <i className="ri-team-line text-4xl mb-2 block opacity-50"></i>
-                                <p>No staff members added yet.</p>
+                                <p>Nenhum membro da equipe adicionado ainda.</p>
                             </div>
                         )}
-                        <p className={`mt-6 text-center text-xs ${DESIGN.text.muted}`}>Note: User must already be registered as 'Staff' to be added.</p>
+                        <p className={`mt-6 text-center text-xs ${DESIGN.text.muted}`}>Nota: O usuário já deve estar registrado como 'Equipe' para ser adicionado.</p>
                     </div>
                 )}
             </div>
@@ -226,10 +226,10 @@ const ManageShop: React.FC = () => {
             {isServiceModalVisible && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
                     <div className={`${DESIGN.card.base} p-6 w-full max-w-md shadow-2xl`}>
-                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>{editingService ? 'Edit Service' : 'Add Service'}</h3>
+                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>{editingService ? 'Editar Serviço' : 'Adicionar Serviço'}</h3>
                         <form onSubmit={handleCreateOrUpdateService} className="space-y-4">
                             <div>
-                                <label className={DESIGN.text.label}>Service Name</label>
+                                <label className={DESIGN.text.label}>Nome do Serviço</label>
                                 <input
                                     name="name"
                                     required
@@ -238,20 +238,20 @@ const ManageShop: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className={DESIGN.text.label}>Service Type</label>
+                                <label className={DESIGN.text.label}>Tipo de Serviço</label>
                                 <select
                                     name="type"
                                     required
                                     defaultValue={editingService?.type || 'OTHER'}
                                     className={DESIGN.input.select}
                                 >
-                                    <option value="OTHER">Other</option>
-                                    <option value="HAIRCUT">Haircut</option>
-                                    <option value="BEARD">Beard Trim</option>
+                                    <option value="OTHER">Outro</option>
+                                    <option value="HAIRCUT">Corte de Cabelo</option>
+                                    <option value="BEARD">Barba</option>
                                 </select>
                             </div>
                             <div>
-                                <label className={DESIGN.text.label}>Duration (minutes)</label>
+                                <label className={DESIGN.text.label}>Duração (minutos)</label>
                                 <input
                                     name="duration"
                                     type="number"
@@ -262,7 +262,7 @@ const ManageShop: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className={DESIGN.text.label}>Buffer Time (minutes)</label>
+                                <label className={DESIGN.text.label}>Tempo de Intervalo (minutos)</label>
                                 <input
                                     name="bufferTime"
                                     type="number"
@@ -272,7 +272,7 @@ const ManageShop: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className={DESIGN.text.label}>Price ($)</label>
+                                <label className={DESIGN.text.label}>Preço ($)</label>
                                 <input
                                     name="price"
                                     type="number"
@@ -283,7 +283,7 @@ const ManageShop: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className={DESIGN.text.label}>Description</label>
+                                <label className={DESIGN.text.label}>Descrição</label>
                                 <textarea
                                     name="description"
                                     rows={3}
@@ -292,7 +292,7 @@ const ManageShop: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className={DESIGN.text.label}>Image URL</label>
+                                <label className={DESIGN.text.label}>URL da Imagem</label>
                                 <input
                                     name="imageUrl"
                                     type="url"
@@ -307,14 +307,14 @@ const ManageShop: React.FC = () => {
                                     onClick={() => setIsServiceModalVisible(false)}
                                     className={DESIGN.button.secondary}
                                 >
-                                    Cancel
+                                    Cancelar
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
                                     className={DESIGN.button.primary}
                                 >
-                                    {loading ? (editingService ? 'Saving...' : 'Adding...') : (editingService ? 'Save Changes' : 'Add')}
+                                    {loading ? (editingService ? 'Salvando...' : 'Adicionando...') : (editingService ? 'Salvar Alterações' : 'Adicionar')}
                                 </button>
                             </div>
                         </form>
@@ -326,15 +326,15 @@ const ManageShop: React.FC = () => {
             {isStaffModalVisible && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
                     <div className={`${DESIGN.card.base} p-6 w-full max-w-md shadow-2xl`}>
-                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>Add Staff</h3>
+                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>Adicionar Equipe</h3>
                         <form onSubmit={handleAddStaff} className="space-y-4">
                             <div>
-                                <label className={DESIGN.text.label}>Staff Email</label>
+                                <label className={DESIGN.text.label}>Email do Membro da Equipe</label>
                                 <input
                                     name="email"
                                     type="email"
                                     required
-                                    placeholder="Enter email of registered staff member"
+                                    placeholder="Digite o email do membro da equipe registrado"
                                     className={DESIGN.input.base}
                                 />
                             </div>
@@ -344,14 +344,14 @@ const ManageShop: React.FC = () => {
                                     onClick={() => setIsStaffModalVisible(false)}
                                     className={DESIGN.button.secondary}
                                 >
-                                    Cancel
+                                    Cancelar
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
                                     className={DESIGN.button.primary}
                                 >
-                                    {loading ? 'Adding...' : 'Add'}
+                                    {loading ? 'Adicionando...' : 'Adicionar'}
                                 </button>
                             </div>
                         </form>
@@ -365,9 +365,9 @@ const ManageShop: React.FC = () => {
                 isOpen={!!deleteServiceId}
                 onClose={() => setDeleteServiceId(null)}
                 onConfirm={confirmDeleteService}
-                title="Delete Service"
-                message="Are you sure you want to delete this service?"
-                confirmText="Delete"
+                title="Excluir Serviço"
+                message="Tem certeza que deseja excluir este serviço?"
+                confirmText="Excluir"
                 isDangerous={true}
             />
 
@@ -375,9 +375,9 @@ const ManageShop: React.FC = () => {
                 isOpen={!!removeStaffId}
                 onClose={() => setRemoveStaffId(null)}
                 onConfirm={confirmRemoveStaff}
-                title="Remove Staff"
-                message="Are you sure you want to remove this staff member from the shop?"
-                confirmText="Remove"
+                title="Remover Equipe"
+                message="Tem certeza que deseja remover este membro da equipe da barbearia?"
+                confirmText="Remover"
                 isDangerous={true}
             />
         </PageLayout>

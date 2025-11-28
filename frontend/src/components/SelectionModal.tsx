@@ -41,7 +41,7 @@ function SelectionModal<T>({
 
                 <div className="overflow-y-auto p-4 space-y-3">
                     {items.length === 0 ? (
-                        <p className="text-text-muted text-center py-4">No items available.</p>
+                        <p className="text-text-muted text-center py-4">Nenhum item disponível.</p>
                     ) : (
                         items.map((item) => (
                             <div

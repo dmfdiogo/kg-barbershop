@@ -20,7 +20,7 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({ isOpen, onClose, onSe
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="p-4 border-b border-neutral-800 flex justify-between items-center sticky top-0 bg-dark-card z-10">
-                    <h3 className={DESIGN.text.subHeader}>Select Time</h3>
+                    <h3 className={DESIGN.text.subHeader}>Selecione o Horário</h3>
                     <button onClick={onClose} className="text-text-secondary hover:text-white p-2">
                         <i className="ri-close-line text-2xl"></i>
                     </button>
@@ -30,7 +30,7 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({ isOpen, onClose, onSe
                     {slots.length === 0 ? (
                         <div className="text-center py-8 text-text-muted">
                             <i className="ri-time-line text-4xl mb-2 block opacity-50"></i>
-                            <p>No available slots for this date.</p>
+                            <p>Nenhum horário disponível para esta data.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">

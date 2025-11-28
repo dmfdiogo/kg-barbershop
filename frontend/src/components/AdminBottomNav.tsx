@@ -29,11 +29,11 @@ const AdminBottomNav: React.FC<AdminBottomNavProps> = ({ activeView, isShopConte
     };
 
     const navItems = [
-        { id: 'shops', icon: 'ri-store-2-line', label: 'Shops', enabled: true },
-        { id: 'analytics', icon: 'ri-bar-chart-box-line', label: 'Analytics', enabled: true },
-        { id: 'profile', icon: 'ri-user-settings-line', label: 'Profile', enabled: true },
-        { id: 'services', icon: 'ri-scissors-line', label: 'Services', enabled: isShopContext },
-        { id: 'staff', icon: 'ri-group-line', label: 'Staff', enabled: isShopContext },
+        { id: 'shops', icon: 'ri-store-2-line', label: 'Barbearias', enabled: true },
+        { id: 'analytics', icon: 'ri-bar-chart-box-line', label: 'Análises', enabled: true },
+        { id: 'profile', icon: 'ri-user-settings-line', label: 'Perfil', enabled: true },
+        { id: 'services', icon: 'ri-scissors-line', label: 'Serviços', enabled: isShopContext },
+        { id: 'staff', icon: 'ri-group-line', label: 'Equipe', enabled: isShopContext },
     ];
 
     return (

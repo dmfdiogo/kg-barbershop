@@ -1,7 +1,7 @@
 export const DESIGN = {
     // Layout
     layout: {
-        pageContainer: "h-screen bg-pattern text-text-primary overflow-hidden",
+        pageContainer: "h-screen bg-pattern-2 text-text-primary overflow-hidden",
         contentContainer: "p-4 md:p-8 max-w-7xl mx-auto w-full",
     },
 

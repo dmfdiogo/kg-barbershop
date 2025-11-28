@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import dayjs from 'dayjs';
+import 'dayjs/locale/pt-br';
+
+dayjs.locale('pt-br');
 
 
 interface DatePickerModalProps {
@@ -90,7 +93,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({ isOpen, onClose, onSe
 
                 {/* Days of Week */}
                 <div className="grid grid-cols-7 gap-1 mb-2 text-center">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                    {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((day, index) => (
                         <div key={index} className="text-text-muted text-xs font-bold h-10 flex items-center justify-center">
                             {day}
                         </div>
@@ -107,7 +110,7 @@ const DatePickerModal: React.FC<DatePickerModalProps> = ({ isOpen, onClose, onSe
                         onClick={onClose}
                         className="text-text-secondary hover:text-white text-sm px-3 py-1"
                     >
-                        Cancel
+                        Cancelar
                     </button>
                 </div>
             </div>

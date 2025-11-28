@@ -28,11 +28,12 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-pattern">
-            <div className="w-full max-w-md bg-dark-card p-8 shadow-none sm:shadow-xl rounded-none sm:rounded-xl border-0 sm:border border-amber-400/10 min-h-screen sm:min-h-0 flex flex-col justify-center">
+        <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+
+            <div className="w-full max-w-md bg-pattern-2 p-8 shadow-none sm:shadow-xl rounded-none sm:rounded-xl border-0 sm:border border-amber-400/10 min-h-screen sm:min-h-0 flex flex-col justify-center relative z-10">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-primary">Barber Shop</h2>
-                    <p className="text-text-secondary mt-2">Sign in to your account</p>
+                    <p className="text-text-secondary mt-2">Entre na sua conta</p>
                 </div>
 
                 {error && (
@@ -43,7 +44,7 @@ const Login: React.FC = () => {
 
                 <form onSubmit={onFinish} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Email</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">E-mail</label>
                         <input
                             name="email"
                             type="email"
@@ -53,7 +54,7 @@ const Login: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Password</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Senha</label>
                         <input
                             name="password"
                             type="password"
@@ -67,11 +68,11 @@ const Login: React.FC = () => {
                         disabled={loading}
                         className="w-full bg-primary text-black py-3 px-4 rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50 font-bold shadow-lg hover:shadow-primary/20"
                     >
-                        {loading ? 'Logging in...' : 'Log in'}
+                        {loading ? 'Entrando...' : 'Entrar'}
                     </button>
 
                     <div className="text-center text-sm text-text-secondary">
-                        Or <Link to="/register" className="text-primary font-semibold hover:underline">register now!</Link>
+                        Ou <Link to="/register" className="text-primary font-semibold hover:underline">registre-se agora!</Link>
                     </div>
                 </form>
             </div>

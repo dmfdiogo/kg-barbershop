@@ -2,6 +2,10 @@ import React from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+// @ts-ignore
+import 'moment/locale/pt-br';
+
+moment.locale('pt-br');
 
 const localizer = momentLocalizer(moment);
 
@@ -59,6 +63,19 @@ const CalendarView: React.FC<CalendarViewProps> = ({ appointments, onSelectEvent
                 step={15}
                 timeslots={4}
                 className="bg-white rounded-lg p-2" // Keep calendar white for readability for now, or customize heavily later
+                messages={{
+                    next: "Próximo",
+                    previous: "Anterior",
+                    today: "Hoje",
+                    month: "Mês",
+                    week: "Semana",
+                    day: "Dia",
+                    agenda: "Agenda",
+                    date: "Data",
+                    time: "Hora",
+                    event: "Evento",
+                    noEventsInRange: "Não há eventos neste período."
+                }}
             />
         </div>
     );

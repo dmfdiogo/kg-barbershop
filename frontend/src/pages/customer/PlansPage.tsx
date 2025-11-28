@@ -38,18 +38,18 @@ const PlansPage: React.FC = () => {
     };
 
     const handleCancel = async () => {
-        if (!window.confirm('Are you sure you want to cancel your subscription? You will lose access at the end of the billing period.')) return;
+        if (!window.confirm('Tem certeza que deseja cancelar sua assinatura? Você perderá o acesso no final do período de cobrança.')) return;
 
         setLoading(true);
         try {
             await api.post('/payment/cancel-subscription');
-            alert('Subscription canceled. It will remain active until the end of the period.');
+            alert('Assinatura cancelada. Ela permanecerá ativa até o final do período.');
             // Refresh status
             const response = await api.get('/payment/subscription-status');
             setSubscription(response.data);
         } catch (error: any) {
             console.error('Cancellation error:', error);
-            alert(error.response?.data?.error || 'Failed to cancel subscription');
+            alert(error.response?.data?.error || 'Falha ao cancelar assinatura');
         } finally {
             setLoading(false);
         }
@@ -59,7 +59,7 @@ const PlansPage: React.FC = () => {
     const isCanceledAtPeriodEnd = subscription?.status === 'canceled_at_period_end' || (subscription?.status === 'active' && subscription?.cancel_at_period_end);
 
     return (
-        <PageLayout title="Membership Plans" showBack className="p-4 md:p-6 max-w-4xl mx-auto">
+        <PageLayout title="Planos de Assinatura" showBack className="p-4 md:p-6 max-w-4xl mx-auto">
 
 
             <div className={`${DESIGN.card.base} overflow-hidden`}>
@@ -69,28 +69,28 @@ const PlansPage: React.FC = () => {
                         <>
                             <h3 className="text-2xl font-bold text-primary mb-4">Plano Mensal</h3>
                             <p className={`${DESIGN.text.body} mb-6`}>
-                                Get premium access with our exclusive monthly membership.
+                                Tenha acesso premium com nossa assinatura mensal exclusiva.
                             </p>
                             <div className="text-4xl font-bold text-white mb-6">
-                                R$ 70.00 <span className={`text-lg ${DESIGN.text.muted} font-normal`}>/ month</span>
+                                R$ 70.00 <span className={`text-lg ${DESIGN.text.muted} font-normal`}>/ mês</span>
                             </div>
 
                             <ul className={`text-left max-w-xs mx-auto space-y-3 mb-8 ${DESIGN.text.body}`}>
                                 <li className="flex items-center">
                                     <i className="ri-check-line text-primary mr-2 text-xl"></i>
-                                    2 Haircuts per month
+                                    2 Cortes de Cabelo por mês
                                 </li>
                                 <li className="flex items-center">
                                     <i className="ri-check-line text-primary mr-2 text-xl"></i>
-                                    1 Beard Trim per month
+                                    1 Barba por mês
                                 </li>
                                 <li className="flex items-center">
                                     <i className="ri-check-line text-primary mr-2 text-xl"></i>
-                                    Priority Booking
+                                    Agendamento Prioritário
                                 </li>
                                 <li className="flex items-center">
                                     <i className="ri-check-line text-primary mr-2 text-xl"></i>
-                                    Cancel Anytime
+                                    Cancele a Qualquer Momento
                                 </li>
                             </ul>
 
@@ -102,12 +102,12 @@ const PlansPage: React.FC = () => {
                                     : 'bg-primary hover:bg-yellow-400 shadow-lg hover:shadow-primary/20'
                                     }`}
                             >
-                                {loading ? 'Processing...' : 'Subscribe Now'}
+                                {loading ? 'Processando...' : 'Assinar Agora'}
                             </button>
                         </>
                     ) : (
                         <div className="space-y-6">
-                            <h3 className="text-2xl font-bold text-white mb-6">Your Membership</h3>
+                            <h3 className="text-2xl font-bold text-white mb-6">Sua Assinatura</h3>
 
                             {subscription.status === 'active' || subscription.status === 'canceled_at_period_end' ? (
                                 <MembershipCard
@@ -119,7 +119,7 @@ const PlansPage: React.FC = () => {
                             ) : (
                                 <div className="bg-gray-800 p-6 rounded-lg border border-amber-500">
                                     <p className="text-white font-medium text-lg mb-2">Status: <span className="uppercase text-yellow-500">{subscription.status.replace(/_/g, ' ')}</span></p>
-                                    <p className="text-gray-400">Your subscription is currently in a non-active state.</p>
+                                    <p className="text-gray-400">Sua assinatura está atualmente inativa.</p>
                                 </div>
                             )}
 
@@ -130,10 +130,10 @@ const PlansPage: React.FC = () => {
                                         disabled={loading}
                                         className="text-red-500 hover:text-red-400 text-sm font-medium underline transition-colors"
                                     >
-                                        {loading ? 'Processing...' : 'Cancel Subscription'}
+                                        {loading ? 'Processando...' : 'Cancelar Assinatura'}
                                     </button>
                                     <p className="text-xs text-gray-500 mt-2">
-                                        Cancellation takes effect at the end of the current billing period.
+                                        O cancelamento entra em vigor no final do período de cobrança atual.
                                     </p>
                                 </div>
                             )}
@@ -141,8 +141,8 @@ const PlansPage: React.FC = () => {
                             {isCanceledAtPeriodEnd && (
                                 <div className="bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-lg">
                                     <p className="text-yellow-500 text-sm">
-                                        Your subscription is set to cancel on {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.
-                                        You will retain access to your benefits until then.
+                                        Sua assinatura será cancelada em {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.
+                                        Você manterá o acesso aos seus benefícios até lá.
                                     </p>
                                 </div>
                             )}

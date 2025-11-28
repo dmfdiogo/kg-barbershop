@@ -110,25 +110,25 @@ const AdminDashboard: React.FC = () => {
             {/* Sidebar */}
             <div className="w-64 bg-dark-card border-r border-amber-400/10 flex flex-col hidden md:flex">
                 <div className="h-16 flex items-center justify-center border-b border-amber-400/10">
-                    <h1 className="text-xl font-bold text-primary">Admin Panel</h1>
+                    <h1 className="text-xl font-bold text-primary">Painel Admin</h1>
                 </div>
                 <nav className="flex-1 p-4 space-y-2">
                     <button
                         onClick={() => setActiveView('shops')}
                         className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-colors ${activeView === 'shops' ? 'bg-gray-800 text-primary' : 'text-text-secondary hover:bg-gray-800 hover:text-white'}`}
                     >
-                        <i className="ri-store-2-line mr-3 text-lg"></i> My Shops
+                        <i className="ri-store-2-line mr-3 text-lg"></i> Minhas Barbearias
                     </button>
                     <button
                         onClick={() => setActiveView('analytics')}
                         className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-colors ${activeView === 'analytics' ? 'bg-gray-800 text-primary' : 'text-text-secondary hover:bg-gray-800 hover:text-white'}`}
                     >
-                        <i className="ri-bar-chart-box-line mr-3 text-lg"></i> Analytics
+                        <i className="ri-bar-chart-box-line mr-3 text-lg"></i> Análises
                     </button>
                 </nav>
                 <div className="p-4 border-t border-amber-400/10">
                     <button onClick={logout} className="w-full flex items-center px-4 py-2 hover:bg-gray-800 rounded text-left text-red-400 transition-colors">
-                        <i className="ri-logout-box-r-line mr-3 text-lg"></i> Logout
+                        <i className="ri-logout-box-r-line mr-3 text-lg"></i> Sair
                     </button>
                 </div>
             </div>
@@ -136,13 +136,13 @@ const AdminDashboard: React.FC = () => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 <header className="bg-transparent shadow-md border-b border-amber-400/10 h-16 flex items-center justify-between px-6 flex-none z-10">
-                    <h2 className={DESIGN.text.subHeader}>Welcome, {user?.name}</h2>
+                    <h2 className={DESIGN.text.subHeader}>Bem-vindo, {user?.name}</h2>
                 </header>
 
                 <main className="flex-1 overflow-y-auto mask-fade p-6 pb-24 scrollbar-hide">
                     {activeView === 'shops' ? (
                         <>
-                            <h3 className={`${DESIGN.text.subHeader} text-lg mb-4`}>Your Shops</h3>
+                            <h3 className={`${DESIGN.text.subHeader} text-lg mb-4`}>Suas Barbearias</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {shops.map(shop => (
                                     <div key={shop.id} className={`${DESIGN.card.base} p-5 flex flex-col gap-4 group hover:border-primary transition-all duration-300`}>
@@ -185,7 +185,7 @@ const AdminDashboard: React.FC = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-white">{shop._count?.services || 0}</p>
-                                                    <p className="text-[10px] text-text-muted uppercase">Services</p>
+                                                    <p className="text-[10px] text-text-muted uppercase">Serviços</p>
                                                 </div>
                                             </div>
                                             <div className="w-px h-8 bg-gray-800"></div>
@@ -195,7 +195,7 @@ const AdminDashboard: React.FC = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-white">{shop._count?.staff || 0}</p>
-                                                    <p className="text-[10px] text-text-muted uppercase">Staff</p>
+                                                    <p className="text-[10px] text-text-muted uppercase">Equipe</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -210,18 +210,18 @@ const AdminDashboard: React.FC = () => {
                                     <div className="w-12 h-12 rounded-full bg-dark-input group-hover:bg-primary group-hover:text-black flex items-center justify-center mb-3 transition-all duration-300 shadow-lg">
                                         <i className="ri-add-line text-2xl text-gray-500 group-hover:text-black transition-colors"></i>
                                     </div>
-                                    <h4 className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Create New Shop</h4>
+                                    <h4 className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">Criar Nova Barbearia</h4>
                                 </button>
                             </div>
                         </>
                     ) : (
                         <div className="space-y-8">
-                            <h3 className={`${DESIGN.text.subHeader} text-lg mb-4`}>Analytics Dashboard</h3>
+                            <h3 className={`${DESIGN.text.subHeader} text-lg mb-4`}>Painel de Análises</h3>
 
                             <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
                                 {/* Popular Barbers Chart */}
                                 <div className={`${DESIGN.card.base} ${DESIGN.card.padding} lg:col-span-2`}>
-                                    <h4 className="text-lg font-bold mb-4 text-white">Most Popular Barbers</h4>
+                                    <h4 className="text-lg font-bold mb-4 text-white">Barbeiros Mais Populares</h4>
                                     <div className="h-80">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <BarChart data={popularBarbers}>
@@ -233,7 +233,7 @@ const AdminDashboard: React.FC = () => {
                                                     itemStyle={{ color: '#F3F4F6' }}
                                                 />
                                                 <Legend />
-                                                <Bar dataKey="count" fill="#F7B500" name="Appointments" />
+                                                <Bar dataKey="count" fill="#F7B500" name="Agendamentos" />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
@@ -241,7 +241,7 @@ const AdminDashboard: React.FC = () => {
 
                                 {/* Peak Hours Chart */}
                                 <div className={`${DESIGN.card.base} ${DESIGN.card.padding} lg:col-span-2`}>
-                                    <h4 className="text-lg font-bold mb-4 text-white">Peak Hours</h4>
+                                    <h4 className="text-lg font-bold mb-4 text-white">Horários de Pico</h4>
                                     <div className="h-80">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <LineChart data={peakHours}>
@@ -253,7 +253,7 @@ const AdminDashboard: React.FC = () => {
                                                     itemStyle={{ color: '#F3F4F6' }}
                                                 />
                                                 <Legend />
-                                                <Line type="monotone" dataKey="count" stroke="#F7B500" strokeWidth={2} name="Appointments" dot={{ fill: '#F7B500' }} />
+                                                <Line type="monotone" dataKey="count" stroke="#F7B500" strokeWidth={2} name="Agendamentos" dot={{ fill: '#F7B500' }} />
                                             </LineChart>
                                         </ResponsiveContainer>
                                     </div>
@@ -261,7 +261,7 @@ const AdminDashboard: React.FC = () => {
 
                                 {/* Peak Days Chart */}
                                 <div className={`${DESIGN.card.base} ${DESIGN.card.padding} lg:col-span-2`}>
-                                    <h4 className="text-lg font-bold mb-4 text-white">Peak Days</h4>
+                                    <h4 className="text-lg font-bold mb-4 text-white">Dias de Pico</h4>
                                     <div className="h-80">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <BarChart data={peakDays}>
@@ -273,7 +273,7 @@ const AdminDashboard: React.FC = () => {
                                                     itemStyle={{ color: '#F3F4F6' }}
                                                 />
                                                 <Legend />
-                                                <Bar dataKey="count" fill="#3B82F6" name="Appointments" />
+                                                <Bar dataKey="count" fill="#3B82F6" name="Agendamentos" />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
@@ -288,10 +288,10 @@ const AdminDashboard: React.FC = () => {
             {isModalVisible && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
                     <div className={`${DESIGN.card.base} p-6 w-full max-w-md shadow-2xl`}>
-                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>{editingShop ? 'Edit Shop' : 'Create New Shop'}</h3>
+                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>{editingShop ? 'Editar Barbearia' : 'Criar Nova Barbearia'}</h3>
                         <form onSubmit={handleCreateOrUpdateShop} className="space-y-4">
                             <div>
-                                <label className={DESIGN.text.label}>Shop Name</label>
+                                <label className={DESIGN.text.label}>Nome da Barbearia</label>
                                 <input
                                     name="name"
                                     required
@@ -300,7 +300,7 @@ const AdminDashboard: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className={DESIGN.text.label}>URL Slug</label>
+                                <label className={DESIGN.text.label}>Slug da URL</label>
                                 <div className="flex">
                                     <span className="inline-flex items-center px-3 rounded-l border border-r-0 border-amber-500 bg-gray-800 text-text-muted text-sm">
                                         app.com/
@@ -319,14 +319,14 @@ const AdminDashboard: React.FC = () => {
                                     onClick={() => setIsModalVisible(false)}
                                     className={DESIGN.button.secondary}
                                 >
-                                    Cancel
+                                    Cancelar
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
                                     className={DESIGN.button.primary}
                                 >
-                                    {loading ? (editingShop ? 'Saving...' : 'Creating...') : (editingShop ? 'Save Changes' : 'Create')}
+                                    {loading ? (editingShop ? 'Salvando...' : 'Criando...') : (editingShop ? 'Salvar Alterações' : 'Criar')}
                                 </button>
                             </div>
                         </form>
@@ -347,9 +347,9 @@ const AdminDashboard: React.FC = () => {
                 isOpen={!!deleteShopId}
                 onClose={() => setDeleteShopId(null)}
                 onConfirm={confirmDeleteShop}
-                title="Delete Shop"
-                message="Are you sure you want to delete this shop? This action cannot be undone and will delete all associated services and staff."
-                confirmText="Delete Shop"
+                title="Excluir Barbearia"
+                message="Tem certeza que deseja excluir esta barbearia? Esta ação não pode ser desfeita e excluirá todos os serviços e equipe associados."
+                confirmText="Excluir Barbearia"
                 isDangerous={true}
             />
         </div>
