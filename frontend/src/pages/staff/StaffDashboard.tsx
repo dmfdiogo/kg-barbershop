@@ -54,10 +54,10 @@ const StaffDashboard: React.FC = () => {
         try {
             await api.post('/schedule', { schedules });
             // Show success message (maybe a toast later)
-            alert('Schedule updated successfully');
+            alert('Horário atualizado com sucesso');
         } catch (error) {
             console.error('Failed to update schedule');
-            alert('Failed to update schedule');
+            alert('Falha ao atualizar horário');
         } finally {
             setLoading(false);
         }
@@ -78,32 +78,32 @@ const StaffDashboard: React.FC = () => {
         fetchAppointments();
     };
 
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
     return (
         <div className={`${DESIGN.layout.pageContainer} flex flex-col md:flex-row`}>
             {/* Sidebar */}
             <div className="w-64 bg-dark-card border-r border-amber-400/10 flex flex-col hidden md:flex">
                 <div className="h-16 flex items-center justify-center border-b border-amber-400/10">
-                    <h1 className="text-xl font-bold text-primary">Barber Panel</h1>
+                    <h1 className="text-xl font-bold text-primary">Painel do Barbeiro</h1>
                 </div>
                 <nav className="flex-1 p-4 space-y-2">
                     <button
                         onClick={() => setActiveTab('appointments')}
                         className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-colors ${activeTab === 'appointments' ? 'bg-gray-800 text-primary' : 'text-text-secondary hover:bg-gray-800 hover:text-white'}`}
                     >
-                        <i className="ri-calendar-check-line mr-3 text-lg"></i> My Appointments
+                        <i className="ri-calendar-check-line mr-3 text-lg"></i> Meus Agendamentos
                     </button>
                     <button
                         onClick={() => setActiveTab('schedule')}
                         className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-colors ${activeTab === 'schedule' ? 'bg-gray-800 text-primary' : 'text-text-secondary hover:bg-gray-800 hover:text-white'}`}
                     >
-                        <i className="ri-time-line mr-3 text-lg"></i> Manage Schedule
+                        <i className="ri-time-line mr-3 text-lg"></i> Gerenciar Horários
                     </button>
                 </nav>
                 <div className="p-4 border-t border-amber-400/10">
                     <button onClick={logout} className="w-full flex items-center px-4 py-2 hover:bg-gray-800 rounded text-left text-red-400 transition-colors">
-                        <i className="ri-logout-box-r-line mr-3 text-lg"></i> Logout
+                        <i className="ri-logout-box-r-line mr-3 text-lg"></i> Sair
                     </button>
                 </div>
             </div>
@@ -111,7 +111,7 @@ const StaffDashboard: React.FC = () => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 <header className="bg-transparent shadow-md border-b border-amber-400/10 h-16 flex items-center px-6 flex-none z-10">
-                    <h2 className={DESIGN.text.subHeader}>Welcome, {user?.name}</h2>
+                    <h2 className={DESIGN.text.subHeader}>Bem-vindo, {user?.name}</h2>
                 </header>
 
                 <main className="flex-1 overflow-y-auto mask-fade p-6 scrollbar-hide">
@@ -119,19 +119,19 @@ const StaffDashboard: React.FC = () => {
                         <div>
                             <div>
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className={`${DESIGN.text.subHeader} text-lg`}>Upcoming Appointments</h3>
+                                    <h3 className={`${DESIGN.text.subHeader} text-lg`}>Próximos Agendamentos</h3>
                                     <div className="flex space-x-2 bg-dark-card rounded-lg p-1 border border-amber-400/10">
                                         <button
                                             onClick={() => setViewMode('list')}
                                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'list' ? 'bg-primary text-black shadow-sm' : 'text-text-secondary hover:text-white'}`}
                                         >
-                                            List
+                                            Lista
                                         </button>
                                         <button
                                             onClick={() => setViewMode('calendar')}
                                             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'calendar' ? 'bg-primary text-black shadow-sm' : 'text-text-secondary hover:text-white'}`}
                                         >
-                                            Calendar
+                                            Calendário
                                         </button>
                                     </div>
                                 </div>
@@ -139,7 +139,7 @@ const StaffDashboard: React.FC = () => {
                                 {viewMode === 'list' ? (
                                     <div className={`${DESIGN.card.base} overflow-hidden`}>
                                         {appointments.length === 0 ? (
-                                            <div className={`p-8 text-center ${DESIGN.text.muted}`}>No upcoming appointments.</div>
+                                            <div className={`p-8 text-center ${DESIGN.text.muted}`}>Nenhum agendamento próximo.</div>
                                         ) : (
                                             <ul className="divide-y divide-gray-800">
                                                 {appointments.map((item: any) => (
@@ -147,25 +147,25 @@ const StaffDashboard: React.FC = () => {
                                                         <div className="flex justify-between items-center">
                                                             <div>
                                                                 <p className="text-lg font-bold text-white">
-                                                                    {item.service.name} <span className={`${DESIGN.text.muted} font-normal`}>with</span> {item.customer.name}
+                                                                    {item.service.name} <span className={`${DESIGN.text.muted} font-normal`}>com</span> {item.customer.name}
                                                                 </p>
                                                                 <p className="text-sm text-primary mt-1">
                                                                     {formatDateTime(item.startTime)}
                                                                 </p>
                                                                 <p className={`text-xs ${DESIGN.text.muted} mt-1`}>
-                                                                    Payment: <span className="text-text-secondary">{item.paymentMethod}</span> - <span className={item.paymentStatus === 'PAID' ? 'text-green-400' : 'text-yellow-400'}>{item.paymentStatus}</span>
+                                                                    Pagamento: <span className="text-text-secondary">{item.paymentMethod}</span> - <span className={item.paymentStatus === 'PAID' ? 'text-green-400' : 'text-yellow-400'}>{item.paymentStatus === 'PAID' ? 'PAGO' : item.paymentStatus}</span>
                                                                 </p>
                                                             </div>
                                                             <div className="flex items-center space-x-4">
                                                                 <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${item.status === 'CONFIRMED' ? DESIGN.badge.success : DESIGN.badge.warning}`}>
-                                                                    {item.status}
+                                                                    {item.status === 'CONFIRMED' ? 'CONFIRMADO' : item.status === 'CANCELLED' ? 'CANCELADO' : item.status}
                                                                 </span>
                                                                 {item.status !== 'CANCELLED' && (
                                                                     <button
                                                                         onClick={() => handleRescheduleClick(item)}
                                                                         className="text-sm text-primary hover:text-yellow-300 font-medium transition-colors"
                                                                     >
-                                                                        Reschedule
+                                                                        Reagendar
                                                                     </button>
                                                                 )}
                                                             </div>
@@ -190,13 +190,13 @@ const StaffDashboard: React.FC = () => {
                     {activeTab === 'schedule' && (
                         <div>
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className={`${DESIGN.text.subHeader} text-lg`}>Weekly Schedule</h3>
+                                <h3 className={`${DESIGN.text.subHeader} text-lg`}>Horário Semanal</h3>
                                 <button
                                     onClick={handleSaveSchedule}
                                     disabled={loading}
                                     className={`${DESIGN.button.primary} disabled:opacity-50`}
                                 >
-                                    {loading ? 'Saving...' : 'Save Schedule'}
+                                    {loading ? 'Salvando...' : 'Salvar Horário'}
                                 </button>
                             </div>
 
@@ -220,7 +220,7 @@ const StaffDashboard: React.FC = () => {
                                                             <div className={`dot absolute left-1 top-1 bg-black w-5 h-5 rounded-full transition-transform ${item.isAvailable ? 'transform translate-x-5' : ''}`}></div>
                                                         </div>
                                                         <div className={`ml-3 text-sm font-medium transition-colors ${item.isAvailable ? 'text-primary' : DESIGN.text.muted}`}>
-                                                            {item.isAvailable ? 'Available' : 'Off'}
+                                                            {item.isAvailable ? 'Disponível' : 'Folga'}
                                                         </div>
                                                     </label>
 
@@ -232,7 +232,7 @@ const StaffDashboard: React.FC = () => {
                                                                 onChange={(e) => updateScheduleItem(index, 'startTime', e.target.value)}
                                                                 className={DESIGN.input.base}
                                                             />
-                                                            <span className={DESIGN.text.muted}>to</span>
+                                                            <span className={DESIGN.text.muted}>até</span>
                                                             <input
                                                                 type="time"
                                                                 value={item.endTime}
@@ -246,7 +246,7 @@ const StaffDashboard: React.FC = () => {
 
                                             {item.isAvailable && (
                                                 <div className="mt-4 ml-32 pl-4 border-l-2 border-amber-400/10">
-                                                    <div className={`text-sm font-medium ${DESIGN.text.body} mb-2`}>Breaks</div>
+                                                    <div className={`text-sm font-medium ${DESIGN.text.body} mb-2`}>Pausas</div>
                                                     {item.breaks && item.breaks.map((brk: any, breakIndex: number) => (
                                                         <div key={breakIndex} className="flex items-center space-x-2 mb-2">
                                                             <input
@@ -259,7 +259,7 @@ const StaffDashboard: React.FC = () => {
                                                                 }}
                                                                 className={`${DESIGN.input.base} py-1 text-xs`}
                                                             />
-                                                            <span className={`${DESIGN.text.muted} text-xs`}>to</span>
+                                                            <span className={`${DESIGN.text.muted} text-xs`}>até</span>
                                                             <input
                                                                 type="time"
                                                                 value={brk.endTime}
@@ -277,7 +277,7 @@ const StaffDashboard: React.FC = () => {
                                                                 }}
                                                                 className="text-red-500 hover:text-red-400 text-xs transition-colors"
                                                             >
-                                                                Remove
+                                                                Remover
                                                             </button>
                                                         </div>
                                                     ))}
@@ -288,7 +288,7 @@ const StaffDashboard: React.FC = () => {
                                                         }}
                                                         className="text-primary hover:text-yellow-300 text-xs font-medium mt-1 transition-colors"
                                                     >
-                                                        + Add Break
+                                                        + Adicionar Pausa
                                                     </button>
                                                 </div>
                                             )}

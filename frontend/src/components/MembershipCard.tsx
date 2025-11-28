@@ -31,15 +31,19 @@ const MembershipCard: React.FC<MembershipCardProps> = ({ status, creditsHaircut,
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                             <i className="ri-vip-crown-2-fill text-primary text-xl"></i>
-                            <h3 className="text-xl font-bold text-white tracking-wide uppercase">VIP Membership</h3>
+                            <h3 className="text-xl font-bold text-white tracking-wide uppercase">Assinatura VIP</h3>
                         </div>
-                        <p className="text-xs text-text-muted font-medium tracking-wider pl-7">MONTHLY ACCESS</p>
+                        <p className="text-xs text-text-muted font-medium tracking-wider pl-7">ACESSO MENSAL</p>
                     </div>
                     <div className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${isActive
                         ? 'bg-primary/10 text-primary border-primary/20'
                         : 'bg-red-500/10 text-red-500 border-red-500/20'
                         }`}>
-                        {status.replace(/_/g, ' ')}
+                        {status === 'active' ? 'ATIVO' :
+                            status === 'canceled_at_period_end' ? 'CANCELADO' :
+                                status === 'past_due' ? 'ATRASADO' :
+                                    status === 'unpaid' ? 'NÃO PAGO' :
+                                        status.replace(/_/g, ' ')}
                     </div>
                 </div>
 
@@ -50,9 +54,9 @@ const MembershipCard: React.FC<MembershipCardProps> = ({ status, creditsHaircut,
                         <div className="flex justify-between items-end mb-2">
                             <div className="flex items-center gap-2 text-white">
                                 <i className="ri-scissors-cut-fill text-primary"></i>
-                                <span className="font-medium text-sm">Haircuts</span>
+                                <span className="font-medium text-sm">Cortes de Cabelo</span>
                             </div>
-                            <span className="text-sm font-bold text-white">{creditsHaircut} <span className="text-text-muted font-normal text-xs">/ 2 left</span></span>
+                            <span className="text-sm font-bold text-white">{creditsHaircut} <span className="text-text-muted font-normal text-xs">/ 2 restantes</span></span>
                         </div>
                         <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
                             <div
@@ -67,9 +71,9 @@ const MembershipCard: React.FC<MembershipCardProps> = ({ status, creditsHaircut,
                         <div className="flex justify-between items-end mb-2">
                             <div className="flex items-center gap-2 text-white">
                                 <i className="ri-user-smile-fill text-primary"></i>
-                                <span className="font-medium text-sm">Beard Trims</span>
+                                <span className="font-medium text-sm">Barba</span>
                             </div>
-                            <span className="text-sm font-bold text-white">{creditsBeard} <span className="text-text-muted font-normal text-xs">/ 1 left</span></span>
+                            <span className="text-sm font-bold text-white">{creditsBeard} <span className="text-text-muted font-normal text-xs">/ 1 restante</span></span>
                         </div>
                         <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
                             <div
@@ -84,7 +88,7 @@ const MembershipCard: React.FC<MembershipCardProps> = ({ status, creditsHaircut,
                 <div className="mt-auto pt-6 border-t border-amber-400/10/50 flex justify-between items-center">
                     <div>
                         <p className="text-[10px] uppercase tracking-widest text-text-muted mb-1">
-                            {status === 'canceled_at_period_end' ? 'Expires On' : 'Renews On'}
+                            {status === 'canceled_at_period_end' ? 'Expira em' : 'Renova em'}
                         </p>
                         <p className="text-sm font-mono text-white font-medium">
                             {currentPeriodEnd ? new Date(currentPeriodEnd).toLocaleDateString() : 'N/A'}

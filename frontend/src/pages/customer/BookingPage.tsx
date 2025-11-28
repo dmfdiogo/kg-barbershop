@@ -101,11 +101,11 @@ const BookingPage: React.FC = () => {
     const onFinish = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedSlot) {
-            setError('Please select a time slot');
+            setError('Por favor, selecione um horário');
             return;
         }
         if (!shop || !selectedBarber || !selectedService) {
-            setError('Please select a shop, barber, and service.');
+            setError('Por favor, selecione uma barbearia, barbeiro e serviço.');
             return;
         }
 
@@ -128,7 +128,7 @@ const BookingPage: React.FC = () => {
             const appointmentId = response.data.id;
 
             if (coveredByPlan) {
-                alert('Appointment booked with your membership!');
+                alert('Agendamento realizado com sua assinatura!');
                 navigate('/history');
                 return;
             }
@@ -145,12 +145,12 @@ const BookingPage: React.FC = () => {
                 } catch (paymentError: any) {
                     console.error('Payment initiation failed', paymentError);
                     const errorMessage = paymentError.response?.data?.error || 'Payment failed';
-                    alert(`Appointment created but payment failed: ${errorMessage}. Please check your appointments.`);
+                    alert(`Agendamento criado mas o pagamento falhou: ${errorMessage}. Por favor verifique seus agendamentos.`);
                     navigate('/history');
                 }
             } else {
                 // Cash payment - just redirect to history
-                alert('Appointment booked successfully!');
+                alert('Agendamento realizado com sucesso!');
                 navigate('/history');
             }
         } catch (error: any) {
@@ -161,11 +161,11 @@ const BookingPage: React.FC = () => {
         }
     };
 
-    if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    if (loading) return <div className="flex justify-center items-center h-screen">Carregando...</div>;
 
     return (
         <PageLayout
-            title={`Book at ${shop?.name}`}
+            title={`Agendar em ${shop?.name}`}
             showBack
             className="p-4 md:p-6 max-w-2xl mx-auto pb-24"
         >
@@ -179,7 +179,7 @@ const BookingPage: React.FC = () => {
                 <form onSubmit={onFinish} className="space-y-8">
                     {/* Service Selection */}
                     <div>
-                        <label className={DESIGN.text.label}>Service</label>
+                        <label className={DESIGN.text.label}>Serviço</label>
                         <div
                             onClick={() => setIsServiceModalOpen(true)}
                             className={`${DESIGN.input.base} cursor-pointer flex justify-between items-center`}
@@ -187,7 +187,7 @@ const BookingPage: React.FC = () => {
                             {selectedService ? (
                                 <span className="text-white">{selectedService.name} - ${selectedService.price}</span>
                             ) : (
-                                <span className="text-text-muted">Select a service</span>
+                                <span className="text-text-muted">Selecione um serviço</span>
                             )}
                             <i className="ri-arrow-down-s-line text-text-muted"></i>
                         </div>
@@ -195,7 +195,7 @@ const BookingPage: React.FC = () => {
 
                     {/* Barber Selection */}
                     <div>
-                        <label className={DESIGN.text.label}>Barber</label>
+                        <label className={DESIGN.text.label}>Barbeiro</label>
                         <div
                             onClick={() => setIsBarberModalOpen(true)}
                             className={`${DESIGN.input.base} cursor-pointer flex justify-between items-center`}
@@ -203,7 +203,7 @@ const BookingPage: React.FC = () => {
                             {selectedBarber ? (
                                 <span className="text-white">{selectedBarber.user.name}</span>
                             ) : (
-                                <span className="text-text-muted">Select a barber</span>
+                                <span className="text-text-muted">Selecione um barbeiro</span>
                             )}
                             <i className="ri-arrow-down-s-line text-text-muted"></i>
                         </div>
@@ -211,7 +211,7 @@ const BookingPage: React.FC = () => {
 
                     {/* Date Selection */}
                     <div>
-                        <label className={DESIGN.text.label}>Date</label>
+                        <label className={DESIGN.text.label}>Data</label>
                         <div
                             onClick={() => setIsDateModalOpen(true)}
                             className={`${DESIGN.input.base} cursor-pointer flex justify-between items-center`}
@@ -219,7 +219,7 @@ const BookingPage: React.FC = () => {
                             {selectedDate ? (
                                 <span className="text-white">{dayjs(selectedDate).format('DD/MM/YYYY')}</span>
                             ) : (
-                                <span className="text-text-muted">Select a date</span>
+                                <span className="text-text-muted">Selecione uma data</span>
                             )}
                             <i className="ri-calendar-line text-text-muted"></i>
                         </div>
@@ -227,13 +227,13 @@ const BookingPage: React.FC = () => {
 
                     {/* Time Selection */}
                     <div>
-                        <label className={DESIGN.text.label}>Time</label>
+                        <label className={DESIGN.text.label}>Horário</label>
                         <div
                             onClick={() => {
                                 if (selectedService && selectedBarber && selectedDate) {
                                     setIsTimeModalOpen(true);
                                 } else {
-                                    setError('Please select Service, Barber, and Date first.');
+                                    setError('Por favor, selecione Serviço, Barbeiro e Data primeiro.');
                                 }
                             }}
                             className={`${DESIGN.input.base} cursor-pointer flex justify-between items-center ${(!selectedService || !selectedBarber || !selectedDate) ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -241,7 +241,7 @@ const BookingPage: React.FC = () => {
                             {selectedSlot ? (
                                 <span className="text-white">{formatTime(selectedSlot)}</span>
                             ) : (
-                                <span className="text-text-muted">Select a time</span>
+                                <span className="text-text-muted">Selecione um horário</span>
                             )}
                             <i className="ri-time-line text-text-muted"></i>
                         </div>
@@ -249,13 +249,13 @@ const BookingPage: React.FC = () => {
 
                     {/* Payment Method */}
                     <div>
-                        <label className={DESIGN.text.label}>Payment Method</label>
+                        <label className={DESIGN.text.label}>Forma de Pagamento</label>
                         {coveredByPlan ? (
                             <div className={`${DESIGN.card.base} bg-primary/10 border-primary border p-4 flex items-center`}>
                                 <i className="ri-vip-crown-fill text-2xl text-primary mr-4"></i>
                                 <div>
-                                    <h4 className="font-bold text-white">Covered by Membership</h4>
-                                    <p className="text-sm text-gray-400">1 credit will be deducted from your balance.</p>
+                                    <h4 className="font-bold text-white">Coberto pela Assinatura</h4>
+                                    <p className="text-sm text-gray-400">1 crédito será descontado do seu saldo.</p>
                                 </div>
                             </div>
                         ) : (
@@ -264,15 +264,15 @@ const BookingPage: React.FC = () => {
                                     onClick={() => setPaymentMethod('STRIPE')}
                                     className={`${DESIGN.selectionCard.base} flex-col text-center justify-center ${paymentMethod === 'STRIPE' ? DESIGN.selectionCard.selected : DESIGN.selectionCard.unselected}`}
                                 >
-                                    <span className="font-bold block text-white">Pay Online</span>
-                                    <span className={`text-xs ${DESIGN.text.muted}`}>Credit/Debit Card</span>
+                                    <span className="font-bold block text-white">Pagar Online</span>
+                                    <span className={`text-xs ${DESIGN.text.muted}`}>Cartão de Crédito/Débito</span>
                                 </div>
                                 <div
                                     onClick={() => setPaymentMethod('CASH')}
                                     className={`${DESIGN.selectionCard.base} flex-col text-center justify-center ${paymentMethod === 'CASH' ? DESIGN.selectionCard.selected : DESIGN.selectionCard.unselected}`}
                                 >
-                                    <span className="font-bold block text-white">Pay in Cash</span>
-                                    <span className={`text-xs ${DESIGN.text.muted}`}>Pay at the shop</span>
+                                    <span className="font-bold block text-white">Pagar no Local</span>
+                                    <span className={`text-xs ${DESIGN.text.muted}`}>Pague na barbearia</span>
                                 </div>
                             </div>
                         )}
@@ -280,7 +280,7 @@ const BookingPage: React.FC = () => {
 
                     {!selectedSlot && (
                         <p className="text-center text-sm text-text-secondary mb-2">
-                            Please select a time slot to continue
+                            Por favor, selecione um horário para continuar
                         </p>
                     )}
                     <button
@@ -288,7 +288,7 @@ const BookingPage: React.FC = () => {
                         disabled={submitting || !selectedSlot}
                         className={`w-full ${DESIGN.button.primary} text-lg mt-8`}
                     >
-                        {submitting ? 'Booking...' : (coveredByPlan ? 'Book with Membership' : (paymentMethod === 'STRIPE' ? 'Proceed to Payment' : 'Confirm Booking'))}
+                        {submitting ? 'Agendando...' : (coveredByPlan ? 'Agendar com Assinatura' : (paymentMethod === 'STRIPE' ? 'Ir para Pagamento' : 'Confirmar Agendamento'))}
                     </button>
                 </form>
             </div>
@@ -297,7 +297,7 @@ const BookingPage: React.FC = () => {
             <SelectionModal
                 isOpen={isServiceModalOpen}
                 onClose={() => setIsServiceModalOpen(false)}
-                title="Select Service"
+                title="Selecione o Serviço"
                 items={shop?.services || []}
                 keyExtractor={(item: any) => item.id}
                 onSelect={(item) => setSelectedService(item)}
@@ -319,7 +319,7 @@ const BookingPage: React.FC = () => {
                                     <div className="text-right">
                                         {isCovered ? (
                                             <div>
-                                                <span className="block text-primary font-bold text-sm">Free</span>
+                                                <span className="block text-primary font-bold text-sm">Grátis</span>
                                                 <span className="text-xs text-text-muted line-through">${s.price}</span>
                                             </div>
                                         ) : (
@@ -338,7 +338,7 @@ const BookingPage: React.FC = () => {
             <SelectionModal
                 isOpen={isBarberModalOpen}
                 onClose={() => setIsBarberModalOpen(false)}
-                title="Select Barber"
+                title="Selecione o Barbeiro"
                 items={shop?.staff || []}
                 keyExtractor={(item: any) => item.id}
                 onSelect={(item) => setSelectedBarber(item)}

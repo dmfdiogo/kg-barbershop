@@ -15,13 +15,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     const getNavItems = () => {
         const items = [
-            { path: '/', label: 'Home', icon: 'ri-home-4-line' },
+            { path: '/', label: 'Início', icon: 'ri-home-4-line' },
         ];
 
         if (user?.role === 'CUSTOMER') {
             items.push(
-                { path: '/history', label: 'Appointments', icon: 'ri-calendar-event-line' },
-                { path: '/plans', label: 'Membership', icon: 'ri-vip-crown-line' }
+                { path: '/history', label: 'Agendamentos', icon: 'ri-calendar-event-line' },
+                { path: '/plans', label: 'Assinatura', icon: 'ri-vip-crown-line' }
             );
         }
 
@@ -38,7 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <header className="hidden md:flex items-center justify-between px-6 py-4 bg-transparent border-b border-amber-400/10 flex-none z-50">
                 <div className="flex items-center gap-8">
                     <h1 className="text-xl font-bold text-primary flex items-center gap-2">
-                        <i className="ri-scissors-cut-fill"></i> Barber Shop
+                        <i className="ri-scissors-cut-fill"></i> Barbearia
                     </h1>
                     <nav className="flex gap-6">
                         {navItems.map(item => (
@@ -54,12 +54,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </nav>
                 </div>
                 <div className="flex items-center gap-4">
-                    <span className={`text-sm ${DESIGN.text.muted}`}>Welcome, {user.name}</span>
+                    <span className={`text-sm ${DESIGN.text.muted}`}>Bem-vindo, {user.name}</span>
                     <button
                         onClick={logout}
                         className="text-sm text-text-secondary hover:text-red-500 transition-colors flex items-center gap-1"
                     >
-                        <i className="ri-logout-box-r-line"></i> Logout
+                        <i className="ri-logout-box-r-line"></i> Sair
                     </button>
                 </div>
             </header>
@@ -89,7 +89,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         className="flex flex-col items-center gap-1 text-text-secondary"
                     >
                         <i className="ri-logout-box-r-line text-xl"></i>
-                        <span className="text-[10px] font-medium">Logout</span>
+                        <span className="text-[10px] font-medium">Sair</span>
                     </button>
                 </nav>
             )}

@@ -18,14 +18,14 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, showBack = false, rightA
                     <button
                         onClick={() => navigate(-1)}
                         className={DESIGN.button.icon}
-                        aria-label="Go back"
+                        aria-label="Voltar"
                     >
                         <i className="ri-arrow-left-line text-xl"></i>
                     </button>
                 )}
             </div>
 
-            <h1 className={`text-xl font-bold text-primary absolute left-1/2 -translate-x-1/2`}>{title}</h1>
+            <h1 className={`text-xl font-bold text-primary absolute left-1/3 -translate-x-1/3`}>{title}</h1>
 
             <div className="flex items-center justify-end w-12 h-9">
                 {rightAction}

@@ -21,10 +21,10 @@ const CustomerDashboard: React.FC = () => {
     }, []);
 
     return (
-        <PageLayout title="Find a Barber Shop" className="p-4 md:p-6 pb-24">
+        <PageLayout title="Encontre uma Barbearia" className="p-4 md:p-6 pb-24">
 
             <div className="px-4 md:px-0">
-                <p className={`mb-6 ${DESIGN.text.body}`}>Book your next haircut with top-rated barbers.</p>
+                <p className={`mb-6 ${DESIGN.text.body}`}>Agende seu próximo corte com os melhores barbeiros.</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {shops.map(shop => (
@@ -33,19 +33,19 @@ const CustomerDashboard: React.FC = () => {
                                 <h3 className={`${DESIGN.text.subHeader} mb-2`}>{shop.name}</h3>
                                 <div className="space-y-2 mb-6">
                                     <p className={`flex items-center text-sm ${DESIGN.text.body}`}>
-                                        <span className={`${DESIGN.text.muted} w-20`}>Owner:</span>
+                                        <span className={`${DESIGN.text.muted} w-20`}>Dono:</span>
                                         {shop.owner?.name}
                                     </p>
                                     <p className={`flex items-center text-sm ${DESIGN.text.body}`}>
-                                        <span className={`${DESIGN.text.muted} w-20`}>Services:</span>
-                                        {shop._count?.services || 0} available
+                                        <span className={`${DESIGN.text.muted} w-20`}>Serviços:</span>
+                                        {shop._count?.services || 0} disponíveis
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => navigate(`/book/${shop.slug}`)}
                                     className={`w-full ${DESIGN.button.primary}`}
                                 >
-                                    Book Now
+                                    Agendar Agora
                                 </button>
                             </div>
                         </div>

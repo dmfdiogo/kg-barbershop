@@ -27,20 +27,20 @@ const PaymentCancel: React.FC = () => {
                 <div className="text-yellow-500 text-5xl mb-4">
                     <i className="ri-error-warning-fill"></i>
                 </div>
-                <h2 className="text-2xl font-bold mb-2 text-white">Payment Cancelled</h2>
-                <p className="text-text-secondary mb-8">You cancelled the payment process. The appointment booking has been cancelled.</p>
+                <h2 className="text-2xl font-bold mb-2 text-white">Pagamento Cancelado</h2>
+                <p className="text-text-secondary mb-8">Você cancelou o processo de pagamento. O agendamento foi cancelado.</p>
                 <div className="space-y-4">
                     <button
                         onClick={() => navigate('/history')}
                         className="block w-full bg-primary text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-400 transition-colors shadow-lg shadow-primary/20"
                     >
-                        View My Appointments
+                        Ver Meus Agendamentos
                     </button>
                     <button
                         onClick={() => navigate(-1)}
                         className="block w-full border border-amber-500 text-text-secondary px-6 py-3 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
                     >
-                        Try Again
+                        Tentar Novamente
                     </button>
                 </div>
             </div>
