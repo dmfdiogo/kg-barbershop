@@ -107,6 +107,51 @@ export const getPeakHours = async (req: AuthRequest, res: Response) => {
     }
 };
 
+export const getPeakDays = async (req: AuthRequest, res: Response) => {
+    try {
+        const { shopId } = req.query;
+        const userId = req.user?.userId;
+
+        let whereClause: any = {};
+        if (shopId) {
+            const shop = await prisma.shop.findUnique({ where: { id: Number(shopId) } });
+            if (!shop || shop.ownerId !== userId) {
+                return res.status(403).json({ error: 'Unauthorized' });
+            }
+            whereClause = { shopId: Number(shopId) };
+        } else {
+            const shops = await prisma.shop.findMany({ where: { ownerId: userId } });
+            const shopIds = shops.map(s => s.id);
+            whereClause = { shopId: { in: shopIds } };
+        }
+
+        const appointments = await prisma.appointment.findMany({
+            where: {
+                ...whereClause,
+                status: { not: 'CANCELLED' }
+            },
+            select: { startTime: true }
+        });
+
+        const daysMap = new Array(7).fill(0);
+        appointments.forEach(appt => {
+            const day = new Date(appt.startTime).getDay();
+            daysMap[day]++;
+        });
+
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const data = daysMap.map((count, index) => ({
+            day: days[index],
+            count
+        }));
+
+        res.json(data);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 export const getRevenueAnalytics = async (req: AuthRequest, res: Response) => {
     try {
         const { shopId, period = 'daily' } = req.query; // period: 'daily' | 'monthly'

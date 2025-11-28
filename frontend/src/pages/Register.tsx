@@ -29,7 +29,7 @@ const Register: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-dark-bg">
-            <div className="w-full max-w-md bg-dark-card p-8 shadow-none sm:shadow-xl rounded-none sm:rounded-xl border-0 sm:border border-gray-800 min-h-screen sm:min-h-0 flex flex-col justify-center">
+            <div className="w-full max-w-md bg-dark-card p-8 shadow-none sm:shadow-xl rounded-none sm:rounded-xl border-0 sm:border border-amber-400/10 min-h-screen sm:min-h-0 flex flex-col justify-center">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-primary">Barber Shop</h2>
                     <p className="text-text-secondary mt-2">Create a new account</p>
@@ -47,7 +47,7 @@ const Register: React.FC = () => {
                         <input
                             name="name"
                             required
-                            className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
+                            className="w-full px-4 py-3 border border-amber-500 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
                         />
                     </div>
 
@@ -57,7 +57,7 @@ const Register: React.FC = () => {
                             name="email"
                             type="email"
                             required
-                            className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
+                            className="w-full px-4 py-3 border border-amber-500 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
                         />
                     </div>
 
@@ -67,7 +67,7 @@ const Register: React.FC = () => {
                             name="password"
                             type="password"
                             required
-                            className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
+                            className="w-full px-4 py-3 border border-amber-500 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
                         />
                     </div>
 
@@ -76,7 +76,7 @@ const Register: React.FC = () => {
                         <select
                             name="role"
                             defaultValue="CUSTOMER"
-                            className="w-full px-4 py-3 border border-gray-700 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
+                            className="w-full px-4 py-3 border border-amber-500 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
                         >
                             <option value="CUSTOMER">Customer</option>
                             <option value="STAFF">Barber (Staff)</option>

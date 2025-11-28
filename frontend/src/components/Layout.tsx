@@ -33,9 +33,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (!user) return <>{children}</>;
 
     return (
-        <div className={DESIGN.layout.pageContainer}>
+        <div className={`${DESIGN.layout.pageContainer} flex flex-col`}>
             {/* Desktop Header */}
-            <header className="hidden md:flex items-center justify-between px-6 py-4 bg-dark-card border-b border-gray-800 sticky top-0 z-50">
+            <header className="hidden md:flex items-center justify-between px-6 py-4 bg-transparent border-b border-amber-400/10 flex-none z-50">
                 <div className="flex items-center gap-8">
                     <h1 className="text-xl font-bold text-primary flex items-center gap-2">
                         <i className="ri-scissors-cut-fill"></i> Barber Shop
@@ -65,30 +65,34 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 pb-24 md:pb-8 max-w-7xl mx-auto w-full">
-                {children}
-            </main>
+            <div className="flex-1 overflow-hidden w-full relative">
+                <main className="h-full max-w-7xl mx-auto w-full">
+                    {children}
+                </main>
+            </div>
 
-            {/* Mobile Bottom Navigation - Always Visible */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-dark-card border-t border-gray-800 px-6 py-3 flex justify-between items-center z-50 safe-area-bottom shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-                {navItems.map(item => (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`flex flex-col items-center gap-1 ${isActive(item.path) ? 'text-primary' : 'text-text-secondary'}`}
+            {/* Mobile Bottom Navigation - Always Visible (except for Admin) */}
+            {user.role !== 'ADMIN' && (
+                <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-dark-card border-t border-amber-400/10 px-6 py-3 flex justify-between items-center z-50 safe-area-bottom shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
+                    {navItems.map(item => (
+                        <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex flex-col items-center gap-1 ${isActive(item.path) ? 'text-primary' : 'text-text-secondary'}`}
+                        >
+                            <i className={`${item.icon} text-xl`}></i>
+                            <span className="text-[10px] font-medium">{item.label}</span>
+                        </Link>
+                    ))}
+                    <button
+                        onClick={logout}
+                        className="flex flex-col items-center gap-1 text-text-secondary"
                     >
-                        <i className={`${item.icon} text-xl`}></i>
-                        <span className="text-[10px] font-medium">{item.label}</span>
-                    </Link>
-                ))}
-                <button
-                    onClick={logout}
-                    className="flex flex-col items-center gap-1 text-text-secondary"
-                >
-                    <i className="ri-logout-box-r-line text-xl"></i>
-                    <span className="text-[10px] font-medium">Logout</span>
-                </button>
-            </nav>
+                        <i className="ri-logout-box-r-line text-xl"></i>
+                        <span className="text-[10px] font-medium">Logout</span>
+                    </button>
+                </nav>
+            )}
         </div>
     );
 };

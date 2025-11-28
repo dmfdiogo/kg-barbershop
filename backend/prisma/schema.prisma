@@ -139,6 +139,7 @@ enum PaymentStatus {
 enum PaymentMethod {
   STRIPE
   CASH
+  SUBSCRIPTION
 }
 
 model Schedule {
