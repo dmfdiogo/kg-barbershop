@@ -72,6 +72,17 @@ export class SubscriptionService {
             data: { last_reset_date: new Date() }
         });
     }
+
+    /**
+     * Clears all credits for a subscription.
+     * Used when a subscription is canceled/deleted.
+     */
+    async clearCredits(subscriptionId: number, tx: Prisma.TransactionClient): Promise<void> {
+        await tx.subscriptionBenefit.updateMany({
+            where: { subscriptionId },
+            data: { remaining: 0 }
+        });
+    }
 }
 
 export const subscriptionService = new SubscriptionService();

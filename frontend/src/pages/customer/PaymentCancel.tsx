@@ -23,7 +23,7 @@ const PaymentCancel: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
-            <div className="bg-dark-card p-8 rounded-xl shadow-2xl max-w-md w-full text-center border border-gray-800">
+            <div className="bg-dark-card p-8 rounded-xl shadow-2xl max-w-md w-full text-center border border-amber-400/10">
                 <div className="text-yellow-500 text-5xl mb-4">
                     <i className="ri-error-warning-fill"></i>
                 </div>
@@ -38,7 +38,7 @@ const PaymentCancel: React.FC = () => {
                     </button>
                     <button
                         onClick={() => navigate(-1)}
-                        className="block w-full border border-gray-700 text-text-secondary px-6 py-3 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
+                        className="block w-full border border-amber-500 text-text-secondary px-6 py-3 rounded-lg hover:bg-gray-800 hover:text-white transition-colors"
                     >
                         Try Again
                     </button>

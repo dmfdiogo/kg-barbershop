@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { DESIGN } from '../../theme/design';
-import PageHeader from '../../components/PageHeader';
+import PageLayout from '../../components/PageLayout';
+import { useAuth } from '../../context/AuthContext';
+
+import AdminBottomNav from '../../components/AdminBottomNav';
 
 const ManageShop: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
+    const navigate = useNavigate();
+    const { logout } = useAuth();
     const [shop, setShop] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('services');
     const [isServiceModalVisible, setIsServiceModalVisible] = useState(false);
@@ -103,116 +108,119 @@ const ManageShop: React.FC = () => {
         setIsServiceModalVisible(true);
     };
 
+    const handleNavChange = (view: string) => {
+        if (view === 'shops' || view === 'analytics') {
+            navigate('/admin', { state: { view } });
+        } else if (view === 'profile') {
+            logout();
+        } else {
+            setActiveTab(view);
+        }
+    };
+
     return (
-        <div className={DESIGN.layout.pageContainer}>
-            <PageHeader title={`Manage ${shop?.name}`} showBack />
-
-            <main className="p-4 md:p-6">
-                <div className={`${DESIGN.card.base} overflow-hidden`}>
-                    {/* Tabs */}
-                    <div className="flex border-b border-gray-800">
+        <PageLayout
+            title={`Manage ${shop?.name}`}
+            showBack
+            className="p-4 md:p-6 pb-24"
+        >
+            <div className="space-y-6">
+                {activeTab === 'services' && (
+                    <div>
                         <button
-                            className={`px-6 py-4 font-bold transition-colors ${activeTab === 'services' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary hover:text-white hover:bg-gray-800'}`}
-                            onClick={() => setActiveTab('services')}
+                            onClick={openCreateServiceModal}
+                            className={`mb-6 ${DESIGN.button.primary} w-full md:w-auto flex items-center justify-center gap-2`}
                         >
-                            Services
+                            <i className="ri-add-line"></i>
+                            Add Service
                         </button>
-                        <button
-                            className={`px-6 py-4 font-bold transition-colors ${activeTab === 'staff' ? 'border-b-2 border-primary text-primary' : 'text-text-secondary hover:text-white hover:bg-gray-800'}`}
-                            onClick={() => setActiveTab('staff')}
-                        >
-                            Staff
-                        </button>
-                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {shop?.services?.map((service: any) => (
+                                <div key={service.id} className="bg-dark-input p-4 rounded-lg border border-amber-400/10 flex flex-col justify-between group hover:border-primary/50 transition-all">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h4 className="font-bold text-white text-lg">{service.name}</h4>
+                                            <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded uppercase tracking-wider">{service.type || 'OTHER'}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xl font-bold text-white">${service.price}</p>
+                                            <p className="text-xs text-text-muted">{service.duration} min</p>
+                                        </div>
+                                    </div>
 
-                    <div className="p-6">
-                        {activeTab === 'services' && (
-                            <div>
-                                <button
-                                    onClick={openCreateServiceModal}
-                                    className={`mb-6 ${DESIGN.button.primary}`}
-                                >
-                                    + Add Service
-                                </button>
-                                <div className="overflow-x-auto rounded-lg border border-gray-800">
-                                    <table className="min-w-full divide-y divide-gray-800">
-                                        <thead className="bg-gray-900">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Name</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Duration (min)</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Price ($)</th>
-                                                <th className="px-6 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-dark-card divide-y divide-gray-800">
-                                            {shop?.services?.map((service: any) => (
-                                                <tr key={service.id} className="hover:bg-gray-800/50 transition-colors">
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{service.name}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{service.duration}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{service.price}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                        <button
-                                                            onClick={() => openEditServiceModal(service)}
-                                                            className="text-primary hover:text-yellow-300 mr-4 transition-colors"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setDeleteServiceId(service.id)}
-                                                            className="text-red-500 hover:text-red-400 transition-colors"
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
+                                    {service.description && (
+                                        <p className="text-sm text-text-secondary mb-4 line-clamp-2">{service.description}</p>
+                                    )}
 
-                        {activeTab === 'staff' && (
-                            <div>
-                                <button
-                                    onClick={() => setIsStaffModalVisible(true)}
-                                    className={`mb-6 ${DESIGN.button.primary}`}
-                                >
-                                    + Add Staff
-                                </button>
-                                <div className="overflow-x-auto rounded-lg border border-gray-800">
-                                    <table className="min-w-full divide-y divide-gray-800">
-                                        <thead className="bg-gray-900">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Name</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Email</th>
-                                                <th className="px-6 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-dark-card divide-y divide-gray-800">
-                                            {shop?.staff?.map((staff: any) => (
-                                                <tr key={staff.id} className="hover:bg-gray-800/50 transition-colors">
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{staff.user.name}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{staff.user.email}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                        <button
-                                                            onClick={() => setRemoveStaffId(staff.id)}
-                                                            className="text-red-500 hover:text-red-400 transition-colors"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                    <div className="flex justify-end gap-2 mt-auto pt-4 border-t border-amber-400/10">
+                                        <button
+                                            onClick={() => openEditServiceModal(service)}
+                                            className="p-2 text-text-secondary hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                                            title="Edit"
+                                        >
+                                            <i className="ri-pencil-line text-lg"></i>
+                                        </button>
+                                        <button
+                                            onClick={() => setDeleteServiceId(service.id)}
+                                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
+                                            title="Delete"
+                                        >
+                                            <i className="ri-delete-bin-line text-lg"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                <p className={`mt-4 ${DESIGN.text.body} ${DESIGN.text.muted}`}>Note: User must already be registered as 'Staff' to be added.</p>
+                            ))}
+                        </div>
+                        {(!shop?.services || shop.services.length === 0) && (
+                            <div className="text-center py-12 text-text-muted">
+                                <i className="ri-scissors-cut-line text-4xl mb-2 block opacity-50"></i>
+                                <p>No services added yet.</p>
                             </div>
                         )}
                     </div>
-                </div>
-            </main>
+                )}
+
+                {activeTab === 'staff' && (
+                    <div>
+                        <button
+                            onClick={() => setIsStaffModalVisible(true)}
+                            className={`mb-6 ${DESIGN.button.primary} w-full md:w-auto flex items-center justify-center gap-2`}
+                        >
+                            <i className="ri-user-add-line"></i>
+                            Add Staff
+                        </button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {shop?.staff?.map((staff: any) => (
+                                <div key={staff.id} className="bg-dark-input p-4 rounded-lg border border-amber-400/10 flex items-center justify-between group hover:border-primary/50 transition-all">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold">
+                                            {staff.user.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-white">{staff.user.name}</h4>
+                                            <p className="text-xs text-text-muted">{staff.user.email}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setRemoveStaffId(staff.id)}
+                                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
+                                        title="Remove"
+                                    >
+                                        <i className="ri-user-unfollow-line text-lg"></i>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        {(!shop?.staff || shop.staff.length === 0) && (
+                            <div className="text-center py-12 text-text-muted">
+                                <i className="ri-team-line text-4xl mb-2 block opacity-50"></i>
+                                <p>No staff members added yet.</p>
+                            </div>
+                        )}
+                        <p className={`mt-6 text-center text-xs ${DESIGN.text.muted}`}>Note: User must already be registered as 'Staff' to be added.</p>
+                    </div>
+                )}
+            </div>
 
             {/* Service Modal */}
             {isServiceModalVisible && (
@@ -351,6 +359,8 @@ const ManageShop: React.FC = () => {
                 </div>
             )}
 
+            <AdminBottomNav activeView={activeTab} isShopContext={true} onViewChange={handleNavChange} />
+
             <ConfirmationModal
                 isOpen={!!deleteServiceId}
                 onClose={() => setDeleteServiceId(null)}
@@ -370,7 +380,7 @@ const ManageShop: React.FC = () => {
                 confirmText="Remove"
                 isDangerous={true}
             />
-        </div>
+        </PageLayout>
     );
 };
 

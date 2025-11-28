@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { DESIGN } from '../../theme/design';
-import PageHeader from '../../components/PageHeader';
+import PageLayout from '../../components/PageLayout';
 
 const CustomerDashboard: React.FC = () => {
     const [shops, setShops] = useState<any[]>([]);
@@ -21,8 +21,7 @@ const CustomerDashboard: React.FC = () => {
     }, []);
 
     return (
-        <div className="space-y-8">
-            <PageHeader title="Find a Barber Shop" />
+        <PageLayout title="Find a Barber Shop" className="p-4 md:p-6 pb-24">
 
             <div className="px-4 md:px-0">
                 <p className={`mb-6 ${DESIGN.text.body}`}>Book your next haircut with top-rated barbers.</p>
@@ -53,7 +52,7 @@ const CustomerDashboard: React.FC = () => {
                     ))}
                 </div>
             </div>
-        </div>
+        </PageLayout>
     );
 };
 

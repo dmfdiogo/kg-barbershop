@@ -12,8 +12,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, showBack = false, rightA
     const navigate = useNavigate();
 
     return (
-        <header className="bg-dark-card border-b border-gray-800 px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-md">
-            <div className="flex items-center gap-4">
+        <header className="px-6 py-4 flex items-center justify-between sticky top-0 z-40 bg-transparent">
+            <div className="flex items-center w-12 h-9">
                 {showBack && (
                     <button
                         onClick={() => navigate(-1)}
@@ -23,11 +23,13 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, showBack = false, rightA
                         <i className="ri-arrow-left-line text-xl"></i>
                     </button>
                 )}
-                <h1 className={DESIGN.text.subHeader}>{title}</h1>
             </div>
-            {rightAction && (
-                <div>{rightAction}</div>
-            )}
+
+            <h1 className={`text-xl font-bold text-primary absolute left-1/2 -translate-x-1/2`}>{title}</h1>
+
+            <div className="flex items-center justify-end w-12 h-9">
+                {rightAction}
+            </div>
         </header>
     );
 };

@@ -9,6 +9,8 @@ import Dashboard from './pages/Dashboard';
 import BookingPage from './pages/customer/BookingPage';
 import HistoryPage from './pages/customer/HistoryPage';
 import ManageShop from './pages/admin/ManageShop';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProfile from './pages/admin/AdminProfile';
 import PaymentSuccess from './pages/customer/PaymentSuccess';
 import PaymentCancel from './pages/customer/PaymentCancel';
 import PlansPage from './pages/customer/PlansPage';
@@ -46,6 +48,20 @@ const App: React.FC = () => {
             <RoleRoute allowedRoles={['ADMIN']}>
               <Layout>
                 <ManageShop />
+              </Layout>
+            </RoleRoute>
+          } />
+          <Route path="/admin" element={
+            <RoleRoute allowedRoles={['ADMIN']}>
+              <Layout>
+                <AdminDashboard />
+              </Layout>
+            </RoleRoute>
+          } />
+          <Route path="/admin/profile" element={
+            <RoleRoute allowedRoles={['ADMIN']}>
+              <Layout>
+                <AdminProfile />
               </Layout>
             </RoleRoute>
           } />

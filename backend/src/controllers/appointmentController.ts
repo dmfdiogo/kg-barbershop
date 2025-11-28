@@ -48,7 +48,7 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
                         // Note: In the original logic, it seemed to auto-apply if credits existed.
                         // We will keep that logic: if credits exist, use them.
                         if (hasCredit) {
-                            finalPaymentMethod = 'STRIPE'; // Or 'SUBSCRIPTION' - keeping 'STRIPE' for compatibility with frontend enum
+                            finalPaymentMethod = 'SUBSCRIPTION';
                             finalPaymentStatus = 'PAID';
 
                             // Deduct credit atomically using the SAME transaction

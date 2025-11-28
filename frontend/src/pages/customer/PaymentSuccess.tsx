@@ -74,7 +74,7 @@ const PaymentSuccess: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
-            <div className="bg-dark-card p-8 rounded-xl shadow-2xl max-w-md w-full text-center border border-gray-800">
+            <div className="bg-dark-card p-8 rounded-xl shadow-2xl max-w-md w-full text-center border border-amber-400/10">
                 {status === 'loading' && (
                     <div>
                         <h2 className="text-2xl font-bold mb-4 text-white">Verifying Payment...</h2>

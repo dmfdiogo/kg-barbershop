@@ -38,6 +38,10 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
             const session = event.data.object as Stripe.Checkout.Session;
             await handleCheckoutSessionCompleted(session);
             break;
+        case 'customer.subscription.deleted':
+            const subscription = event.data.object as Stripe.Subscription;
+            await handleSubscriptionDeleted(subscription);
+            break;
         default:
             console.log(`Unhandled event type ${event.type}`);
     }
@@ -174,7 +178,7 @@ const handlePaymentSucceeded = async (invoice: any) => {
                     }
                 });
             } else {
-                // Reset existing benefits
+                // Reset existing benefits (Flow 3: Renewal)
                 await subscriptionService.resetCredits(subscription.id, tx);
             }
 
@@ -203,12 +207,42 @@ const handlePaymentFailed = async (invoice: any) => {
         await prisma.subscription.update({
             where: { stripeSubscriptionId: subscriptionId },
             data: {
-                status: 'past_due',
-                // Optionally lock credits here if needed, but status check should suffice
+                status: 'suspended', // Flow 3: Failure -> Suspended
             },
         });
-        console.log(`Subscription ${subscriptionId} marked as past_due`);
+        console.log(`Subscription ${subscriptionId} marked as suspended`);
     } catch (error) {
         console.error('Error handling payment failure:', error);
+    }
+};
+
+const handleSubscriptionDeleted = async (subscription: any) => {
+    const subscriptionId = subscription.id;
+    console.log(`Processing subscription deletion: ${subscriptionId}`);
+
+    try {
+        await prisma.$transaction(async (tx) => {
+            const sub = await tx.subscription.findUnique({
+                where: { stripeSubscriptionId: subscriptionId }
+            });
+
+            if (!sub) {
+                console.error(`Subscription not found for ID: ${subscriptionId}`);
+                return;
+            }
+
+            // Update status to canceled
+            await tx.subscription.update({
+                where: { id: sub.id },
+                data: { status: 'canceled' }
+            });
+
+            // Clear credits (Flow 3: Deletion -> Entitlement 0)
+            await subscriptionService.clearCredits(sub.id, tx);
+        });
+
+        console.log(`Subscription ${subscriptionId} canceled and credits cleared`);
+    } catch (error) {
+        console.error('Error handling subscription deletion:', error);
     }
 };

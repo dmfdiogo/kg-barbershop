@@ -45,7 +45,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ appointments, onSelectEvent
     };
 
     return (
-        <div className="h-[600px] bg-dark-card p-4 rounded-xl shadow-lg border border-gray-800 text-gray-900">
+        <div className="h-[600px] bg-dark-card p-4 rounded-xl shadow-lg border border-amber-400/10 text-gray-900">
             <Calendar
                 localizer={localizer}
                 events={events}
