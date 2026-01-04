@@ -28,8 +28,8 @@ const Register: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-dark-bg">
-            <div className="w-full max-w-md bg-dark-card p-8 shadow-none sm:shadow-xl rounded-none sm:rounded-xl border-0 sm:border border-amber-400/10 min-h-screen sm:min-h-0 flex flex-col justify-center">
+        <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+            <div className="w-full max-w-md bg-pattern-2 p-8 shadow-none sm:shadow-xl rounded-none sm:rounded-xl border-0 sm:border border-amber-400/10 min-h-screen sm:min-h-0 flex flex-col justify-center relative z-10">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-primary">Barber Shop</h2>
                     <p className="text-text-secondary mt-2">Crie uma nova conta</p>
@@ -71,18 +71,7 @@ const Register: React.FC = () => {
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Eu sou um...</label>
-                        <select
-                            name="role"
-                            defaultValue="CUSTOMER"
-                            className="w-full px-4 py-3 border border-amber-500 rounded-lg focus:ring-primary focus:border-primary outline-none transition-colors bg-dark-input text-white"
-                        >
-                            <option value="CUSTOMER">Cliente</option>
-                            <option value="STAFF">Barbeiro (Funcionário)</option>
-                            <option value="ADMIN">Dono da Barbearia (Admin)</option>
-                        </select>
-                    </div>
+                    <input type="hidden" name="role" value="CUSTOMER" />
 
                     <button
                         type="submit"

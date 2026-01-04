@@ -18,13 +18,18 @@ const AdminBottomNav: React.FC<AdminBottomNavProps> = ({ activeView, isShopConte
             return;
         }
 
-        if (view === 'shops' || view === 'analytics') {
-            navigate('/admin', { state: { view } });
+        // If in shop context, services and staff are local tabs
+        if (isShopContext && (view === 'services' || view === 'staff')) {
+            if (onViewChange) onViewChange(view);
             return;
         }
 
-        if (onViewChange) {
+        // If we have an onViewChange handler and we are NOT in shop context (e.g. AdminDashboard), use it
+        if (onViewChange && !isShopContext) {
             onViewChange(view);
+        } else {
+            // Otherwise navigate to Admin Dashboard with the view (e.g. from Profile or from Shop for global items)
+            navigate('/admin', { state: { view } });
         }
     };
 
@@ -32,8 +37,8 @@ const AdminBottomNav: React.FC<AdminBottomNavProps> = ({ activeView, isShopConte
         { id: 'shops', icon: 'ri-store-2-line', label: 'Barbearias', enabled: true },
         { id: 'analytics', icon: 'ri-bar-chart-box-line', label: 'Análises', enabled: true },
         { id: 'profile', icon: 'ri-user-settings-line', label: 'Perfil', enabled: true },
-        { id: 'services', icon: 'ri-scissors-line', label: 'Serviços', enabled: isShopContext },
-        { id: 'staff', icon: 'ri-group-line', label: 'Equipe', enabled: isShopContext },
+        { id: 'services', icon: 'ri-scissors-line', label: 'Serviços', enabled: true },
+        { id: 'staff', icon: 'ri-group-line', label: 'Equipe', enabled: true },
     ];
 
     return (

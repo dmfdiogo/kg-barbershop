@@ -7,6 +7,9 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 import { DESIGN } from '../../theme/design';
 import AdminBottomNav from '../../components/AdminBottomNav';
 
+import AdminStaffView from './AdminStaffView';
+import AdminServicesView from './AdminServicesView';
+
 const AdminDashboard: React.FC = () => {
     const { user, logout } = useAuth();
     const location = useLocation();
@@ -15,7 +18,7 @@ const AdminDashboard: React.FC = () => {
     const [loading, setLoading] = useState(false);
 
     // Initialize view from state if available (e.g. navigated from ManageShop)
-    const [activeView, setActiveView] = useState<'shops' | 'analytics'>(
+    const [activeView, setActiveView] = useState<'shops' | 'analytics' | 'staff' | 'services'>(
         (location.state as any)?.view || 'shops'
     );
 
@@ -50,6 +53,12 @@ const AdminDashboard: React.FC = () => {
             console.error('Failed to fetch analytics');
         }
     };
+
+    useEffect(() => {
+        if (location.state && (location.state as any).view) {
+            setActiveView((location.state as any).view);
+        }
+    }, [location]);
 
     useEffect(() => {
         fetchShops();
@@ -124,6 +133,18 @@ const AdminDashboard: React.FC = () => {
                         className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-colors ${activeView === 'analytics' ? 'bg-gray-800 text-primary' : 'text-text-secondary hover:bg-gray-800 hover:text-white'}`}
                     >
                         <i className="ri-bar-chart-box-line mr-3 text-lg"></i> Análises
+                    </button>
+                    <button
+                        onClick={() => setActiveView('services')}
+                        className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-colors ${activeView === 'services' ? 'bg-gray-800 text-primary' : 'text-text-secondary hover:bg-gray-800 hover:text-white'}`}
+                    >
+                        <i className="ri-scissors-line mr-3 text-lg"></i> Serviços Globais
+                    </button>
+                    <button
+                        onClick={() => setActiveView('staff')}
+                        className={`w-full flex items-center px-4 py-3 rounded-lg text-left transition-colors ${activeView === 'staff' ? 'bg-gray-800 text-primary' : 'text-text-secondary hover:bg-gray-800 hover:text-white'}`}
+                    >
+                        <i className="ri-group-line mr-3 text-lg"></i> Equipe Global
                     </button>
                 </nav>
                 <div className="p-4 border-t border-amber-400/10">
@@ -214,6 +235,10 @@ const AdminDashboard: React.FC = () => {
                                 </button>
                             </div>
                         </>
+                    ) : activeView === 'services' ? (
+                        <AdminServicesView />
+                    ) : activeView === 'staff' ? (
+                        <AdminStaffView />
                     ) : (
                         <div className="space-y-8">
                             <h3 className={`${DESIGN.text.subHeader} text-lg mb-4`}>Painel de Análises</h3>
@@ -337,7 +362,7 @@ const AdminDashboard: React.FC = () => {
             <AdminBottomNav
                 activeView={activeView}
                 onViewChange={(view) => {
-                    if (view === 'shops' || view === 'analytics') {
+                    if (view === 'shops' || view === 'analytics' || view === 'staff' || view === 'services') {
                         setActiveView(view);
                     }
                 }}

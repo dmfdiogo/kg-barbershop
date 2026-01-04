@@ -16,6 +16,7 @@ const ManageShop: React.FC = () => {
     const [activeTab, setActiveTab] = useState('services');
     const [isServiceModalVisible, setIsServiceModalVisible] = useState(false);
     const [isStaffModalVisible, setIsStaffModalVisible] = useState(false);
+    const [isCreatingNewStaff, setIsCreatingNewStaff] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const [editingService, setEditingService] = useState<any>(null);
@@ -81,6 +82,26 @@ const ManageShop: React.FC = () => {
             fetchShop();
         } catch (error) {
             console.error('Failed to add staff');
+            alert('Falha ao adicionar equipe. Verifique se o email está correto e se o usuário é um barbeiro.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCreateStaff = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setLoading(true);
+        const formData = new FormData(e.currentTarget);
+        const values = Object.fromEntries(formData.entries());
+
+        try {
+            await api.post('/shops/staff/create', { ...values, shopId: shop.id });
+            setIsStaffModalVisible(false);
+            setIsCreatingNewStaff(false);
+            fetchShop();
+        } catch (error: any) {
+            console.error('Failed to create staff');
+            alert(error.response?.data?.error || 'Falha ao criar usuário da equipe.');
         } finally {
             setLoading(false);
         }
@@ -326,35 +347,112 @@ const ManageShop: React.FC = () => {
             {isStaffModalVisible && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
                     <div className={`${DESIGN.card.base} p-6 w-full max-w-md shadow-2xl`}>
-                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>Adicionar Equipe</h3>
-                        <form onSubmit={handleAddStaff} className="space-y-4">
-                            <div>
-                                <label className={DESIGN.text.label}>Email do Membro da Equipe</label>
-                                <input
-                                    name="email"
-                                    type="email"
-                                    required
-                                    placeholder="Digite o email do membro da equipe registrado"
-                                    className={DESIGN.input.base}
-                                />
-                            </div>
-                            <div className="flex justify-end space-x-3 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsStaffModalVisible(false)}
-                                    className={DESIGN.button.secondary}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className={DESIGN.button.primary}
-                                >
-                                    {loading ? 'Adicionando...' : 'Adicionar'}
-                                </button>
-                            </div>
-                        </form>
+                        <h3 className={`${DESIGN.text.subHeader} mb-4`}>Gerenciar Equipe</h3>
+
+                        <div className="flex gap-4 mb-6 border-b border-gray-700">
+                            <button
+                                onClick={() => setIsCreatingNewStaff(false)}
+                                className={`pb-2 px-2 transition-colors ${!isCreatingNewStaff ? 'text-primary border-b-2 border-primary font-bold' : 'text-text-secondary hover:text-white'}`}
+                            >
+                                Adicionar Existente
+                            </button>
+                            <button
+                                onClick={() => setIsCreatingNewStaff(true)}
+                                className={`pb-2 px-2 transition-colors ${isCreatingNewStaff ? 'text-primary border-b-2 border-primary font-bold' : 'text-text-secondary hover:text-white'}`}
+                            >
+                                Criar Novo
+                            </button>
+                        </div>
+
+                        {isCreatingNewStaff ? (
+                            <form onSubmit={handleCreateStaff} className="space-y-4">
+                                <div>
+                                    <label className={DESIGN.text.label}>Nome</label>
+                                    <input
+                                        name="name"
+                                        required
+                                        className={DESIGN.input.base}
+                                        placeholder="Nome do barbeiro"
+                                    />
+                                </div>
+                                <div>
+                                    <label className={DESIGN.text.label}>Email</label>
+                                    <input
+                                        name="email"
+                                        type="email"
+                                        required
+                                        className={DESIGN.input.base}
+                                        placeholder="email@exemplo.com"
+                                    />
+                                </div>
+                                <div>
+                                    <label className={DESIGN.text.label}>Senha</label>
+                                    <input
+                                        name="password"
+                                        type="password"
+                                        required
+                                        className={DESIGN.input.base}
+                                        placeholder="Senha para acesso"
+                                    />
+                                </div>
+                                <div>
+                                    <label className={DESIGN.text.label}>Função</label>
+                                    <select
+                                        name="role"
+                                        defaultValue="STAFF"
+                                        className={DESIGN.input.select}
+                                    >
+                                        <option value="STAFF">Barbeiro (Funcionário)</option>
+                                        <option value="ADMIN">Admin (Gerente)</option>
+                                    </select>
+                                </div>
+                                <div className="flex justify-end space-x-3 mt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsStaffModalVisible(false)}
+                                        className={DESIGN.button.secondary}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className={DESIGN.button.primary}
+                                    >
+                                        {loading ? 'Criando...' : 'Criar e Adicionar'}
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleAddStaff} className="space-y-4">
+                                <div>
+                                    <label className={DESIGN.text.label}>Email do Membro da Equipe</label>
+                                    <input
+                                        name="email"
+                                        type="email"
+                                        required
+                                        placeholder="Digite o email do membro da equipe registrado"
+                                        className={DESIGN.input.base}
+                                    />
+                                </div>
+                                <div className="flex justify-end space-x-3 mt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsStaffModalVisible(false)}
+                                        className={DESIGN.button.secondary}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className={DESIGN.button.primary}
+                                    >
+                                        {loading ? 'Adicionando...' : 'Adicionar'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 </div>
             )}

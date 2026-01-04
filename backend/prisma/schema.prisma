@@ -33,7 +33,7 @@ model User {
   // Relations
   ownedShops    Shop[]        @relation("ShopOwner")
   appointments  Appointment[] // As customer
-  staffProfile  StaffProfile?
+  staffProfiles StaffProfile[]
   subscription  Subscription?
 }
 
@@ -79,7 +79,7 @@ model Shop {
 
 model StaffProfile {
   id          Int      @id @default(autoincrement())
-  userId      Int      @unique
+  userId      Int
   user        User     @relation(fields: [userId], references: [id])
   shopId      Int
   shop        Shop     @relation(fields: [shopId], references: [id])
@@ -96,10 +96,26 @@ enum ServiceType {
   OTHER
 }
 
+model GlobalService {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  imageUrl    String?
+  type        ServiceType @default(OTHER)
+  defaultDuration Int      // in minutes
+  defaultPrice    Decimal
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services    Service[]
+}
+
 model Service {
   id          Int      @id @default(autoincrement())
   shopId      Int
   shop        Shop     @relation(fields: [shopId], references: [id])
+  globalServiceId Int?
+  globalService GlobalService? @relation(fields: [globalServiceId], references: [id])
   name        String
   description String?
   imageUrl    String?

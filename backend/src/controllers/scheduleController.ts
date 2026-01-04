@@ -8,10 +8,16 @@ const prisma = new PrismaClient();
 // Expects body: { schedules: [{ dayOfWeek: 0, startTime: '09:00', endTime: '17:00', isAvailable: true }, ...] }
 export const createSchedule = async (req: AuthRequest, res: Response) => {
     try {
-        const { schedules } = req.body;
+        const { schedules, shopId } = req.body; // Modified to include shopId
         const userId = req.user?.userId;
 
-        const staffProfile = await prisma.staffProfile.findUnique({ where: { userId } });
+        let staffProfile;
+        if (shopId) {
+            staffProfile = await prisma.staffProfile.findFirst({ where: { userId, shopId } });
+        } else {
+            staffProfile = await prisma.staffProfile.findFirst({ where: { userId } });
+        }
+
         if (!staffProfile) {
             return res.status(404).json({ error: 'Staff profile not found' });
         }
@@ -79,7 +85,14 @@ export const createSchedule = async (req: AuthRequest, res: Response) => {
 export const getSchedule = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?.userId;
-        const staffProfile = await prisma.staffProfile.findUnique({ where: { userId } });
+        const shopId = req.query.shopId ? parseInt(req.query.shopId as string) : undefined;
+
+        let staffProfile;
+        if (shopId) {
+            staffProfile = await prisma.staffProfile.findFirst({ where: { userId, shopId } });
+        } else {
+            staffProfile = await prisma.staffProfile.findFirst({ where: { userId } });
+        }
 
         if (!staffProfile) {
             return res.status(404).json({ error: 'Staff profile not found' });
