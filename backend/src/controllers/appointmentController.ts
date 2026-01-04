@@ -92,9 +92,9 @@ export const getAppointments = async (req: AuthRequest, res: Response) => {
             whereClause = { customerId: userId };
         } else if (role === 'STAFF') {
             // Find staff profile to get ID
-            const staffProfile = await prisma.staffProfile.findUnique({ where: { userId } });
-            if (staffProfile) {
-                whereClause = { barberId: staffProfile.id };
+            const staffProfiles = await prisma.staffProfile.findMany({ where: { userId } });
+            if (staffProfiles.length > 0) {
+                whereClause = { barberId: { in: staffProfiles.map(p => p.id) } };
             }
         } else if (role === 'ADMIN') {
             // Admin sees all appointments for their shops
@@ -284,8 +284,15 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response) =
         } else if (role === 'STAFF') {
             // Staff can update appointments for their shop (or just their own? Let's say shop)
             // Ideally check if staff belongs to the shop of the appointment
-            const staffProfile = await prisma.staffProfile.findUnique({ where: { userId } });
-            if (!staffProfile || staffProfile.shopId !== appointment.shopId) {
+            // Find staff profile for this shop
+            const staffProfile = await prisma.staffProfile.findFirst({
+                where: {
+                    userId,
+                    shopId: appointment.shopId
+                }
+            });
+
+            if (!staffProfile) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
         } else if (role === 'ADMIN') {
@@ -344,8 +351,15 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response) => 
             }
         } else if (role === 'STAFF') {
             // Check if appointment belongs to this barber
-            const staffProfile = await prisma.staffProfile.findUnique({ where: { userId } });
-            if (!staffProfile || appointment.barberId !== staffProfile.id) {
+            // Verify the user is the barber assigned to this appointment
+            const staffProfile = await prisma.staffProfile.findFirst({
+                where: {
+                    userId,
+                    id: appointment.barberId
+                }
+            });
+
+            if (!staffProfile) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
         }
@@ -362,7 +376,7 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response) => 
         }
 
         // Check against schedule
-        const dayOfWeek = newStart.getDay();
+        const dayOfWeek = newStart.getUTCDay();
         const schedules = await prisma.schedule.findMany({
             where: {
                 barberId: appointment.barberId,
@@ -381,10 +395,10 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response) => 
             const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
 
             const workStart = new Date(newStart);
-            workStart.setHours(startHour, startMinute, 0, 0);
+            workStart.setUTCHours(startHour, startMinute, 0, 0);
 
             const workEnd = new Date(newStart);
-            workEnd.setHours(endHour, endMinute, 0, 0);
+            workEnd.setUTCHours(endHour, endMinute, 0, 0);
 
             return newStart >= workStart && newEnd <= workEnd;
         });

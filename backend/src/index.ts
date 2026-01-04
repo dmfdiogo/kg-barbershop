@@ -21,12 +21,16 @@ import serviceRoutes from './routes/serviceRoutes';
 import appointmentRoutes from './routes/appointmentRoutes';
 import scheduleRoutes from './routes/scheduleRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import staffRoutes from './routes/staffRoutes';
+import globalServiceRoutes from './routes/globalServiceRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 
 app.use('/api/auth', authRoutes);
-app.use('/api/shops', shopRoutes);
-app.use('/api/services', serviceRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/global-services', globalServiceRoutes);
+app.use('/api/shops', shopRoutes);
+app.use('/api/staff', staffRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payment', paymentRoutes);
