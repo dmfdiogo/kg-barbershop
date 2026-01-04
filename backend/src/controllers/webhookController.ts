@@ -3,8 +3,16 @@ import Stripe from 'stripe';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-    apiVersion: '2025-11-17.clover',
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+
+if (!stripeKey) {
+    console.warn("⚠️  WARNING: STRIPE_SECRET_KEY is missing. Payment features will not work.");
+}
+
+const stripe = new Stripe(stripeKey || 'sk_test_dummy_key_to_prevent_crash', {
+    // Note: '2025-11-17.clover' is the version from the original code. 
+    // We keep it to avoid breaking changes, casting to any if types don't match.
+    apiVersion: '2025-11-17.clover' as any,
 });
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
