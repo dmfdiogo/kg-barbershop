@@ -34,6 +34,10 @@ jobs:
       PAYMENT_PROVIDER: mock
       MESSAGING_PROVIDER: mock
       BILLING_PROVIDER: mock
+      # Obrigatórias em produção, e `next start` (usado pelo e2e) roda em
+      # produção. Sem elas o servidor não sobe e o e2e falha por timeout.
+      APP_DOMAIN: localhost:3000
+      AUTH_SESSION_SECRET: ci-session-secret-nao-usar-em-producao
 
     steps:
       - uses: actions/checkout@v5
@@ -81,6 +85,10 @@ jobs:
       PAYMENT_PROVIDER: mock
       MESSAGING_PROVIDER: mock
       BILLING_PROVIDER: mock
+      # Obrigatórias em produção, e `next start` (usado pelo e2e) roda em
+      # produção. Sem elas o servidor não sobe e o e2e falha por timeout.
+      APP_DOMAIN: localhost:3000
+      AUTH_SESSION_SECRET: ci-session-secret-nao-usar-em-producao
 
     steps:
       - uses: actions/checkout@v5

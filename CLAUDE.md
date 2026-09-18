@@ -17,15 +17,22 @@ algo no código contradiz a spec, a spec vence.
 ## Como rodar
 
 ```bash
-cp .env.example .env     # sem isto, os testes de integração falham
+cp .env.example .env     # sem isto, os testes falham (e um .env antigo também)
 npm ci                   # o postinstall roda `prisma generate`
 npm run db:up            # Postgres 17 com btree_gist, via docker compose
 npm run db:reset         # aplica migrations e roda o seed
 npm run dev              # http://localhost:3000
 ```
 
-Sem Docker, aponte `DATABASE_URL` para um Postgres 17 local — a única exigência
-é a extensão `btree_gist`, criada pela migration.
+**Se o Docker não subir** (é o caso das máquinas usadas até aqui), pule o
+`db:up` e aponte `DATABASE_URL` para um Postgres 17 local. A única exigência é a
+extensão `btree_gist`, criada pela própria migration. O `docker-compose.yml`
+segue como o único artefato da fundação nunca validado de ponta a ponta.
+
+**Se o seu `.env` é antigo**, recopie do exemplo. Fases novas acrescentam
+variáveis lá, e como `.env` não é versionado, um arquivo defasado quebra de
+formas confusas — a suíte e2e caiu assim depois da fase 1, por falta de
+`APP_DOMAIN`.
 
 ### O que o seed cria
 

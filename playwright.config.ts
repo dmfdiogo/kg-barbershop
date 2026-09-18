@@ -23,5 +23,13 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // `next start` roda em produção, onde estas variáveis são obrigatórias e
+    // falham cedo de propósito. Fixadas aqui para que o e2e funcione mesmo com
+    // um .env desatualizado — foi assim que a suíte quebrou depois da F1.0: o
+    // agente tinha as variáveis na worktree dele, e .env não é versionado.
+    env: {
+      APP_DOMAIN: process.env.APP_DOMAIN ?? `127.0.0.1:${PORT}`,
+      AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET ?? 'e2e-session-secret',
+    },
   },
 });
