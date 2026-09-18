@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { translatePostgresError } from './errors';
+import { runWithRetry } from './retry';
 
 /**
  * Client Prisma escopado por tenant — a camada de aplicação do isolamento
@@ -82,10 +83,6 @@ function isRetryableTransactionError(error: unknown): boolean {
   );
 }
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /**
  * Cria um client escopado isolado (útil em testes, que apontam para uma role
  * NÃO-superuser para que a RLS realmente valha).
@@ -102,25 +99,27 @@ export function createTenantDb(connectionString: string): TenantDb {
     fn: (tx: TenantTransaction) => Promise<T>,
     options?: TransactionOptions,
   ): Promise<T> {
-    for (let attempt = 1; ; attempt += 1) {
-      try {
-        return await prisma.$transaction(
-          async (tx) => {
-            await setContext(tx);
-            return fn(tx);
-          },
-          {
-            timeout: options?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-            maxWait: options?.maxWaitMs ?? DEFAULT_MAX_WAIT_MS,
-          },
-        );
-      } catch (error) {
-        if (attempt < MAX_TRANSACTION_ATTEMPTS && isRetryableTransactionError(error)) {
-          await delay(RETRY_BASE_DELAY_MS * attempt);
-          continue;
-        }
-        throw translatePostgresError(error);
-      }
+    try {
+      return await runWithRetry(
+        () =>
+          prisma.$transaction(
+            async (tx) => {
+              await setContext(tx);
+              return fn(tx);
+            },
+            {
+              timeout: options?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+              maxWait: options?.maxWaitMs ?? DEFAULT_MAX_WAIT_MS,
+            },
+          ),
+        {
+          maxAttempts: MAX_TRANSACTION_ATTEMPTS,
+          baseDelayMs: RETRY_BASE_DELAY_MS,
+          isRetryable: isRetryableTransactionError,
+        },
+      );
+    } catch (error) {
+      throw translatePostgresError(error);
     }
   }
 

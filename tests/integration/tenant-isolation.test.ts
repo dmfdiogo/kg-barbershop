@@ -67,19 +67,19 @@ describe('isolamento entre tenants (RLS)', () => {
         WHERE n.nspname = 'public'
           AND c.relkind = 'r'
           AND (
-            c.relname = 'Tenant'
+            c.relname = 'tenant'
             OR EXISTS (
               SELECT 1 FROM information_schema.columns col
               WHERE col.table_schema = 'public'
                 AND col.table_name = c.relname
-                AND col.column_name = 'tenantId'
+                AND col.column_name = 'tenant_id'
             )
           )
         ORDER BY c.relname
       `,
     );
 
-    // Tenant + 17 tabelas de negócio (migration 20260918142000).
+    // tenant + 17 tabelas de negócio (migration 20260918143000).
     expect(rows.length).toBeGreaterThanOrEqual(18);
     for (const row of rows) {
       expect(row, `tabela ${row.table_name}`).toMatchObject({
@@ -159,16 +159,26 @@ describe('isolamento entre tenants (RLS)', () => {
   });
 
   it('o caminho "esperto" (join) também fica escopado', async () => {
-    const rows = await db.forTenant(tenantA.tenantId, (tx) =>
-      tx.booking.findMany({
-        include: { customer: { include: { user: true } }, staff: true, service: true },
-      }),
-    );
+    // Queries sequenciais de propósito: o Prisma carrega relações
+    // independentes de um include em paralelo, na mesma conexão da transação
+    // interativa. Com o driver adapter isso emite o aviso de query concorrente
+    // do pg (e vira erro no pg@9); encadear queries na mão mantém o teste limpo
+    // sem abrir mão de exercitar relação.
+    const result = await db.forTenant(tenantA.tenantId, async (tx) => {
+      const bookings = await tx.booking.findMany({
+        include: { customer: { include: { user: true } } },
+      });
+      const staff = await tx.staffProfile.findMany();
+      const services = await tx.service.findMany();
+      return { bookings, staff, services };
+    });
 
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.customer.tenantId).toBe(tenantA.tenantId);
-    expect(rows[0]?.customer.id).toBe(tenantA.customerMemberId);
-    expect(rows[0]?.customer.user.phone).not.toBe('');
+    expect(result.bookings).toHaveLength(1);
+    expect(result.bookings[0]?.customer.tenantId).toBe(tenantA.tenantId);
+    expect(result.bookings[0]?.customer.id).toBe(tenantA.customerMemberId);
+    expect(result.bookings[0]?.customer.user.phone).not.toBe('');
+    expect(result.staff.every((row) => row.tenantId === tenantA.tenantId)).toBe(true);
+    expect(result.services.every((row) => row.tenantId === tenantA.tenantId)).toBe(true);
 
     const otherMember = await db.forTenant(tenantA.tenantId, (tx) =>
       tx.tenantMember.findUnique({ where: { id: tenantB.customerMemberId } }),

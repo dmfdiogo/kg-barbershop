@@ -2,6 +2,9 @@
 --
 -- Ordem: extensão -> anti-overlap -> RLS. Tudo aqui é parte do schema congelado
 -- da F0; nenhuma fase seguinte precisa (nem deve) tocar nesta migration.
+--
+-- Nomes em snake_case: o schema mapeia todos os modelos/campos com @@map/@map,
+-- então não há aspas duplas nem camelCase em sessão de psql, $queryRaw ou BI.
 
 -- ===========================================================================
 -- 1. btree_gist
@@ -16,14 +19,14 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 -- 2. Anti double-booking (plano-refatoracao.md §5.1)
 -- ===========================================================================
 -- A garantia de "um slot por profissional" não depende de if em JavaScript.
--- O intervalo é [startsAt, blockedUntil), onde blockedUntil = endsAt + buffer
--- do serviço: o buffer entre atendimentos também é garantido pelo banco.
+-- O intervalo é [starts_at, blocked_until), onde blocked_until = ends_at +
+-- buffer do serviço: o buffer entre atendimentos também é garantido pelo banco.
 -- Só HOLD, PENDING e CONFIRMED ocupam a agenda; COMPLETED/CANCELLED/NO_SHOW
 -- deixam o intervalo livre.
-ALTER TABLE "Booking" ADD CONSTRAINT booking_no_overlap
+ALTER TABLE booking ADD CONSTRAINT booking_no_overlap
   EXCLUDE USING gist (
-    "staffId" WITH =,
-    tstzrange("startsAt", "blockedUntil", '[)') WITH &&
+    staff_id WITH =,
+    tstzrange(starts_at, blocked_until, '[)') WITH &&
   )
   WHERE (status IN ('HOLD', 'PENDING', 'CONFIRMED'));
 
@@ -51,24 +54,24 @@ DECLARE
   t text;
 BEGIN
   FOR t IN SELECT unnest(ARRAY[
-    'Tenant',
-    'TenantMember',
-    'StaffProfile',
-    'WorkingHours',
-    'TimeOff',
-    'Service',
-    'StaffService',
-    'Booking',
-    'Payment',
-    'AsaasAccount',
-    'PlatformSub',
-    'MembershipPlan',
-    'MembershipBenefit',
-    'Membership',
-    'CreditLedger',
-    'MessagingPref',
-    'NotificationJob',
-    'AuditLog'
+    'tenant',
+    'tenant_member',
+    'staff_profile',
+    'working_hours',
+    'time_off',
+    'service',
+    'staff_service',
+    'booking',
+    'payment',
+    'asaas_account',
+    'platform_sub',
+    'membership_plan',
+    'membership_benefit',
+    'membership',
+    'credit_ledger',
+    'messaging_pref',
+    'notification_job',
+    'audit_log'
   ]) LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
@@ -76,61 +79,61 @@ BEGIN
 END
 $$;
 
--- Tenant não tem coluna "tenantId": a chave do isolamento é o próprio "id".
+-- tenant não tem coluna tenant_id: a chave do isolamento é o próprio id.
 -- Sem esta policy, qualquer query escopada enxergaria todos os estabelecimentos.
-CREATE POLICY tenant_isolation ON "Tenant"
+CREATE POLICY tenant_isolation ON tenant
   USING (
     current_setting('app.is_platform_admin', true) = 'true'
-    OR "id" = current_setting('app.current_tenant', true)
+    OR id = current_setting('app.current_tenant', true)
   )
   WITH CHECK (
     current_setting('app.is_platform_admin', true) = 'true'
-    OR "id" = current_setting('app.current_tenant', true)
+    OR id = current_setting('app.current_tenant', true)
   );
 
--- Demais tabelas de negócio: todas carregam tenantId (contexto-comum.md §3.3),
+-- Demais tabelas de negócio: todas carregam tenant_id (contexto-comum.md §3.3),
 -- inclusive as join tables — é o que dispensa alcançar o tenant por join.
 DO $$
 DECLARE
   t text;
 BEGIN
   FOR t IN SELECT unnest(ARRAY[
-    'TenantMember',
-    'StaffProfile',
-    'WorkingHours',
-    'TimeOff',
-    'Service',
-    'StaffService',
-    'Booking',
-    'Payment',
-    'AsaasAccount',
-    'PlatformSub',
-    'MembershipPlan',
-    'MembershipBenefit',
-    'Membership',
-    'CreditLedger',
-    'MessagingPref',
-    'NotificationJob',
-    'AuditLog'
+    'tenant_member',
+    'staff_profile',
+    'working_hours',
+    'time_off',
+    'service',
+    'staff_service',
+    'booking',
+    'payment',
+    'asaas_account',
+    'platform_sub',
+    'membership_plan',
+    'membership_benefit',
+    'membership',
+    'credit_ledger',
+    'messaging_pref',
+    'notification_job',
+    'audit_log'
   ]) LOOP
     EXECUTE format($policy$
       CREATE POLICY tenant_isolation ON %I
         USING (
           current_setting('app.is_platform_admin', true) = 'true'
-          OR "tenantId" = current_setting('app.current_tenant', true)
+          OR tenant_id = current_setting('app.current_tenant', true)
         )
         WITH CHECK (
           current_setting('app.is_platform_admin', true) = 'true'
-          OR "tenantId" = current_setting('app.current_tenant', true)
+          OR tenant_id = current_setting('app.current_tenant', true)
         )
     $policy$, t);
   END LOOP;
 END
 $$;
 
--- Tabelas globais (User, OtpChallenge, RateLimitCounter, WebhookEvent) NÃO têm
--- RLS nem tenantId por decisão do plano §4: identidade é global (um telefone
--- pertence a vários salões) e essas tabelas são infraestrutura, não negócio.
--- O acesso a PII de User continua sendo responsabilidade da camada de
+-- Tabelas globais (user, otp_challenge, rate_limit_counter, webhook_event) NÃO
+-- têm RLS nem tenant_id por decisão do plano §4: identidade é global (um
+-- telefone pertence a vários salões) e essas tabelas são infraestrutura, não
+-- negócio. O acesso a PII de user continua sendo responsabilidade da camada de
 -- aplicação, que só deve consultá-la a partir de relações já escopadas por
--- tenant (ex.: Booking -> customer -> user).
+-- tenant (ex.: booking -> customer -> user).
