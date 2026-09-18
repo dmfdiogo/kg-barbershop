@@ -322,6 +322,17 @@ AMBIENTE
 VOCÊ É DONO DE
   prisma/seed.ts, CLAUDE.md
 
+ACHADOS DA MESCLAGEM DA ONDA 1 QUE O SEU CLAUDE.md PRECISA COBRIR
+  - Um clone novo NÃO tem .env, e sem ele os testes de integração falham com
+    "DATABASE_URL não definida". O passo "cp .env.example .env" tem de estar no
+    CLAUDE.md, antes de qualquer comando de teste.
+  - typedRoutes está ligado: o script typecheck já roda "next typegen" antes do
+    tsc. Documente que typecheck não depende de um build anterior.
+  - O docker-compose.yml NUNCA foi validado (o Docker não subia nas máquinas dos
+    agentes). Suba "docker compose up -d", confirme que o init.sql criou a
+    extensão btree_gist e corrija o que estiver errado — este é o único ponto da
+    fundação ainda não verificado de ponta a ponta.
+
 ENTREGUE
   - Tenant A completo e realista: owner, 3 profissionais com jornadas DIFERENTES
     (um que folga na segunda, um com almoço), 5 serviços com durações, buffers e
