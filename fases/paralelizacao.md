@@ -69,6 +69,8 @@ A regra que torna tudo isto seguro: **num dado momento, cada arquivo tem exatame
 | `lib/privacy/` | F6.2 |
 | `scripts/` | quem cria o script (F8.1, setup do Stripe) |
 | `package.json`, `package-lock.json`, `tsconfig.json`, `eslint.config.mjs`, `.github/`, `docker-compose.yml` | **F0.1.** Depois disso ninguém mexe sem pedir — exceto a F0.4, autorizada a remover as exclusões do legado |
+| `prisma.config.ts` (raiz) | F0.2. Fica na raiz por convenção do Prisma 7, mas é arquivo do schema, não do tronco |
+| `.env.example` | **compartilhado, append-only.** Cada tarefa acrescenta as suas variáveis com comentário de quem usa; ninguém edita linha alheia |
 | `lib/payments/asaas.ts` · `stripe.ts` · `lib/messaging/cloud-api.ts` | F8.1 · F8.2 · F8.3 |
 
 ### 4.1. Evite arquivos-lista

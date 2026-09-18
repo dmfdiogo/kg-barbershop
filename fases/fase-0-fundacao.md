@@ -30,6 +30,8 @@ Estrutura de `../plano-refatoracao.md` §3. Grupos de rota `(platform)`, `(dashb
 
 ### 3. Schema completo
 
+`prisma.config.ts` vive na **raiz** (convenção do Prisma 7 para `migrate`) e é seu, apesar da localização. Os scripts `db:migrate`, `db:deploy`, `db:reset` e `db:studio` já existem em `package.json`; falta só o `postinstall` com `prisma generate`, que **você adiciona junto com o schema** — antes dele existir, o `postinstall` quebraria todo `npm ci` do repositório.
+
 Implemente **todas** as entidades de `../plano-refatoracao.md` §4, inclusive as que só serão usadas nas fases 5, 6 e 7. Esta é a razão de a F0 existir sozinha: fases paralelas não podem estar criando migrations concorrentes.
 
 ### 4. Isolamento (o coração da fase)
