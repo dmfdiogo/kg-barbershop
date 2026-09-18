@@ -1,6 +1,6 @@
 # Fase 8 — Integrações reais
 
-> **Depende de:** F5, F6, F7 **e de ações humanas** (§1) · **Estimativa:** 12 dias de código, mas o prazo real é ditado por aprovações de terceiros.
+> **Depende de:** F5, F6, F7 **e de ações humanas** (§1) · **Estimativa:** 14 dias de código, mas o prazo real é ditado por aprovações de terceiros.
 > **Leia antes:** [`contexto-comum.md`](contexto-comum.md) §5, [`../plano-refatoracao.md`](../plano-refatoracao.md) §1.1 e §8.
 
 ## Objetivo

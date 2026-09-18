@@ -1,6 +1,6 @@
 # Fase 2 — Painel do Owner
 
-> **Depende de:** F1 · **Estimativa:** 15 dias · **Paralelismo:** pode rodar junto com F3 (usa o seed da F0 para não depender das telas desta fase).
+> **Depende de:** F1 · **Estimativa:** 18 dias · **Paralelismo:** pode rodar junto com F3 (usa o seed da F0 para não depender das telas desta fase).
 > **Leia antes:** [`contexto-comum.md`](contexto-comum.md), spec §2.2 e §5.1.
 
 ## Objetivo
@@ -35,7 +35,7 @@ Janela de cancelamento (padrão 24h), política de no-show, antecedência mínim
 
 Upload de logo (PNG/JPG/SVG, com limite de tamanho e validação de tipo real, não só extensão), cores primária/secundária/fundo, e os 4 presets da spec §5.1 (*Classic Barber*, *Beauty & Spa*, *Pet Friendly*, *Auto Detail*). Preview ao vivo.
 
-As cores viram CSS variables injetadas no SSR do portal — é o que evita o flash de tema errado. **Valide contraste**: um dono pode escolher amarelo sobre branco e tornar o próprio portal ilegível. Avise antes de salvar.
+As cores viram CSS variables injetadas no SSR do portal — é o que evita o flash de tema errado. **A injeção em si é da F3.0** (`lib/theme/resolve.ts`, entregue com valores padrão); você entrega a tela de edição, os presets (`lib/theme/presets.ts`) e o preview, consumindo aquele resolvedor. Não reimplemente a injeção. **Valide contraste**: um dono pode escolher amarelo sobre branco e tornar o próprio portal ilegível. Avise antes de salvar.
 
 ### 6. Dashboard operacional
 
@@ -70,6 +70,6 @@ Fase com o maior paralelismo do projeto: depois do tronco, **quatro folhas simul
 | **F2.0** ⟨T0⟩ | Shell do painel: layout, navegação descoberta por feature (sem arquivo-lista), tokens de tema, estados vazio/erro/carregando | `app/(dashboard)/layout.tsx`, `components/dashboard/**` | F1 | 2,5 |
 | **F2.1** | Serviços: CRUD, duração, buffer, preço, modalidade de cobrança, desativação | `app/(dashboard)/servicos/**`, `lib/catalog/**` | F2.0 | 3 |
 | **F2.2** | Equipe, convite por telefone, jornadas, bloqueios e detecção de conflito com agendamentos | `app/(dashboard)/equipe/**`, `lib/staffing/**` | F2.0 | 4 |
-| **F2.3** | White-label: logo, cores, 4 presets, injeção SSR de CSS variables, validação de contraste | `app/(dashboard)/marca/**`, `lib/theme/**` | F2.0 | 3 |
+| **F2.3** | White-label: logo, cores, 4 presets, preview, validação de contraste (a injeção SSR é da F3.0) | `app/(dashboard)/marca/**`, `lib/theme/presets.ts` | F2.0, F3.0 | 3 |
 | **F2.4** | Políticas do tenant e dashboard operacional | `app/(dashboard)/configuracoes/**`, `app/(dashboard)/inicio/**` | F2.0 | 3 |
 | **F2.5** | Onboarding guiado, reusando as server actions das folhas | `app/(dashboard)/onboarding/**` | F2.1, F2.2, F2.3 | 2,5 |

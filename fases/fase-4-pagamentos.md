@@ -1,6 +1,6 @@
 # Fase 4 — Pagamentos (contra mock)
 
-> **Depende de:** F3 · **Estimativa:** 12 dias · **Paralelismo:** pode rodar junto com F6 e F7.
+> **Depende de:** F3 · **Estimativa:** 12,5 dias · **Paralelismo:** pode rodar junto com F6 e F7.
 > **Leia antes:** [`contexto-comum.md`](contexto-comum.md) §5 e §6, spec §3.2.
 
 ## Objetivo
@@ -77,4 +77,4 @@ Clube de assinatura (F5), mensalidade da plataforma (F7), qualquer chamada real 
 | **F4.0** ⟨T0⟩ | Máquina de estados `Booking` × `Payment` e núcleo de webhook: assinatura, idempotência, transação, fora de ordem | `lib/payments/state.ts`, `app/api/webhooks/payments/**` | F3 | 3 |
 | **F4.1** | Conta de recebimento: `createMerchantAccount`, estados de KYC, criptografia da chave em repouso, caminho degradado `ON_SITE` | `lib/payments/merchant.ts`, `app/(dashboard)/financeiro/conta/**` | F4.0 | 3 |
 | **F4.2** | Checkout: integral, sinal e no local; Pix e cartão; split na subconta; expiração dentro da janela do hold | `app/[slug]/checkout/**`, `lib/payments/charge.ts` | F4.0 | 4 |
-| **F4.3** | Saldo, extrato e estorno dentro do painel | `app/(dashboard)/financeiro/**` | F4.0, F4.1 | 2,5 |
+| **F4.3** | Saldo, extrato e estorno dentro do painel | `app/(dashboard)/financeiro/extrato/**`, `app/(dashboard)/financeiro/page.tsx` | F4.0, F4.1 | 2,5 |

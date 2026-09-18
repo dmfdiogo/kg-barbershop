@@ -191,15 +191,15 @@ Por D5, tudo de F1 a F7 é construído contra mocks. Nenhuma dessas fases precis
 
 | Fase | Entrega | Dias | Depende de | Precisa de você? |
 | :--- | :--- | :--- | :--- | :--- |
-| **F0** | **Fundação.** Remoção do legado (após portar slots e componentes), esqueleto Next.js, schema completo, RLS, exclusion constraint, ports + mocks, console `/dev`, seed, CI, `CLAUDE.md` | 7 | — | não |
+| **F0** | **Fundação.** Remoção do legado (após portar slots e componentes), esqueleto Next.js, schema completo, RLS, exclusion constraint, ports + mocks, console `/dev`, seed, CI, `CLAUDE.md` | 10 | — | não |
 | **F1** | **Multi-tenant + auth OTP** (mock de WhatsApp). Middleware de tenant, RBAC por `TenantMember`, OTP com rate limit e defesas | 12 | F0 | não |
-| **F2** | **Painel do Owner.** Onboarding guiado, serviços, equipe, jornadas, bloqueios, políticas, white-label | 15 | F1 | não |
-| **F3** | **Portal de booking + anti-concorrência.** Grade, hold de 10 min, área do cliente, walk-in | 12 | F1 | não |
-| **F4** | **Pagamentos** (mock). Subconta, KYC, checkout Pix/cartão, sinal, split, saldo, extrato, estorno | 12 | F3 | não |
-| **F5** | **Clube de assinatura B2C** (mock) *(escopo novo, fora da spec)*. Planos do tenant, cartão tokenizado, ledger de créditos | 12 | F4 | não |
-| **F6** | **Notificações** (mock). Jobs persistidos, confirmação, D-1, H-2, cancelamento, opt-out, log de entrega | 8 | F3 | não |
-| **F7** | **Billing B2B + Super Admin** (mock) *(a spec não estimou)*. Planos, trial por 10 agendamentos, suspensão graciosa, painel da plataforma | 10 | F2 | não |
-| **F8** | **Integrações reais.** Stripe → Asaas → WhatsApp, trocando só a factory | 12 | F5, F6, F7 | **sim** |
+| **F2** | **Painel do Owner.** Onboarding guiado, serviços, equipe, jornadas, bloqueios, políticas, white-label | 18 | F1 | não |
+| **F3** | **Portal de booking + anti-concorrência.** Grade, hold de 10 min, área do cliente, walk-in | 18 | F1 | não |
+| **F4** | **Pagamentos** (mock). Subconta, KYC, checkout Pix/cartão, sinal, split, saldo, extrato, estorno | 12,5 | F3 | não |
+| **F5** | **Clube de assinatura B2C** (mock) *(escopo novo, fora da spec)*. Planos do tenant, cartão tokenizado, ledger de créditos | 12,5 | F4 | não |
+| **F6** | **Notificações** (mock). Jobs persistidos, confirmação, D-1, H-2, cancelamento, opt-out, log de entrega | 10,5 | F3 | não |
+| **F7** | **Billing B2B + Super Admin** (mock) *(a spec não estimou)*. Planos, trial por 10 agendamentos, suspensão graciosa, painel da plataforma | 11 | F2 | não |
+| **F8** | **Integrações reais.** Stripe → Asaas → WhatsApp, trocando só a factory | 14 | F5, F6, F7 | **sim** |
 | **F9** | **Piloto** com 3 a 5 estabelecimentos reais | 14 | F8 | **sim** |
 
 ### 6.1. Paralelização
@@ -217,7 +217,7 @@ O que torna o paralelismo possível é o schema inteiro nascer na F0: fases simu
 
 **Fase não é tarefa de agente.** As 9 fases se decompõem em **42 tarefas** de 1 a 3 dias, listadas no fim de cada arquivo de fase. O mapa de quantos agentes cabem por onda, quem é dono de quais arquivos e como mesclar está em [`fases/paralelizacao.md`](fases/paralelizacao.md) — com um revisor humano, o recomendado é **3 a 4 agentes simultâneos**, contra um teto de 7 a 9 pelo grafo de dependências.
 
-**Total em série ≈ 114 dias. Caminho crítico ≈ 81 dias** paralelizando no nível de fase (F0 → F1 → F3 → F4 → F5 → F8 → F9), **≈ 58 dias de esforço** paralelizando também dentro das fases — este último supondo agentes suficientes e revisão que não vira fila. O roadmap da spec soma 80 dias em série porque não orçou o módulo Stripe B2B, o painel do Super Admin nem o clube B2C — vale ajustar a spec para não criar expectativa errada.
+**Total em série ≈ 132,5 dias. Caminho crítico ≈ 93 dias** paralelizando no nível de fase (F0 → F1 → F3 → F4 → F5 → F8 → F9), **≈ 59 dias de esforço** paralelizando também dentro das fases — este último supondo agentes suficientes e revisão que não vira fila. O roadmap da spec soma 80 dias em série porque não orçou o módulo Stripe B2B, o painel do Super Admin nem o clube B2C — vale ajustar a spec para não criar expectativa errada.
 
 **Corte possível se precisar antecipar o piloto:** F5 (clube) e F7 (billing B2B) podem ir para depois do primeiro piloto — durante o piloto os estabelecimentos não pagam mensalidade mesmo. Tira ~22 dias do caminho até o primeiro cliente real, sem tocar no núcleo.
 

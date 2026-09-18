@@ -1,6 +1,6 @@
 # Fase 7 — Assinatura B2B e painel da plataforma
 
-> **Depende de:** F2 · **Estimativa:** 10 dias · **Paralelismo:** pode rodar junto com F4 e F6.
+> **Depende de:** F2 · **Estimativa:** 11 dias · **Paralelismo:** pode rodar junto com F4 e F6.
 > **Leia antes:** [`contexto-comum.md`](contexto-comum.md), spec §2.1, §3.1 e §6.
 
 ## Objetivo
@@ -25,7 +25,7 @@ Ao ultrapassar (ex.: 5º profissional no Equipe), ofereça upgrade com o impacto
 
 ### 2. Trial por valor: 10 agendamentos (spec §6.2)
 
-Contador por tenant, incrementado na **confirmação** do agendamento (não na criação do hold — senão hold abandonado consome trial).
+Contador por tenant, incrementado na **confirmação** do agendamento (não na criação do hold — senão hold abandonado consome trial). Entre pelo ponto de extensão da F3.2 (`lib/booking/participants/`, ver `fase-3-portal-booking.md` §3.1), como participante de transação — não edite a transação.
 
 - 8º agendamento: aviso amigável no painel convidando a escolher o plano.
 - 11º: bloqueia **novos agendamentos**, preservando acesso ao que já existe. Nunca derrube a agenda de um salão em funcionamento; a spec pede "suspensão graciosa".

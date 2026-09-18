@@ -1,6 +1,6 @@
 # Fase 0 — Fundação
 
-> **Depende de:** nada · **Estimativa:** 7 dias · **Paralelismo:** nenhum. Esta fase define o schema e os contratos de que todas as outras dependem.
+> **Depende de:** nada · **Estimativa:** 10 dias · **Paralelismo:** nenhum. Esta fase define o schema e os contratos de que todas as outras dependem.
 > **Leia antes:** [`contexto-comum.md`](contexto-comum.md), [`../spec-executiva.md`](../spec-executiva.md), [`../plano-refatoracao.md`](../plano-refatoracao.md).
 
 ## Objetivo

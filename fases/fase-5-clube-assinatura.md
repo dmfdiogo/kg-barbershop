@@ -1,6 +1,6 @@
 # Fase 5 — Clube de assinatura B2C
 
-> **Depende de:** F4 · **Estimativa:** 12 dias · **Paralelismo:** nenhum (mexe no núcleo do agendamento).
+> **Depende de:** F4 · **Estimativa:** 12,5 dias · **Paralelismo:** nenhum (mexe no núcleo do agendamento).
 > **Leia antes:** [`contexto-comum.md`](contexto-comum.md), [`fase-4-pagamentos.md`](fase-4-pagamentos.md).
 
 > ⚠️ **Este módulo não está na `spec-executiva.md`.** É requisito confirmado do dono do produto, fora do documento. Não o remova por não encontrá-lo na spec.
@@ -74,11 +74,11 @@ Mensalidade B2B (F7), integração real (F8).
 
 ## Tarefas
 
-⚠️ **F5.2 toca a transação de agendamento da F3.** Coordene com o dono de `lib/booking/` antes de começar; é o único ponto do projeto onde duas fases disputam o mesmo arquivo de propósito.
+**F5.2 entra na transação de agendamento pelo ponto de extensão que a F3.2 entregou** (`lib/booking/participants/`, ver `fase-3-portal-booking.md` §3.1): você deixa o seu próprio arquivo na pasta, não edita a transação. O débito de crédito precisa ser atômico com o agendamento, então é participante de transação, não evento pós-commit.
 
 | ID | Tarefa | Dono dos arquivos | Depende | Dias |
 | :--- | :--- | :--- | :--- | :--- |
-| **F5.0** ⟨T0⟩ | Planos e benefícios do tenant: modelo, CRUD do owner, regra de preço travado para quem já assinou | `app/(dashboard)/clube/**`, `lib/membership/plans.ts` | F4 | 2,5 |
+| **F5.0** ⟨T0⟩ | Planos e benefícios do tenant: modelo, CRUD do owner, regra de preço travado para quem já assinou | `app/(dashboard)/clube/planos/**`, `app/(dashboard)/clube/page.tsx`, `lib/membership/plans.ts` | F4 | 2,5 |
 | **F5.1** | Assinatura: tokenização de cartão, criação na subconta com split, renovação, falha de cobrança, cancelamento, webhooks | `lib/membership/subscription.ts` | F5.0 | 4 |
 | **F5.2** | `CreditLedger` append-only e consumo transacional no agendamento, com devolução no cancelamento | `lib/membership/credits.ts` + ponto de integração em `lib/booking/` | F5.0 | 3,5 |
 | **F5.3** | Visões: cliente (plano, saldo, próxima cobrança) e owner (assinantes, MRR, inadimplentes, consumo) | `app/[slug]/clube/**`, `app/(dashboard)/clube/relatorios/**` | F5.1, F5.2 | 2,5 |

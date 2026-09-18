@@ -1,6 +1,6 @@
 # Fase 6 — Notificações e automações (contra mock)
 
-> **Depende de:** F3 · **Estimativa:** 8 dias · **Paralelismo:** pode rodar junto com F4 e F7.
+> **Depende de:** F3 · **Estimativa:** 10,5 dias · **Paralelismo:** pode rodar junto com F4 e F7.
 > **Leia antes:** [`contexto-comum.md`](contexto-comum.md) §5, spec §4.
 
 ## Objetivo
@@ -11,7 +11,7 @@ Toda a máquina de comunicação — agendamento, envio, retentativa, log e pref
 
 ### 1. Trabalhos persistidos
 
-Lembretes viram linhas em `NotificationJob` criadas na confirmação do agendamento, executadas por `/api/cron/send-notifications` a cada 5 minutos, com janela de tolerância e marcação de envio.
+Lembretes viram linhas em `NotificationJob` criadas ao reagir aos eventos `BookingConfirmed` / `BookingCancelled` da F3.2 (ver `fase-3-portal-booking.md` §3.1) — **pós-commit**, porque WhatsApp fora do ar não pode impedir alguém de marcar horário. Os jobs são executadas por `/api/cron/send-notifications` a cada 5 minutos, com janela de tolerância e marcação de envio.
 
 **`setTimeout` não sobrevive a deploy em ambiente serverless.** Se o lembrete D-1 depende de um timer em memória, ele simplesmente não acontece.
 
@@ -35,9 +35,11 @@ Cada template é declarado em um registro central com nome, categoria e variáve
 - Retentativa com backoff, limite de tentativas e estado final de falha visível no painel.
 - Log de entrega (`providerMessageId`, status) — no piloto, "o cliente diz que não recebeu" vai acontecer.
 
-### 4. Preferências e conformidade
+### 4. Preferências e direitos do titular (LGPD)
 
-Opt-out por cliente, respeitado em tudo que não for transacional crítico. Registro de consentimento (LGPD).
+Opt-out por cliente, respeitado em tudo que não for transacional crítico. Registro de consentimento.
+
+**E os direitos do titular**, que até agora só apareciam como item de checklist do piloto e não eram tarefa de ninguém: exportação dos dados do cliente e **caminho de exclusão funcionando** (o que é apagado, o que é anonimizado por obrigação fiscal — um agendamento pago não pode sumir do extrato — e em quanto tempo). Sem isso não se abre o piloto com cliente real.
 
 ### 5. Web Push (spec §2.3)
 
@@ -71,5 +73,5 @@ Cloud API real, verificação do Meta Business, aprovação de templates (F8).
 | :--- | :--- | :--- | :--- | :--- |
 | **F6.0** ⟨T0⟩ | Registro central de templates, `NotificationJob`, runner com lock (sem envio duplicado), cron, retry com backoff | `lib/messaging/{jobs,templates}.ts`, `app/api/cron/send-notifications/**` | F3 | 3 |
 | **F6.1** | Gatilhos: confirmação, D-1 com botão, H-2, cancelamento, remarcação, aviso ao profissional; cancelar jobs pendentes | `lib/messaging/triggers.ts` | F6.0 | 2,5 |
-| **F6.2** | Opt-out, registro de consentimento (LGPD) e log de entrega visível no painel | `app/(dashboard)/mensagens/**`, `lib/messaging/preferences.ts` | F6.0 | 2 |
+| **F6.2** | Opt-out, consentimento, **exportação e exclusão de dados do titular** e log de entrega no painel | `app/(dashboard)/mensagens/**`, `lib/messaging/preferences.ts`, `lib/privacy/**` | F6.0 | 3 |
 | **F6.3** | Web Push para o profissional *(opcional — só se não comprometer o resto)* | `lib/push/**` | F6.0 | 2 |

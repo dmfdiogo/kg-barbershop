@@ -43,15 +43,17 @@ Duas regras tornam isso seguro, e estão detalhadas em `paralelizacao.md`:
 
 | Fase | Arquivo | Dias | Depende de |
 | :--- | :--- | :--- | :--- |
-| F0 | [fase-0-fundacao.md](fase-0-fundacao.md) | 7 | — |
+| F0 | [fase-0-fundacao.md](fase-0-fundacao.md) | 10 | — |
 | F1 | [fase-1-multitenant-auth.md](fase-1-multitenant-auth.md) | 12 | F0 |
-| F2 | [fase-2-painel-owner.md](fase-2-painel-owner.md) | 15 | F1 |
-| F3 | [fase-3-portal-booking.md](fase-3-portal-booking.md) | 12 | F1 |
-| F4 | [fase-4-pagamentos.md](fase-4-pagamentos.md) | 12 | F3 |
-| F5 | [fase-5-clube-assinatura.md](fase-5-clube-assinatura.md) | 12 | F4 |
-| F6 | [fase-6-notificacoes.md](fase-6-notificacoes.md) | 8 | F3 |
-| F7 | [fase-7-billing-superadmin.md](fase-7-billing-superadmin.md) | 10 | F2 |
+| F2 | [fase-2-painel-owner.md](fase-2-painel-owner.md) | 18 | F1 |
+| F3 | [fase-3-portal-booking.md](fase-3-portal-booking.md) | 18 | F1 |
+| F4 | [fase-4-pagamentos.md](fase-4-pagamentos.md) | 12,5 | F3 |
+| F5 | [fase-5-clube-assinatura.md](fase-5-clube-assinatura.md) | 12,5 | F4 |
+| F6 | [fase-6-notificacoes.md](fase-6-notificacoes.md) | 10,5 | F3 |
+| F7 | [fase-7-billing-superadmin.md](fase-7-billing-superadmin.md) | 11 | F2 |
 | F8 | [fase-8-integracoes-reais.md](fase-8-integracoes-reais.md) | 12 | F5, F6, F7 + ações do dono |
 | F9 | [fase-9-piloto.md](fase-9-piloto.md) | 14 | F8 |
 
-Caminho crítico: **≈ 81 dias** paralelizando só no nível de fase (F0 → F1 → F3 → F4 → F5 → F8 → F9), e **≈ 58 dias de esforço** paralelizando também dentro das fases — este último supondo agentes suficientes e revisão que não vira fila. Em série, 114.
+Caminho crítico: **≈ 93 dias** paralelizando só no nível de fase (F0 → F1 → F3 → F4 → F5 → F8 → F9), e **≈ 59 dias de esforço** paralelizando também dentro das fases — este último supondo agentes suficientes e revisão que não vira fila. Em série, 132,5.
+
+> Números revisados em 18/09/2026: as estimativas por fase estavam menores que a soma das próprias tarefas em 6 das 9 fases, e faltavam escopos (agenda do profissional, direitos do titular, pontos de extensão do agendamento). Os totais acima já refletem a correção.

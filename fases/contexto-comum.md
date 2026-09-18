@@ -89,14 +89,20 @@ Um mock permissivo esconde bugs que só aparecem na integração. Os mocks **val
 
 Pagamento real é assíncrono e chega por webhook. O mock **não** marca o pagamento como pago de forma síncrona: ele agenda e **dispara uma requisição real ao próprio endpoint de webhook da aplicação**, com payload no formato do provider e assinatura válida. Assim a máquina de estados é a mesma no mock e em produção.
 
-### 5.3. Console de desenvolvimento
+### 5.3. O estado do mock não mora no schema
+
+O mock guarda o que inventa (cobranças, assinaturas, contas, mensagens) em **store próprio** sob `lib/payments/` e `lib/messaging/` — memória ou arquivo —, **nunca em tabela do schema de domínio**.
+
+Duas razões: a F0.3 roda em paralelo com a F0.2 e não pode depender de um schema que ainda não existe; e dados falsos de provider não pertencem às tabelas do negócio, que são a fonte de verdade do que realmente aconteceu. Quem persiste `Payment` e `WebhookEvent` é o código de produto, ao processar o webhook — não o mock ao fingir que cobrou.
+
+### 5.4. Console de desenvolvimento
 
 Rota `/dev/*`, **bloqueada fora de ambiente de desenvolvimento** (checar `NODE_ENV` no servidor, não só esconder o link):
 
 - `/dev/outbox` — mensagens "enviadas" pelo mock de WhatsApp, com o código OTP visível (é assim que se testa o login).
 - `/dev/payments` — cobranças e assinaturas do mock, com botões: confirmar pagamento, recusar, expirar Pix, aprovar/reprovar KYC, simular estorno. Cada botão dispara o webhook correspondente.
 
-### 5.4. Testes de contrato
+### 5.5. Testes de contrato
 
 Existe uma suíte que roda **contra qualquer implementação do port**, parametrizada:
 
@@ -126,7 +132,7 @@ Cada fase entrega testes; não é opcional e não é "se der tempo".
 - **Unidade:** regras de domínio puras (cálculo de grade, política de cancelamento, consumo de crédito do clube).
 - **Integração:** rotas e webhooks contra banco real (Postgres em container, não SQLite — precisamos de RLS e `btree_gist`).
 - **Isolamento:** toda fase que adiciona entidade com `tenantId` adiciona um teste que prova que o tenant A não lê nem escreve dado do tenant B. Este teste é obrigatório e não pode ser pulado.
-- **E2E:** o fluxo principal da fase, em Playwright.
+- **E2E:** o fluxo principal da fase, em Playwright. O CI roda e2e em job separado (`npm run test:e2e`), depois de `build`.
 
 ---
 

@@ -34,6 +34,8 @@ Sem isso, três agentes inventam três versões do mesmo layout e do mesmo tipo,
 | 2 | F1 | 5 | 3 | 2 |
 | 3 | F2 ‖ F3 | 12 | 7 | 4 |
 | 4 | F4 ‖ F6 ‖ F7 | 12 | 9 | 4 |
+
+Duas fronteiras dentro da onda 3 exigem ordem, e estão marcadas nos arquivos das fases: **F2.3 depende da F3.0** (a injeção de tema é da F3.0; a F2.3 entrega a tela e os presets) e **F3.5 depende da F2.0** (a agenda do profissional vive dentro do shell do painel).
 | 5 | F5 | 4 | 2 | 2 |
 | 6 | F8 | 4 | 3 | 3 |
 
@@ -54,7 +56,19 @@ A regra que torna tudo isto seguro: **num dado momento, cada arquivo tem exatame
 | `components/` (compartilhados) | F0.4; alteração posterior exige pedido explícito |
 | `app/(dashboard)/<feature>/` | a folha daquela feature |
 | `app/[slug]/` | F3.0 e suas folhas |
-| `app/(platform)/` | F7.3 |
+| `app/(platform)/` | F1.4 (portão e layout), depois F7.3 (telas) |
+| `app/(auth)/` | F1.2 |
+| `lib/audit/` | F1.4 |
+| `lib/theme/resolve.ts` · `lib/theme/presets.ts` | F3.0 · F2.3 |
+| `lib/booking/confirm.ts`, `lib/booking/participants/` | F3.2 entrega o contrato; as demais fases só **adicionam arquivo** na pasta |
+| `app/api/cron/expire-holds/` · `app/api/cron/send-notifications/` | F3.2 · F6.0 |
+| `app/api/webhooks/payments/` | F0.3 (versão mínima) → F4.0 assume |
+| `app/api/webhooks/billing/` | F7.2 |
+| `lib/membership/` | F5.0 (planos), F5.1 (assinatura), F5.2 (créditos) |
+| `lib/billing/` | F7.0 (planos e limites), F7.1 (trial), F7.2 (cobrança) |
+| `lib/privacy/` | F6.2 |
+| `scripts/` | quem cria o script (F8.1, setup do Stripe) |
+| `package.json`, `package-lock.json`, `tsconfig.json`, `eslint.config.mjs`, `.github/`, `docker-compose.yml` | **F0.1.** Depois disso ninguém mexe sem pedir — exceto a F0.4, autorizada a remover as exclusões do legado |
 | `lib/payments/asaas.ts` · `stripe.ts` · `lib/messaging/cloud-api.ts` | F8.1 · F8.2 · F8.3 |
 
 ### 4.1. Evite arquivos-lista
@@ -66,12 +80,13 @@ Prefira **um arquivo por feature, descoberto automaticamente** (ex.: cada featur
 ## 5. Regras de engajamento
 
 1. **Uma worktree git por agente** (`git worktree add ../wt-f2-1 -b f2.1-servicos`). Dois agentes no mesmo diretório se sabotam.
-2. **Tronco antes das folhas.** Nunca solte folhas antes do T0 mesclado.
-3. **Contrato primeiro.** O T0 entrega os tipos e as assinaturas; as folhas implementam contra eles sem se enxergar.
-4. **Branch de integração por onda** (`onda-3`), não direto na `main`. A `main` recebe a onda inteira, testada junta.
-5. **Ordem de mesclagem = ordem de propriedade.** Quem mexeu em área compartilhada entra primeiro; folhas rebasam por cima.
-6. **PR pequeno.** Tarefa que está gerando um diff gigante foi mal dimensionada — vale parar e dividir.
-7. **Schema congelado.** Depois da F0, precisou mexer? Para e pergunta. É a regra que sustenta as ondas 3 e 4.
+2. **Um banco por agente.** Os testes de integração rodam contra Postgres real e derrubam o schema entre execuções. Três agentes no mesmo `DATABASE_URL` se apagam mutuamente, e o sintoma é teste que falha de forma intermitente — o pior tipo de bug para diagnosticar à distância. Cada worktree usa banco próprio: `createdb kg_f0_2` e `DATABASE_URL=...:5432/kg_f0_2` no `.env` dela.
+3. **Tronco antes das folhas.** Nunca solte folhas antes do T0 mesclado.
+4. **Contrato primeiro.** O T0 entrega os tipos e as assinaturas; as folhas implementam contra eles sem se enxergar.
+5. **Branch de integração por onda** (`onda-3`), não direto na `main`. A `main` recebe a onda inteira, testada junta.
+6. **Ordem de mesclagem = ordem de propriedade.** Quem mexeu em área compartilhada entra primeiro; folhas rebasam por cima.
+7. **PR pequeno.** Tarefa que está gerando um diff gigante foi mal dimensionada — vale parar e dividir.
+8. **Schema congelado.** Depois da F0, precisou mexer? Para e pergunta. É a regra que sustenta as ondas 3 e 4.
 
 ## 6. Prompt para abrir um agente
 
