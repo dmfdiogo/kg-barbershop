@@ -39,6 +39,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Artefatos de harness de agente (sessões do OpenCode e afins). São transcrições
+# de trabalho, não código: pesam dezenas de MB e não pertencem ao repositório.
+.opencode/
+.aider*/
+.cursor/
+
 # Temporários
 *.tmp
 .cache/
