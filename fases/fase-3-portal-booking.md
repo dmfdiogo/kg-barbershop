@@ -39,6 +39,8 @@ Três tarefas futuras precisam reagir à confirmação de um agendamento: consum
 Entregue, portanto, **dois pontos de extensão** em `lib/booking/confirm.ts`:
 
 1. **Participantes da transação** — módulos em `lib/booking/participants/*.ts`, descobertos por convenção, executados **dentro** da transação de confirmação. É por aqui que o débito de crédito (F5.2) e o contador de trial (F7.1) entram: os dois precisam ser atômicos com o agendamento. Um participante que lança aborta a confirmação inteira.
+
+   **Todo participante precisa ser reexecutável.** O client escopado faz retry em `P2034` (write conflict sob disputa de slot), então a transação inteira — participantes incluídos — pode rodar duas vezes. Só efeito no banco, nada fora dele. Escreva isso no contrato que você documentar.
 2. **Eventos pós-commit** — `BookingConfirmed`, `BookingCancelled`, `BookingRescheduled`, emitidos **depois** do commit, para efeitos que não podem derrubar o agendamento se falharem. É por aqui que os lembretes (F6.1) entram: WhatsApp fora do ar não pode impedir alguém de marcar horário.
 
 Sem arquivo-lista central: cada feature deixa o seu próprio arquivo na pasta. Documente o contrato dos dois pontos — F5.2, F6.1 e F7.1 vão implementar contra ele sem te consultar.

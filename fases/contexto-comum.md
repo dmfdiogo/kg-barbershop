@@ -54,6 +54,8 @@ A diretriz §9.3 da spec (dados de um salão nunca visíveis para outro) é impl
 1. **Aplicação:** todo acesso passa pelo client escopado (`lib/tenant/db.ts`), que abre transação e executa `SET LOCAL app.current_tenant = $tenantId` antes das queries. Nunca importe `PrismaClient` cru em código de produto.
 2. **Banco:** RLS ligada em todas as tabelas com `tenantId`, com policy comparando `current_setting('app.current_tenant')`.
 
+**A callback que você passa ao client escopado pode rodar duas vezes.** Sob disputa, o Postgres devolve `40P01`/`P2034` (write conflict) e o client faz um retry curto — o que é o comportamento certo para a exclusion constraint do agendamento. A consequência é um contrato: **tudo dentro da callback tem de ser reexecutável e viver no banco**. Nada de chamada externa, escrita em store de mock, envio de mensagem ou incremento em memória lá dentro. Efeito que não pode acontecer duas vezes vai depois do commit.
+
 A camada 1 é a que o dia a dia usa; a camada 2 é a que pega o erro humano. Remover qualquer uma delas "porque a outra já cobre" é regressão de segurança.
 
 Consultas do Super Admin usam um caminho explícito e auditado (`lib/tenant/db.ts` → `asPlatformAdmin()`), nunca o bypass silencioso da RLS.
