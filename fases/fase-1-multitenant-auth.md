@@ -15,6 +15,17 @@ Ordem: `Host` casando com `Tenant.customDomain` → subdomínio → `/[slug]`. O
 
 Domínio próprio é Fase 2 do produto: implemente **só a resolução**, sem provisionamento de DNS/SSL.
 
+### Divisão entre `proxy.ts` e `lib/tenant/context.ts`
+
+| | |
+| :--- | :--- |
+| `proxy.ts` — **sem banco, Edge-safe** | Extrai host e caminho, recusa slug reservado, reescreve subdomínio para `/[slug]` e injeta os headers internos (`x-tenant-host`, `x-tenant-slug`). Nada mais. |
+| `lib/tenant/context.ts` — **com banco** | Resolve as três formas, valida `status`, memoiza por requisição com `cache()` do React e alimenta sessão/RBAC. |
+
+**Domínio próprio na raiz não fica em aberto.** Numa requisição a `www.salao.com.br/` não há slug no caminho, e o proxy não pode descobrir o tenant sem banco. A saída **não** é adiar: `app/page.tsx` lê o header de host e delega ao mesmo resolvedor — se o host casa com um `customDomain`, renderiza o portal daquele tenant; senão, a landing da plataforma. O recurso só é vendido no plano Pro (fase 2 do produto), mas o **mecanismo** fica definido agora, para ninguém ter de redesenhar depois.
+
+**O resolvedor de tenant NÃO é acesso auditado.** A F1.4 exige `AuditLog` em todo acesso da plataforma a dado de tenant — e a resolução de rota usa `asPlatformAdmin()`, porque é preciso ler `tenant` antes de saber qual é o tenant. Se o resolvedor passasse pelo caminho auditado, o `AuditLog` ganharia uma linha por requisição e deixaria de servir para o que existe (rastrear suporte olhando dado de cliente). Então: o resolvedor é uma função **estreita e dedicada**, que devolve só id, slug, status e campos de tema, e não é auditada. Auditoria vale para acesso a dado de tenant pelo Super Admin, não para roteamento. Escreva isso no contrato.
+
 **O proxy fica fino, e o motivo não é estilo.** Ele roda em **toda** requisição, inclusive as de asset. Se cada uma disparar um `SELECT` para descobrir o tenant, você paga um ida-e-volta de banco no caminho mais quente da aplicação. Faça o `proxy.ts` apenas **extrair** o identificador (host, subdomínio ou primeiro segmento do path) e repassá-lo adiante por header; a resolução de fato — buscar o `Tenant`, checar status, alimentar o client escopado — acontece na camada de Server Component / route handler, onde dá para memoizar por requisição com `cache()` do React.
 
 **Slugs reservados (achado da F0.1).** A rota dinâmica `/[slug]` convive com segmentos estáticos (`/painel`, `/plataforma` e, no futuro, `/api`, `/dev`). O Next resolve o estático primeiro, então funciona — mas um tenant com slug `painel` ficaria inacessível para sempre. Entregue a lista de palavras reservadas e a função de validação; quem consome é a configuração de slug na F2.
