@@ -9,6 +9,8 @@ Toda a máquina de comunicação — agendamento, envio, retentativa, log e pref
 
 ## Escopo
 
+> **`lib/messaging/templates.ts` já existe**, criado na F0.3: o mock precisa dele para recusar template não registrado. Ele traz os 9 templates da spec §4 com nome, categoria e variáveis. **Você assume a propriedade** e o evolui — não recrie. Os nomes são proposta, não contrato: quem fixa é a aprovação da Meta na F8.3.
+
 ### 1. Trabalhos persistidos
 
 Lembretes viram linhas em `NotificationJob` criadas ao reagir aos eventos `BookingConfirmed` / `BookingCancelled` da F3.2 (ver `fase-3-portal-booking.md` §3.1) — **pós-commit**, porque WhatsApp fora do ar não pode impedir alguém de marcar horário. Os jobs são executadas por `/api/cron/send-notifications` a cada 5 minutos, com janela de tolerância e marcação de envio.

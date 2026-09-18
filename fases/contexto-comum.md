@@ -144,7 +144,7 @@ Cada fase entrega testes; não é opcional e não é "se der tempo".
 - [ ] `npm run test` verde, incluindo o teste de isolamento entre tenants.
 - [ ] Migrations versionadas e commitadas (`prisma/migrations/**/migration.sql` **não** pode estar no `.gitignore`).
 - [ ] Seed atualizado se a fase criou entidade nova.
-- [ ] Nenhum segredo commitado; `.env.example` atualizado com as variáveis novas.
+- [ ] Nenhum segredo commitado; `.env.example` atualizado com as variáveis novas. **`.env.example` é o único arquivo de configuração compartilhado: append-only.** Cada tarefa acrescenta as suas variáveis, com comentário dizendo quem as usa, e não mexe nas linhas de ninguém. A regra de propriedade da F0.1 não vale aqui — vale o contrário, e é de propósito: variável de ambiente não documentada é a que ninguém descobre até quebrar em produção.
 - [ ] Nenhuma cor literal em componente de produto.
 - [ ] Nenhum import direto de SDK de provider fora de `lib/payments/` e `lib/messaging/`.
 - [ ] README da fase atualizado com o que ficou fora do escopo e por quê.

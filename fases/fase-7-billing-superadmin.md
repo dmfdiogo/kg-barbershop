@@ -1,6 +1,6 @@
 # Fase 7 — Assinatura B2B e painel da plataforma
 
-> **Depende de:** F2 · **Estimativa:** 11 dias · **Paralelismo:** pode rodar junto com F4 e F6.
+> **Depende de:** F2 · **Estimativa:** 12,5 dias · **Paralelismo:** pode rodar junto com F4 e F6.
 > **Leia antes:** [`contexto-comum.md`](contexto-comum.md), spec §2.1, §3.1 e §6.
 
 ## Objetivo
@@ -11,7 +11,11 @@ A plataforma cobra dos estabelecimentos e se administra: planos Solo/Equipe/Pro,
 
 ## Escopo
 
-### 1. Planos (spec §6.1)
+### 1. Planos, limites e o port de billing
+
+**O `BillingProvider` ainda não existe.** A F0.3 entregou `PaymentProvider` e `WhatsAppProvider`; o de billing é seu, porque só aqui ele ganha consumidor. Mesmo contrato dos outros (`contexto-comum.md` §5): interface em `lib/billing/types.ts`, `MockBillingProvider` que reprova o que o Stripe reprovaria, factory por `BILLING_PROVIDER`, e a suíte de contrato parametrizada que a F8.1 vai reusar contra o test mode.
+
+#### Planos (spec §6.1)
 
 | Plano | Preço | Limites |
 | :--- | :--- | :--- |
@@ -67,7 +71,7 @@ Conta Stripe real e chaves (F8), emissão de NFS-e (pendência de produto), mód
 
 | ID | Tarefa | Dono dos arquivos | Depende | Dias |
 | :--- | :--- | :--- | :--- | :--- |
-| **F7.0** ⟨T0⟩ | Planos, limites e enforcement no servidor; upgrade e downgrade com decisão explícita | `lib/billing/{plans,limits}.ts` | F2 | 2,5 |
+| **F7.0** ⟨T0⟩ | **Port `BillingProvider` + mock + contrato**, planos, limites e enforcement no servidor; upgrade e downgrade com decisão explícita | `lib/billing/{types,mock,index,plans,limits}.ts` | F2 | 4 |
 | **F7.1** | Trial por 10 agendamentos: contador na confirmação, aviso no 8º, bloqueio gracioso no 11º | `lib/billing/trial.ts` | F7.0 | 2 |
 | **F7.2** | Ciclo de cobrança contra mock: assinar, trocar com proração, inadimplência, suspensão, reativação, webhooks | `lib/billing/subscription.ts`, `app/api/webhooks/billing/**` | F7.0 | 3,5 |
 | **F7.3** | Painel do Super Admin: tenants, MRR, churn, conversão de trial, acesso de suporte auditado | `app/(platform)/**` | F7.0 | 3 |
