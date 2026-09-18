@@ -89,7 +89,7 @@ kg-barbershop/
 
 **Rotas de webhook são nomeadas pelo domínio, não pelo provider** (`payments`, `billing`) — e não `asaas`/`stripe`. Trocar a implementação por variável de ambiente não pode implicar trocar URL: quem verifica assinatura e traduz o payload é o adaptador, atrás do port. Na F8, a URL que se cola no painel do Asaas é essa mesma.
 
-**Resolução de tenant (middleware do Next), nesta ordem:** domínio próprio (`Host` casando com `Tenant.customDomain`) → subdomínio → `/[slug]`. Fase 1 entrega slug; domínio próprio é Fase 2 da spec.
+**Resolução de tenant (`proxy.ts`, o antigo middleware — renomeado no Next 16), nesta ordem:** domínio próprio (`Host` casando com `Tenant.customDomain`) → subdomínio → `/[slug]`. Fase 1 entrega slug; domínio próprio é Fase 2 da spec.
 
 **Mensageria como porta, não como dependência.** `WhatsAppProvider` é uma interface com adaptadores (Cloud API oficial, Z-API, Evolution). Motivo em §8.1: o prazo de aprovação da Meta é o maior risco de cronograma do projeto, e essa interface permite desenvolver e pilotar sem ficar bloqueado.
 

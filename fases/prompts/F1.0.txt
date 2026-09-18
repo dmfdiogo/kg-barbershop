@@ -10,7 +10,7 @@ AMBIENTE
   git worktree add ../wt-f1-0 -b f1.0-contratos     (F0 inteira mesclada)
 
 VOCÊ É DONO DE
-  middleware.ts, lib/tenant/context.ts, lib/auth/session.ts, lib/auth/rbac.ts,
+  proxy.ts, lib/tenant/context.ts, lib/auth/session.ts, lib/auth/rbac.ts,
   lib/auth/types.ts
 
 VOCÊ É O TRONCO DESTA FASE
@@ -19,7 +19,7 @@ VOCÊ É O TRONCO DESTA FASE
   assinaturas das server actions de auth (mesmo que como stub tipado) e helpers.
 
 ENTREGUE
-  - Middleware resolvendo o tenant nesta ordem: Host casando com Tenant.customDomain,
+  - Proxy (proxy.ts) resolvendo o tenant nesta ordem: Host casando com Tenant.customDomain,
     depois subdomínio, depois /[slug]. Só a RESOLUÇÃO — provisionamento de DNS/SSL
     é fase 2 do produto.
   - Páginas próprias para tenant inexistente, suspenso ou inativo (não 404 genérico).

@@ -50,7 +50,7 @@ A regra que torna tudo isto seguro: **num dado momento, cada arquivo tem exatame
 | `prisma/schema.prisma`, `prisma/migrations/` | **F0.2 e mais ninguém.** Congelado depois. |
 | `lib/payments/types.ts`, `lib/messaging/types.ts` | F0.3; depois só o T0 da fase que precisar estender |
 | `lib/tenant/` | F0.2, depois F1.0 |
-| `middleware.ts` | F1.0 |
+| `proxy.ts` | F1.0 |
 | `lib/auth/` | F1.0 (contratos), F1.1 (OTP) |
 | `lib/booking/availability.ts` | F0.4, depois F3.1 |
 | `components/` (compartilhados) | F0.4; alteração posterior exige pedido explícito |

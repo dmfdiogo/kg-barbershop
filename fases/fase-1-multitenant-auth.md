@@ -9,11 +9,13 @@ Resolver *qual tenant* e *quem é o usuário* em toda requisição, com login pa
 
 ## Escopo
 
-### 1. Resolução de tenant (middleware)
+### 1. Resolução de tenant (proxy.ts)
 
 Ordem: `Host` casando com `Tenant.customDomain` → subdomínio → `/[slug]`. O tenant resolvido entra no contexto da requisição e alimenta o client escopado da F0. Tenant inexistente, suspenso ou inativo tem página própria — não 404 genérico.
 
 Domínio próprio é Fase 2 do produto: implemente **só a resolução**, sem provisionamento de DNS/SSL.
+
+**O proxy fica fino, e o motivo não é estilo.** Ele roda em **toda** requisição, inclusive as de asset. Se cada uma disparar um `SELECT` para descobrir o tenant, você paga um ida-e-volta de banco no caminho mais quente da aplicação. Faça o `proxy.ts` apenas **extrair** o identificador (host, subdomínio ou primeiro segmento do path) e repassá-lo adiante por header; a resolução de fato — buscar o `Tenant`, checar status, alimentar o client escopado — acontece na camada de Server Component / route handler, onde dá para memoizar por requisição com `cache()` do React.
 
 **Slugs reservados (achado da F0.1).** A rota dinâmica `/[slug]` convive com segmentos estáticos (`/painel`, `/plataforma` e, no futuro, `/api`, `/dev`). O Next resolve o estático primeiro, então funciona — mas um tenant com slug `painel` ficaria inacessível para sempre. Entregue a lista de palavras reservadas e a função de validação; quem consome é a configuração de slug na F2.
 
@@ -66,7 +68,7 @@ Painel do Owner (F2), portal público de agendamento (F3), envio real de WhatsAp
 
 | ID | Tarefa | Dono dos arquivos | Depende | Dias |
 | :--- | :--- | :--- | :--- | :--- |
-| **F1.0** ⟨T0⟩ | Middleware de resolução de tenant, contexto de requisição, tipos de sessão, `requireRole`, assinaturas das server actions de auth | `middleware.ts`, `lib/tenant/context.ts`, `lib/auth/{session,rbac,types}.ts` | F0 | 2,5 |
+| **F1.0** ⟨T0⟩ | Resolução de tenant no proxy, contexto de requisição, tipos de sessão, `requireRole`, assinaturas das server actions de auth | `proxy.ts`, `lib/tenant/context.ts`, `lib/auth/{session,rbac,types}.ts` | F0 | 2,5 |
 | **F1.1** | OTP: desafio com hash, TTL, uso único, limite de tentativas, cooldown, rate limit persistente, testes de abuso | `lib/auth/otp.ts`, `app/api/auth/**` | F1.0 | 3 |
 | **F1.2** | Telas de identificação: nome + WhatsApp, código, reenvio, erros | `app/(auth)/**` | F1.0 | 2,5 |
 | **F1.3** | Provisionamento de `TenantMember` no primeiro acesso e troca de contexto entre tenants | `lib/auth/membership.ts` | F1.0 | 2 |
