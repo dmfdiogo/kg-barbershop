@@ -105,6 +105,21 @@ por profissional. A violação chega como `23P01` e é traduzida para
 
 ---
 
+## Duas armadilhas do Next que já custaram caro
+
+**`notFound()` no layout de um grupo escapa para o 404 da raiz.** O boundary
+`not-found.tsx` do grupo fica *por dentro* do layout, então não captura o que o
+próprio layout lança. Portão de acesso vai no layout do **segmento**, não no do
+grupo — é por isso que `app/(platform)/plataforma/layout.tsx` existe, e há um
+teste estrutural (`tests/unit/platform/gate-coverage.test.ts`) que falha se
+alguém criar segmento novo sem portão.
+
+**Renderizar a página de negação em vez de lançar vaza o conteúdo protegido.**
+Se o layout renderiza um 404 "por cima" mas continua renderizando `children`, a
+página protegida vai serializada no payload RSC e chega pela rede a quem não
+podia vê-la. Sempre **lance** (`notFound()` / `redirect()`), nunca renderize a
+negação com o conteúdo montado atrás.
+
 ## Providers externos: tudo mock até a fase 8
 
 WhatsApp, Asaas e Stripe ficam atrás de interfaces
