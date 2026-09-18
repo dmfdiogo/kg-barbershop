@@ -37,6 +37,8 @@ O percentual da taxa é configuração da plataforma, não número mágico no c�
 
 ### 4. Máquina de estados e webhooks
 
+> **A rota `app/api/webhooks/payments/route.ts` já existe**, criada na F0.3 em versão mínima (verifica assinatura e despacha para um handler, sem tocar no banco — o schema ainda não existia lá). Você assume a propriedade dela e a evolui: persistência em `WebhookEvent`, idempotência real, transação e máquina de estados.
+
 `Booking.status` × `Payment.status` num único lugar, com transições explícitas e proibidas explícitas. Webhooks conforme `contexto-comum.md` §6: assinatura verificada, idempotência por `WebhookEvent`, processamento transacional, valor sempre confrontado com o registro local.
 
 Cenários a cobrir: pago, recusado, Pix expirado, estorno total, estorno parcial, webhook duplicado, webhook fora de ordem (confirmação chegando depois do estorno).

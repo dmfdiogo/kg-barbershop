@@ -73,8 +73,8 @@ kg-barbershop/
 │   ├── (dashboard)/           # Owner e Staff (RBAC por membership)
 │   ├── [slug]/                # Portal público do tenant (SSR, white-label)
 │   └── api/
-│       ├── webhooks/asaas/    # pagamentos, assinaturas, status de subconta
-│       ├── webhooks/stripe/   # billing B2B
+│       ├── webhooks/payments/ # B2C: cobranças, assinaturas do clube, KYC
+│       ├── webhooks/billing/  # B2B: mensalidade da plataforma
 │       └── cron/              # lembretes D-1/H-2, expiração de holds
 ├── lib/
 │   ├── tenant/                # resolução de tenant + client Prisma com RLS
@@ -86,6 +86,8 @@ kg-barbershop/
 ├── prisma/
 └── spec-executiva.md, plano-refatoracao.md
 ```
+
+**Rotas de webhook são nomeadas pelo domínio, não pelo provider** (`payments`, `billing`) — e não `asaas`/`stripe`. Trocar a implementação por variável de ambiente não pode implicar trocar URL: quem verifica assinatura e traduz o payload é o adaptador, atrás do port. Na F8, a URL que se cola no painel do Asaas é essa mesma.
 
 **Resolução de tenant (middleware do Next), nesta ordem:** domínio próprio (`Host` casando com `Tenant.customDomain`) → subdomínio → `/[slug]`. Fase 1 entrega slug; domínio próprio é Fase 2 da spec.
 

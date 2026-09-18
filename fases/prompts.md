@@ -1279,6 +1279,14 @@ AMBIENTE
 VOCÊ É DONO DE
   lib/payments/state.ts, app/api/webhooks/payments/**
 
+HERANÇA DA F0.3
+  A rota app/api/webhooks/payments/route.ts JÁ EXISTE em versão mínima: verifica
+  assinatura e despacha para um handler, sem tocar no banco (na F0.3 o schema
+  ainda não estava mesclado, e a dedupe vivia no store do mock). Você assume a
+  propriedade dela e a evolui para o que a sua tarefa exige: persistência em
+  WebhookEvent, idempotência real por unique(provider, eventId), processamento
+  transacional e a máquina de estados. Não recrie do zero sem ler o que está lá.
+
 VOCÊ É O TRONCO DA F4
   F4.1, F4.2 e F4.3 dependem dos seus estados e do seu webhook.
 
