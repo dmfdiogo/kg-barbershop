@@ -53,6 +53,8 @@ Próximos agendamentos, histórico, cancelar (dentro da janela do tenant) e rema
 
 ### 6. Agenda do painel: visão do profissional e walk-in
 
+> O `CalendarView` que a F0.4 entregou é uma grade **semanal** própria, escrita do zero: o original dependia de `react-big-calendar` + `moment`, e `moment` é proibido (`contexto-comum.md` §2). Se esta tarefa precisar de visão de dia ou de mês, estenda o componente — **não** reintroduza a dependência.
+
 **Área do Prestador (spec §2.3).** Visão do dia e da semana para o Staff, mobile-first, com os atendimentos e seus status (confirmado, pago, pendente, finalizado), e a ação de marcar como finalizado ou não compareceu. O Owner vê a agenda de qualquer profissional do tenant; o Staff, só a sua.
 
 **Walk-in.** Staff e Owner criam agendamento pelo painel, com `source='WALK_IN'`, podendo passar por cima da antecedência mínima — mas **nunca** por cima do anti-overlap.

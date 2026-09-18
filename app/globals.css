@@ -12,6 +12,16 @@
   --color-foreground: #171717;
   --color-muted: #f5f5f5;
   --color-border: #e5e5e5;
+
+  /* Cores de status são FUNCIONAIS, não de marca: o tenant customiza
+     primária, secundária e fundo (spec §5.1), nunca estas. Vermelho de
+     cancelamento precisa significar cancelamento em todo salão. */
+  --color-success: #15803d;
+  --color-success-soft: #dcfce7;
+  --color-warning: #a16207;
+  --color-warning-soft: #fef9c3;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fee2e2;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,6 +32,13 @@
     --color-foreground: #fafafa;
     --color-muted: #171717;
     --color-border: #262626;
+
+    --color-success: #4ade80;
+    --color-success-soft: #14321f;
+    --color-warning: #facc15;
+    --color-warning-soft: #332a10;
+    --color-danger: #f87171;
+    --color-danger-soft: #3a1717;
   }
 }
 
@@ -32,6 +49,12 @@
   --color-foreground: var(--color-foreground);
   --color-muted: var(--color-muted);
   --color-border: var(--color-border);
+  --color-success: var(--color-success);
+  --color-success-soft: var(--color-success-soft);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
 }
 
 body {

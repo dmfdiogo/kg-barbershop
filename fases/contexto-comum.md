@@ -22,6 +22,8 @@ O repositório contém hoje um MVP antigo, single-tenant, em Express + React/Vit
 | :--- | :--- | :--- |
 | App | Next.js (App Router) + TypeScript `strict` | Server Components por padrão; `"use client"` só onde há interação. |
 | Estilo | Tailwind + CSS variables por tenant | **Nunca** cor literal em componente de produto. Sempre token (`bg-[var(--color-primary)]` ou classe semântica). O white-label depende disso. |
+
+**Duas famílias de token, e só uma é do tenant.** `--color-primary`, `--color-secondary` e `--color-background` são **marca**: o dono customiza (spec §5.1). `--color-success`, `--color-warning` e `--color-danger` (com as variantes `-soft`) são **funcionais** e ficam fixas — vermelho de cancelamento precisa significar cancelamento em todo salão, e deixar o dono pintar isso é como deixá-lo escolher a cor do semáforo. Use-as para status de agendamento e pagamento.
 | ORM | Prisma | Sempre pelo client escopado (§4). |
 | Banco | PostgreSQL | Extensão `btree_gist` obrigatória. |
 | Testes | Vitest (unidade/integração) + Playwright (e2e) | Ver §7. |
