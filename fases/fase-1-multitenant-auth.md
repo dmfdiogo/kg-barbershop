@@ -30,6 +30,8 @@ Domínio próprio é Fase 2 do produto: implemente **só a resolução**, sem pr
 
 **Slugs reservados (achado da F0.1).** A rota dinâmica `/[slug]` convive com segmentos estáticos (`/painel`, `/plataforma` e, no futuro, `/api`, `/dev`). O Next resolve o estático primeiro, então funciona — mas um tenant com slug `painel` ficaria inacessível para sempre. Entregue a lista de palavras reservadas e a função de validação; quem consome é a configuração de slug na F2.
 
+> **Heranças da F1.0** (mesmo padrão dos repasses anteriores): `lib/auth/actions.ts` nasce na F1.0 só com as assinaturas e um stub que lança — **a F1.1 assume a propriedade** e preenche, delegando para o seu `lib/auth/otp.ts`. Não recrie o arquivo nem mude as assinaturas: a F1.2 compila contra elas.
+
 ### 2. OTP
 
 Fluxo: informa nome + WhatsApp → `OtpChallenge` com **hash** do código (nunca o código em texto puro) → `sendOtp` pelo provider → valida → cria/recupera `User` por telefone → cria `TenantMember` com papel `CUSTOMER` se ainda não existir naquele tenant → sessão.

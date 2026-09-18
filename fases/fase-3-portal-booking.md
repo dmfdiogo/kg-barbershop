@@ -11,6 +11,8 @@ O portal público do estabelecimento, mobile-first: escolher serviço → profis
 
 ## Escopo
 
+> **Heranças da F1.0:** `app/[slug]/layout.tsx` (portão que traduz status do tenant em página própria) e `app/tenant-status.tsx` já existem. Você **estende**, não substitui, e preserva o uso de `getTenantContext(slug)` — é ele que memoiza a resolução por requisição. Há também um `app/not-found.tsx` na raiz: qualquer 404 não casado mostra "estabelecimento não encontrado"; um segmento que queira 404 próprio declara o seu.
+
 ### 1. Portal SSR
 
 `/[slug]`, renderizado no servidor com o tema do tenant já aplicado. Catálogo de serviços com duração e preço.

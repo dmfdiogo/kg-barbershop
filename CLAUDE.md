@@ -116,6 +116,18 @@ As duas rotas respondem 404 fora de desenvolvimento.
 - ESLint fixado na linha 9: o `eslint-config-next` 16 quebra no ESLint 10.
 - Prisma fixado em 7.10.0: o dist-tag `latest` aponta para uma release candidate.
 
+## Testar no celular
+
+O cookie de sessão é `secure: true` sempre — inclusive em desenvolvimento, de
+propósito. Por isso `http://192.168.x.x:3000` não guarda sessão. Para testar num
+aparelho real, suba com HTTPS:
+
+```bash
+npx next dev --experimental-https
+```
+
+Afrouxar o `secure` em dev seria testar um cookie diferente do que vai a produção.
+
 ## Armadilhas conhecidas
 
 - **Testes compartilham o banco do `DATABASE_URL`** com o desenvolvimento. Rodar
