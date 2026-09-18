@@ -56,6 +56,8 @@ Helpers `requireRole(...)` para Server Components e Route Handlers. Owner e Staf
 
 `User.isSuperAdmin` dá acesso a `(platform)`, por caminho auditado (`asPlatformAdmin()`), nunca por bypass implícito de RLS. A tela em si é F7; aqui é só o portão.
 
+> **Heranças da F1.4** (mesmo padrão dos repasses anteriores): o portão já existe em `app/(platform)/plataforma/layout.tsx` e nega com 404 quem não tem `User.isSuperAdmin`; sem sessão ele manda para `/`. **A F1.2 troca esse destino por `/entrar?next=/plataforma`** quando criar a tela de login, para o Super Admin voltar direto ao painel depois do OTP. O 404 do segmento tem mensagem própria em `app/(platform)/not-found.tsx` (o portão fica no segmento filho de propósito: `notFound()` no layout do grupo cairia no 404 da raiz, que fala de estabelecimento). Acesso de suporte a dado de tenant é `withPlatformAudit()` (`lib/audit/**`), que revalida o portão e grava o `AuditLog` antes de ler — `asPlatformAdmin` direto só passa no lint nos caminhos inventariados em `eslint.config.mjs`. As telas do painel são a F7.3 e vivem sob `plataforma/**` (slug reservado; segmento irmão ficaria fora do portão).
+
 ## Fora do escopo
 
 Painel do Owner (F2), portal público de agendamento (F3), envio real de WhatsApp (F8), provisionamento de domínio (produto Fase 2).
