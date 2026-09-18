@@ -5,7 +5,7 @@ import {
   resolveTenantById,
   type TenantRoutingInfo,
 } from '@/lib/tenant/context';
-import { asPlatformAdmin, forTenant } from '@/lib/tenant/db';
+import { asPlatformAdmin, forTenant, type TenantTransaction } from '@/lib/tenant/db';
 import { postgresErrorCode } from '@/lib/tenant/errors';
 import { getSession, setActiveTenant } from './session';
 import type { Role, Session } from './types';
@@ -82,6 +82,32 @@ export async function getMembership(tenantId: string, userId: string): Promise<T
   );
 }
 
+export interface EnsureMembershipOptions {
+  /**
+   * Transação já aberta pelo chamador (ex.: o verify do OTP), para que o
+   * vínculo nasça atômico com o resto do fluxo. Com `tx`, a corrida de
+   * unicidade NÃO é tratada aqui: uma violação aborta a transação do chamador,
+   * que é quem sabe reler/retentar. O OTP que passa a tx serializa por telefone
+   * e consome o desafio antes de provisionar, então não há corrida a tratar.
+   */
+  tx?: TenantTransaction;
+}
+
+async function ensureMembershipInTx(
+  tx: TenantTransaction,
+  tenantId: string,
+  userId: string,
+): Promise<TenantMember> {
+  const existing = await tx.tenantMember.findUnique({
+    where: { tenantId_userId: { tenantId, userId } },
+  });
+  if (existing) return existing;
+
+  return tx.tenantMember.create({
+    data: { tenantId, userId, role: DEFAULT_MEMBER_ROLE },
+  });
+}
+
 /**
  * Provisiona o `TenantMember` com papel CUSTOMER no primeiro acesso da pessoa
  * ao portal do tenant e devolve o vínculo — existente ou recém-criado.
@@ -93,25 +119,28 @@ export async function getMembership(tenantId: string, userId: string): Promise<T
  * de unicidade aborta a transação corrente, então não dá para capturá-la e
  * continuar dentro da mesma callback.
  *
+ * `options.tx` entrega a transação do chamador (ex.: verify do OTP): o vínculo
+ * é escrito NA MESMA transação, sem abrir uma segunda — a atomicidade do fluxo
+ * de primeiro acesso fica com quem abriu a transação.
+ *
  * PRECONDIÇÃO: `userId` vem de identidade provada (sessão ou OTP verificado) e
  * `tenantId` do tenant resolvido da requisição — nunca de input do cliente.
  */
-export async function ensureMembership(tenantId: string, userId: string): Promise<TenantMember> {
+export async function ensureMembership(
+  tenantId: string,
+  userId: string,
+  options: EnsureMembershipOptions = {},
+): Promise<TenantMember> {
   if (!tenantId || !userId) {
     throw new TypeError('ensureMembership exige tenantId e userId.');
   }
 
-  try {
-    return await forTenant(tenantId, async (tx) => {
-      const existing = await tx.tenantMember.findUnique({
-        where: { tenantId_userId: { tenantId, userId } },
-      });
-      if (existing) return existing;
+  if (options.tx) {
+    return ensureMembershipInTx(options.tx, tenantId, userId);
+  }
 
-      return tx.tenantMember.create({
-        data: { tenantId, userId, role: DEFAULT_MEMBER_ROLE },
-      });
-    });
+  try {
+    return await forTenant(tenantId, (tx) => ensureMembershipInTx(tx, tenantId, userId));
   } catch (error) {
     if (!isUniqueViolation(error)) throw error;
 
