@@ -1,0 +1,651 @@
+// Schema completo da F0.2 — congelado a partir daqui.
+//
+// O detalhamento de cada entidade está em plano-refatoracao.md §4. Campos sem
+// consumidor hoje trazem, em comentário, a tarefa que os usará; não são resto.
+//
+// Invariantes (fases/contexto-comum.md §3):
+//   - dinheiro é Int em centavos;
+//   - tempo é timestamptz (sempre UTC no banco) — por isso todo DateTime leva
+//     @db.Timestamptz(3);
+//   - toda tabela de negócio carrega tenantId, mesmo quando "dá para chegar lá
+//     por join": é o que permite RLS uniforme;
+//   - telefone em E.164;
+//   - IDs expostos em URL são cuid.
+//
+// O generator é o prisma-client-js (legado) de propósito: ele gera para
+// node_modules/@prisma/client, sem criar pasta de artefato no repositório que
+// precise de .gitignore próprio ou ignore de lint. O runtime usa o driver
+// adapter (@prisma/adapter-pg) dentro de lib/tenant/db.ts.
+//
+// DÍVIDA CONHECIDA: o generator `prisma-client` (novo, com output versionável)
+// é o caminho recomendado, mas hoje o dist-tag do Prisma 8 ainda aponta para
+// RC — e a fundação não vai em RC. Gatilho para trocar: quando o Prisma 8
+// estabilizar fora de RC, migrar generator e output junto.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Sem `url` no schema: no Prisma 7 a connection string vive em prisma.config.ts
+// (migrate) e no driver adapter (runtime).
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum TenantStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELED
+
+  @@map("tenant_status")
+}
+
+enum MemberRole {
+  OWNER
+  STAFF
+  CUSTOMER
+
+  @@map("member_role")
+}
+
+enum PaymentMode {
+  FULL_PREPAID
+  DEPOSIT
+  ON_SITE
+
+  @@map("payment_mode")
+}
+
+enum BookingStatus {
+  HOLD
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+
+  @@map("booking_status")
+}
+
+enum BookingSource {
+  PORTAL
+  WALK_IN
+
+  @@map("booking_source")
+}
+
+enum PaymentMethod {
+  PIX
+  CARD
+  CASH
+
+  @@map("payment_method")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  EXPIRED
+
+  @@map("payment_status")
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("kyc_status")
+}
+
+enum BillingPlan {
+  SOLO
+  EQUIPE
+  PRO
+
+  @@map("billing_plan")
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+
+  @@map("subscription_status")
+}
+
+// Ciclos aceitos pelo Asaas Assinaturas (plano §1.1).
+enum MembershipCycle {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMIANNUALLY
+  YEARLY
+
+  @@map("membership_cycle")
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+
+  @@map("membership_status")
+}
+
+enum NotificationStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  CANCELED
+  SKIPPED
+
+  @@map("notification_status")
+}
+
+enum MessagingChannel {
+  WHATSAPP
+  PUSH
+  EMAIL
+
+  @@map("messaging_channel")
+}
+
+// ---------------------------------------------------------------------------
+// Tenant e identidade
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id                        String       @id @default(cuid())
+  slug                      String       @unique
+  customDomain              String?      @unique @map("custom_domain")
+  name                      String
+  document                  String // CPF ou CNPJ do estabelecimento
+  timezone                  String       @default("America/Sao_Paulo")
+  logoUrl                   String?      @map("logo_url")
+  colorPrimary              String?      @map("color_primary")
+  colorSecondary            String?      @map("color_secondary")
+  colorBackground           String?      @map("color_background")
+  themePreset               String?      @map("theme_preset")
+  cancellationWindowHours   Int          @default(24) @map("cancellation_window_hours")
+  status                    TenantStatus @default(TRIAL)
+  trialBookingsUsed         Int          @default(0) @map("trial_bookings_used") // F7.1: incrementa na confirmação
+  minAdvanceMinutes         Int          @default(0) @map("min_advance_minutes") // F3.1/F2.5
+  maxAdvanceMinutes         Int?         @map("max_advance_minutes") // F3.1/F2.5 — null = sem limite
+  noShowPolicyText          String?      @map("no_show_policy_text") // F2.5: texto exibido, sem semântica
+  membershipRequiresDeposit Boolean      @default(false) @map("membership_requires_deposit") // F5: pendência clube × sinal
+  createdAt                 DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                 DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  members            TenantMember[]
+  staffProfiles      StaffProfile[]
+  workingHours       WorkingHours[]
+  timeOff            TimeOff[]
+  services           Service[]
+  staffServices      StaffService[]
+  bookings           Booking[]
+  payments           Payment[]
+  asaasAccount       AsaasAccount?
+  platformSub        PlatformSub?
+  membershipPlans    MembershipPlan[]
+  membershipBenefits MembershipBenefit[]
+  memberships        Membership[]
+  creditLedger       CreditLedger[]
+  messagingPrefs     MessagingPref[]
+  notificationJobs   NotificationJob[]
+  auditLogs          AuditLog[]
+
+  @@map("tenant")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  phone        String   @unique // E.164 (ex.: +5548999999999)
+  name         String
+  email        String?
+  isSuperAdmin Boolean  @default(false) @map("is_super_admin")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  memberships    TenantMember[]
+  messagingPrefs MessagingPref[]
+  auditLogs      AuditLog[]      @relation("AuditActor")
+
+  @@map("user")
+}
+
+model TenantMember {
+  id        String     @id @default(cuid())
+  tenantId  String     @map("tenant_id")
+  userId    String     @map("user_id")
+  role      MemberRole
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  staffProfile StaffProfile?
+  bookings     Booking[]     @relation("BookingCustomer")
+  memberships  Membership[]  @relation("MembershipCustomer")
+
+  // Um papel por pessoa por tenant: quem é STAFF deixa de ser CUSTOMER nele.
+  @@unique([tenantId, userId])
+  @@index([tenantId, role])
+  @@index([userId])
+  @@map("tenant_member")
+}
+
+model StaffProfile {
+  id             String   @id @default(cuid())
+  tenantId       String   @map("tenant_id")
+  tenantMemberId String   @unique @map("tenant_member_id")
+  bio            String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantMember  TenantMember   @relation(fields: [tenantMemberId], references: [id], onDelete: Cascade)
+  workingHours  WorkingHours[]
+  timeOff       TimeOff[]
+  staffServices StaffService[]
+  bookings      Booking[]
+
+  @@index([tenantId, active])
+  @@map("staff_profile")
+}
+
+// Jornada semanal. O dia é decidido no fuso do tenant.
+//
+// `weekday`: 0=domingo … 6=sábado. A convenção coincide de propósito entre o
+// getDay() do JS e o extract(dow) do Postgres — "corrigir" um dos lados sem o
+// outro desloca a jornada em um dia. O cálculo do dia acontece no fuso do
+// tenant (date-fns-tz), NUNCA em UTC: getUTCDay() foi o bug real do MVP antigo
+// (contexto-comum.md §3.2 e plano §5.4).
+model WorkingHours {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  staffId   String   @map("staff_id")
+  weekday   Int
+  startTime DateTime @map("start_time") @db.Time(0)
+  endTime   DateTime @map("end_time") @db.Time(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff  StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, weekday, startTime])
+  @@index([tenantId, staffId, weekday])
+  @@map("working_hours")
+}
+
+model TimeOff {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  staffId   String   @map("staff_id")
+  startsAt  DateTime @map("starts_at") @db.Timestamptz(3)
+  endsAt    DateTime @map("ends_at") @db.Timestamptz(3)
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff  StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, staffId, startsAt])
+  @@map("time_off")
+}
+
+// ---------------------------------------------------------------------------
+// Catálogo
+// ---------------------------------------------------------------------------
+
+model Service {
+  id             String      @id @default(cuid())
+  tenantId       String      @map("tenant_id")
+  name           String
+  durationMin    Int         @map("duration_min")
+  bufferMin      Int         @default(0) @map("buffer_min")
+  priceCents     Int         @map("price_cents")
+  paymentMode    PaymentMode @default(ON_SITE) @map("payment_mode")
+  depositCents   Int?        @map("deposit_cents")
+  depositPercent Int?        @map("deposit_percent")
+  active         Boolean     @default(true)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffServices      StaffService[]
+  bookings           Booking[]
+  membershipBenefits MembershipBenefit[]
+  creditLedger       CreditLedger[]
+
+  @@index([tenantId, active])
+  @@map("service")
+}
+
+model StaffService {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  staffId   String   @map("staff_id")
+  serviceId String   @map("service_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff   StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  service Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, serviceId])
+  @@index([tenantId])
+  @@map("staff_service")
+}
+
+// ---------------------------------------------------------------------------
+// Agendamento e pagamento B2C
+// ---------------------------------------------------------------------------
+
+model Booking {
+  id                 String        @id @default(cuid())
+  tenantId           String        @map("tenant_id")
+  customerId         String        @map("customer_id")
+  staffId            String        @map("staff_id")
+  serviceId          String        @map("service_id")
+  startsAt           DateTime      @map("starts_at") @db.Timestamptz(3)
+  endsAt             DateTime      @map("ends_at") @db.Timestamptz(3)
+  blockedUntil       DateTime      @map("blocked_until") @db.Timestamptz(3) // endsAt + buffer do serviço
+  status             BookingStatus
+  holdExpiresAt      DateTime?     @map("hold_expires_at") @db.Timestamptz(3) // F3.2
+  holdSessionId      String?       @map("hold_session_id") // F3.2: amarra o hold à sessão/dispositivo
+  priceCents         Int           @map("price_cents")
+  source             BookingSource @default(PORTAL)
+  confirmedAt        DateTime?     @map("confirmed_at") @db.Timestamptz(3) // F7.1: trial conta na confirmação
+  completedAt        DateTime?     @map("completed_at") @db.Timestamptz(3) // F3.5
+  cancelledAt        DateTime?     @map("cancelled_at") @db.Timestamptz(3) // F3.4
+  cancelledBy        String?       @map("cancelled_by") // F3.4: User.id de quem cancelou
+  cancellationReason String?       @map("cancellation_reason") // F3.4
+  noShowAt           DateTime?     @map("no_show_at") @db.Timestamptz(3) // F3.5
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer         TenantMember      @relation("BookingCustomer", fields: [customerId], references: [id])
+  staff            StaffProfile      @relation(fields: [staffId], references: [id])
+  service          Service           @relation(fields: [serviceId], references: [id])
+  payments         Payment[]
+  creditLedger     CreditLedger[]
+  notificationJobs NotificationJob[]
+
+  @@index([tenantId, startsAt])
+  @@index([tenantId, status, startsAt])
+  @@index([staffId, startsAt])
+  @@index([customerId])
+  @@map("booking")
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  tenantId         String        @map("tenant_id")
+  bookingId        String        @map("booking_id")
+  provider         String // "mock" | "asaas" (o adapter real entra na F8)
+  method           PaymentMethod
+  amountCents      Int           @map("amount_cents")
+  platformFeeCents Int           @default(0) @map("platform_fee_cents")
+  asaasId          String?       @map("asaas_id")
+  status           PaymentStatus @default(PENDING)
+  paidAt           DateTime?     @map("paid_at") @db.Timestamptz(3)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([bookingId])
+  @@index([asaasId])
+  @@map("payment")
+}
+
+model AsaasAccount {
+  id             String    @id @default(cuid())
+  tenantId       String    @unique @map("tenant_id")
+  asaasAccountId String    @map("asaas_account_id")
+  walletId       String    @map("wallet_id")
+  apiKeyEnc      String    @map("api_key_enc") // chave da subconta criptografada em repouso (F4.1)
+  pixKey         String    @map("pix_key")
+  kycStatus      KycStatus @default(PENDING) @map("kyc_status")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("asaas_account")
+}
+
+// ---------------------------------------------------------------------------
+// Billing B2B da plataforma (F7)
+// ---------------------------------------------------------------------------
+
+model PlatformSub {
+  id                   String             @id @default(cuid())
+  tenantId             String             @unique @map("tenant_id")
+  stripeCustomerId     String?            @map("stripe_customer_id")
+  stripeSubscriptionId String?            @map("stripe_subscription_id")
+  plan                 BillingPlan
+  status               SubscriptionStatus @default(TRIALING)
+  currentPeriodEnd     DateTime?          @map("current_period_end") @db.Timestamptz(3)
+  trialEndedAt         DateTime?          @map("trial_ended_at") @db.Timestamptz(3)
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("platform_sub")
+}
+
+// ---------------------------------------------------------------------------
+// Clube de assinatura B2C do tenant (F5)
+// ---------------------------------------------------------------------------
+
+model MembershipPlan {
+  id         String          @id @default(cuid())
+  tenantId   String          @map("tenant_id")
+  name       String
+  priceCents Int             @map("price_cents")
+  cycle      MembershipCycle
+  active     Boolean         @default(true)
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  benefits    MembershipBenefit[]
+  memberships Membership[]
+
+  @@index([tenantId, active])
+  @@map("membership_plan")
+}
+
+model MembershipBenefit {
+  id               String   @id @default(cuid())
+  tenantId         String   @map("tenant_id")
+  planId           String   @map("plan_id")
+  serviceId        String   @map("service_id")
+  quantityPerCycle Int      @map("quantity_per_cycle")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan    MembershipPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  service Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, serviceId])
+  @@index([tenantId])
+  @@map("membership_benefit")
+}
+
+model Membership {
+  id                  String           @id @default(cuid())
+  tenantId            String           @map("tenant_id")
+  customerId          String           @map("customer_id")
+  planId              String           @map("plan_id")
+  asaasSubscriptionId String?          @map("asaas_subscription_id")
+  status              MembershipStatus @default(ACTIVE)
+  currentPeriodEnd    DateTime?        @map("current_period_end") @db.Timestamptz(3)
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer     TenantMember   @relation("MembershipCustomer", fields: [customerId], references: [id])
+  plan         MembershipPlan @relation(fields: [planId], references: [id])
+  creditLedger CreditLedger[]
+
+  @@index([tenantId, status])
+  @@index([customerId])
+  @@map("membership")
+}
+
+// Append-only: saldo é a soma de `delta`, nunca um contador mutável (F5.2).
+model CreditLedger {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  membershipId String   @map("membership_id")
+  serviceId    String   @map("service_id")
+  delta        Int
+  reason       String
+  bookingId    String?  @map("booking_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  service    Service    @relation(fields: [serviceId], references: [id])
+  booking    Booking?   @relation(fields: [bookingId], references: [id])
+
+  @@index([tenantId, membershipId])
+  @@index([membershipId])
+  @@map("credit_ledger")
+}
+
+// ---------------------------------------------------------------------------
+// Auth, rate limit e consentimento
+// ---------------------------------------------------------------------------
+
+// Global de propósito: identidade é por telefone, não por tenant (plano §4).
+model OtpChallenge {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String    @map("code_hash") // nunca o código em texto puro (F1.1)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  attempts   Int       @default(0)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([phone, expiresAt])
+  @@map("otp_challenge")
+}
+
+// F1.1: em serverless, contador em memória não sobrevive — daí a tabela.
+model RateLimitCounter {
+  id          String   @id @default(cuid())
+  key         String   @unique // ex.: "otp:phone:+5548…" | "otp:ip:…"
+  windowStart DateTime @map("window_start") @db.Timestamptz(3)
+  count       Int      @default(0)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([expiresAt])
+  @@map("rate_limit_counter")
+}
+
+// F6.2: opt-out por canal e registro de consentimento (LGPD).
+model MessagingPref {
+  id            String           @id @default(cuid())
+  tenantId      String           @map("tenant_id")
+  userId        String           @map("user_id")
+  channel       MessagingChannel
+  optedOutAt    DateTime?        @map("opted_out_at") @db.Timestamptz(3)
+  consentAt     DateTime?        @map("consent_at") @db.Timestamptz(3)
+  consentSource String?          @map("consent_source")
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, channel])
+  @@index([userId])
+  @@map("messaging_pref")
+}
+
+// ---------------------------------------------------------------------------
+// Infraestrutura: jobs, webhooks e auditoria
+// ---------------------------------------------------------------------------
+
+model NotificationJob {
+  id                String             @id @default(cuid())
+  tenantId          String             @map("tenant_id")
+  bookingId         String?            @map("booking_id")
+  template          String // nomes válidos: registro central da F6.0
+  scheduledFor      DateTime           @map("scheduled_for") @db.Timestamptz(3)
+  sentAt            DateTime?          @map("sent_at") @db.Timestamptz(3)
+  providerMessageId String?            @map("provider_message_id")
+  status            NotificationStatus @default(PENDING)
+  attempts          Int                @default(0) // F6.0: retry com backoff
+  lockedAt          DateTime?          @map("locked_at") @db.Timestamptz(3) // F6.0: claim do runner
+  lastError         String?            @map("last_error") // F6.0
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  // Query do runner da F6.0 (a cada 5 minutos).
+  @@index([status, scheduledFor])
+  @@index([tenantId, bookingId])
+  @@map("notification_job")
+}
+
+// Idempotência de webhooks (contexto-comum.md §6): a unique é (provider, eventId).
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  eventId     String    @map("event_id")
+  payload     Json
+  processedAt DateTime? @map("processed_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([provider, eventId])
+  @@index([provider, processedAt])
+  @@map("webhook_event")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  actorId   String?  @map("actor_id") // F1.4: null quando a ação é do sistema (cron/webhook)
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor  User?  @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([actorId])
+  @@map("audit_log")
+}
