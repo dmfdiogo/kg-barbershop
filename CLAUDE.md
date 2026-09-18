@@ -80,6 +80,14 @@ escopado ([`lib/tenant/db.ts`](lib/tenant/db.ts)), que abre transação e execut
 as tabelas com `tenantId`. Nunca importe `PrismaClient` cru em código de produto.
 Remover uma camada "porque a outra cobre" é regressão de segurança.
 
+**Dois URLs de banco, e a diferença importa.** `DATABASE_URL` é a role de
+aplicação (`kg_app`), sem superuser — a RLS vale para ela, **inclusive em
+desenvolvimento**. `DIRECT_DATABASE_URL` é o dono do banco e serve só para
+migrations, seed e criação da role. Superuser ignora RLS por completo: se o app
+rodasse como dono em dev, uma query sem escopo de tenant passaria na sua máquina
+e vazaria em produção. Uma consulta sem `set_config` agora devolve zero linhas,
+que é o comportamento correto — falha fechado.
+
 **A callback do client escopado pode rodar duas vezes.** Sob disputa de slot o
 Postgres devolve `40P01`/`P2034` e o client faz retry. Tudo lá dentro precisa ser
 reexecutável e viver no banco — nada de chamada externa ou efeito em memória.
@@ -140,6 +148,9 @@ Afrouxar o `secure` em dev seria testar um cookie diferente do que vai a produç
 - **Testes compartilham o banco do `DATABASE_URL`** com o desenvolvimento. Rodar
   a suíte mexe no mesmo Postgres do seed. Para trabalho paralelo, use um banco
   por worktree.
+- **Consulta devolvendo zero linhas sem motivo?** Provavelmente falta o escopo de
+  tenant. Com a role de aplicação, a RLS filtra tudo quando `app.current_tenant`
+  não está definido — passe pelo client escopado em vez de contornar.
 - **`npm audit` acusa vulnerabilidades em `mysql2`**, dependência transitiva do
   CLI do Prisma. O projeto é Postgres e o CLI é `devDependency`. **Não rode
   `npm audit fix --force`** — ele rebaixa o Prisma para a 6.x.

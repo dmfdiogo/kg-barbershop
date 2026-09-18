@@ -13,10 +13,11 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
-    // `prisma migrate reset` roda o seed sozinho — é o caminho de um clone novo.
-    seed: 'node prisma/seed.mts',
   },
   datasource: {
-    url: process.env.DATABASE_URL,
+    // Migrations e seed precisam do DONO do banco: criam extensão, políticas e
+    // escrevem entre tenants. O app em runtime usa DATABASE_URL, que aponta
+    // para uma role sem superuser — é o que mantém a RLS valendo em dev.
+    url: process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL,
   },
 });

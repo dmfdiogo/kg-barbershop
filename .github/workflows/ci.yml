@@ -29,7 +29,8 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://kg:kg@localhost:5432/kg?schema=public
+      DATABASE_URL: postgresql://kg_app:kg_app@localhost:5432/kg?schema=public
+      DIRECT_DATABASE_URL: postgresql://kg:kg@localhost:5432/kg?schema=public
       # O CI roda sem rede externa e sem gastar dinheiro: sempre contra os mocks.
       PAYMENT_PROVIDER: mock
       MESSAGING_PROVIDER: mock
@@ -81,7 +82,8 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://kg:kg@localhost:5432/kg?schema=public
+      DATABASE_URL: postgresql://kg_app:kg_app@localhost:5432/kg?schema=public
+      DIRECT_DATABASE_URL: postgresql://kg:kg@localhost:5432/kg?schema=public
       PAYMENT_PROVIDER: mock
       MESSAGING_PROVIDER: mock
       BILLING_PROVIDER: mock

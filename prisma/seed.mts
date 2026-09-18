@@ -33,7 +33,7 @@ if (!process.env.DATABASE_URL && existsSync('.env')) {
   process.loadEnvFile('.env');
 }
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL;
 if (!connectionString) {
   console.error('DATABASE_URL não definida. Copie .env.example para .env (veja o CLAUDE.md).');
   process.exit(1);

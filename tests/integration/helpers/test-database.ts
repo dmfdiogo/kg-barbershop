@@ -32,9 +32,22 @@ export function databaseUrl(): string {
   return url;
 }
 
+/**
+ * Dono do banco: cria a role de teste, aplica migrations e monta fixtures.
+ * `DATABASE_URL` aponta para a role de aplicação (sem superuser), que não pode
+ * `ALTER ROLE` nem criar tabela — é justamente o ponto de ter as duas.
+ */
+export function ownerDatabaseUrl(): string {
+  // Chama databaseUrl() primeiro de propósito: é ele que carrega o .env. Ler
+  // DIRECT_DATABASE_URL antes disso devolveria undefined e cairia no fallback,
+  // que é exatamente a role sem permissão para criar role e tabela.
+  const appUrl = databaseUrl();
+  return process.env.DIRECT_DATABASE_URL ?? appUrl;
+}
+
 /** Connection string da role NÃO-superuser, na qual a RLS é aplicada de fato. */
 export function rlsDatabaseUrl(): string {
-  const url = new URL(databaseUrl());
+  const url = new URL(ownerDatabaseUrl());
   url.username = RLS_ROLE;
   url.password = RLS_PASSWORD;
   return url.toString();
@@ -49,7 +62,9 @@ let ensured = false;
 export async function ensureTestDatabase(): Promise<void> {
   if (ensured) return;
 
-  const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl() }) });
+  const admin = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: ownerDatabaseUrl() }),
+  });
   try {
     await admin.$transaction(
       async (tx) => {
@@ -76,7 +91,12 @@ function runMigrations(): void {
   );
   try {
     execFileSync(binary, ['migrate', 'deploy'], {
-      env: { ...process.env, DATABASE_URL: databaseUrl() },
+      env: {
+        ...process.env,
+        // Migrations precisam do dono do banco; DATABASE_URL pode apontar para
+        // a role de aplicação, que não cria tabela.
+        DATABASE_URL: ownerDatabaseUrl(),
+      },
       stdio: 'pipe',
     });
   } catch (error) {
@@ -218,5 +238,5 @@ export async function deleteTenant(admin: TenantDb, tenantId: string): Promise<v
 }
 
 export function createAdminDb(): TenantDb {
-  return createTenantDb(databaseUrl());
+  return createTenantDb(ownerDatabaseUrl());
 }
