@@ -27,13 +27,13 @@ function statusClasses(status: string): string {
   switch (status) {
     case 'CONFIRMED':
     case 'COMPLETED':
-      return 'bg-primary text-background';
+      return 'bg-success-soft text-success';
     case 'PENDING':
     case 'HOLD':
-      return 'border border-primary bg-background text-foreground';
+      return 'bg-warning-soft text-warning';
     case 'CANCELLED':
     case 'NO_SHOW':
-      return 'bg-muted text-secondary line-through';
+      return 'bg-danger-soft text-danger line-through';
     default:
       return 'bg-secondary/20 text-foreground';
   }

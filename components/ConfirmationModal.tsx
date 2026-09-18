@@ -55,7 +55,7 @@ export default function ConfirmationModal({
             }}
             className={`rounded-lg px-4 py-2 font-medium shadow-lg transition-colors ${
               isDangerous
-                ? 'border border-foreground bg-background text-foreground hover:bg-muted'
+                ? 'bg-danger text-background hover:bg-danger/90'
                 : 'bg-primary text-background hover:bg-primary/90'
             }`}
           >
