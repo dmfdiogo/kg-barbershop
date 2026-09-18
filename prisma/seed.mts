@@ -82,6 +82,9 @@ async function seedTenantA(tx: TenantTransaction): Promise<void> {
     data: {
       id: SEED.tenantA,
       slug: 'carlosbarber',
+      // Domínio próprio: existe no seed para que a resolução por Host tenha
+      // dado real (F1.0). O provisionamento de DNS/SSL é fase 2 do produto.
+      customDomain: 'www.carlosbarber.com.br',
       name: 'Barbearia do Carlos',
       document: '12345678000190',
       timezone: TZ,
