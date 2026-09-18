@@ -44,6 +44,8 @@ Defesas obrigatórias, porque é o endpoint mais atacável do produto:
 - resposta idêntica para telefone existente e inexistente (não vaze a base de clientes de um salão);
 - reenvio com cooldown.
 
+**Rate limit por IP e a realidade brasileira.** O limite por telefone é a defesa precisa; o por IP é rede grossa contra automação. Calibre-os de forma diferente: operadoras móveis no Brasil usam CGNAT em larga escala, então **milhares de clientes reais compartilham um mesmo IP público**. Um teto apertado por IP não barra o atacante (que troca de IP) e barra a cliente no 4G num sábado de manhã — com uma mensagem que ela não entende. Mantenha o teto por IP folgado, conte de preferência só as tentativas que falham, e registre quando ele disparar: se estiver batendo, provavelmente está batendo em gente de verdade.
+
 ### 3. Sessão e RBAC
 
 Sessão em cookie `httpOnly`, `secure`, `sameSite=lax`. O papel **não** mora no token: é lido de `TenantMember` para o tenant da requisição — a mesma pessoa pode ser `OWNER` no salão A e `CUSTOMER` no salão B.

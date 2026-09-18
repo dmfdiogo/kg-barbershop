@@ -105,6 +105,29 @@ function runMigrations(): void {
   }
 }
 
+/**
+ * `ALTER ROLE` em paralelo devolve `XX000 tuple concurrently updated` — o
+ * catálogo de roles é global e não tem trava por linha. Acontece quando a suíte
+ * roda em workers paralelos ou quando um `db:reset` coincide com os testes.
+ * Repetir resolve; o comando é idempotente.
+ */
+async function withRoleRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await fn();
+    } catch (error) {
+      const code = (error as { meta?: { code?: string } })?.meta?.code;
+      const message = error instanceof Error ? error.message : String(error);
+      const concurrent = code === 'XX000' || message.includes('tuple concurrently updated');
+      if (!concurrent) throw error;
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 50 * (i + 1)));
+    }
+  }
+  throw lastError;
+}
+
 async function ensureRlsRole(tx: Prisma.TransactionClient): Promise<void> {
   await tx.$executeRawUnsafe(`
     DO $$ BEGIN
@@ -113,7 +136,9 @@ async function ensureRlsRole(tx: Prisma.TransactionClient): Promise<void> {
       END IF;
     END $$;
   `);
-  await tx.$executeRawUnsafe(`ALTER ROLE ${RLS_ROLE} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`);
+  await withRoleRetry(() =>
+    tx.$executeRawUnsafe(`ALTER ROLE ${RLS_ROLE} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`),
+  );
   await tx.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO ${RLS_ROLE}`);
   await tx.$executeRawUnsafe(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${RLS_ROLE}`);
   await tx.$executeRawUnsafe(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${RLS_ROLE}`);

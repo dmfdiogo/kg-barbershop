@@ -34,6 +34,26 @@ if (!connectionString) {
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
+/**
+ * `ALTER ROLE` em paralelo devolve `XX000 tuple concurrently updated`: o
+ * catálogo de roles é global e não tem trava por linha. Repetir resolve, porque
+ * o comando é idempotente.
+ */
+async function withRoleRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await fn();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes('tuple concurrently updated')) throw error;
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 50 * (i + 1)));
+    }
+  }
+  throw lastError;
+}
+
 try {
   await prisma.$executeRawUnsafe(`
     DO $$ BEGIN
@@ -42,8 +62,8 @@ try {
       END IF;
     END $$;
   `);
-  await prisma.$executeRawUnsafe(
-    `ALTER ROLE ${APP_ROLE} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`,
+  await withRoleRetry(() =>
+    prisma.$executeRawUnsafe(`ALTER ROLE ${APP_ROLE} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`),
   );
   await prisma.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO ${APP_ROLE}`);
   await prisma.$executeRawUnsafe(
