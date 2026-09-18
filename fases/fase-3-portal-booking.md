@@ -1,6 +1,8 @@
 # Fase 3 — Portal de agendamento e anti-concorrência
 
-> **Depende de:** F1 (usa o seed da F0 para não esperar a F2) · **Estimativa:** 18 dias · **Paralelismo:** pode rodar junto com F2.
+> **Depende de:** F1 para a parte de UI · **Estimativa:** 18 dias · **Paralelismo:** pode rodar junto com F2.
+>
+> **F3.1 e F3.2 não esperam nada além da F0.** São domínio puro (`lib/booking/`): não tocam autenticação, resolução de tenant nem portal. Podem começar junto com a F1.0, o que encurta o caminho crítico — a dependência que este arquivo declarava antes era suposição de ordem de UI, não dependência real.
 > **Leia antes:** [`contexto-comum.md`](contexto-comum.md), spec §2.4 e §9.1.
 
 ## Objetivo
@@ -90,8 +92,8 @@ F3.1 e F3.2 são domínio puro e testável — bons candidatos a rodar em parale
 | ID | Tarefa | Dono dos arquivos | Depende | Dias |
 | :--- | :--- | :--- | :--- | :--- |
 | **F3.0** ⟨T0⟩ | Portal público `/[slug]`: SSR com tema do tenant (com defaults), catálogo, shell mobile-first, página de tenant inválido | `app/[slug]/(portal)/**`, `components/portal/**`, `lib/theme/resolve.ts` | F1 | 2 |
-| **F3.1** | Grade de disponibilidade: jornada, bloqueios, buffer, antecedência, "qualquer profissional" com distribuição, fuso do tenant | `lib/booking/availability.ts` | F3.0 | 3 |
-| **F3.2** | Hold de 10 min: transação, limpeza de vencidos, tradução do erro `23P01`, cron de expiração, **e os dois pontos de extensão do item 3.1** | `lib/booking/hold.ts`, `lib/booking/confirm.ts`, `lib/booking/participants/`, `app/api/cron/expire-holds/**` | F3.0 | 3,5 |
+| **F3.1** | Grade de disponibilidade: jornada, bloqueios, buffer, antecedência, "qualquer profissional" com distribuição, fuso do tenant | `lib/booking/availability.ts` | **F0** (domínio puro, não espera o portal) | 3 |
+| **F3.2** | Hold de 10 min: transação, limpeza de vencidos, tradução do erro `23P01`, cron de expiração, **e os dois pontos de extensão do item 3.1** | `lib/booking/hold.ts`, `lib/booking/confirm.ts`, `lib/booking/participants/`, `app/api/cron/expire-holds/**` | **F0** (não espera o portal) | 3,5 |
 | **F3.3** | Fluxo de agendamento na UI, com OTP **no fim** e contador de expiração do hold | `app/[slug]/agendar/**` | F3.1, F3.2 | 3 |
 | **F3.4** | Área do cliente: próximos, histórico, cancelar e remarcar pela política | `app/[slug]/minha-conta/**` | F3.2 | 2,5 |
 | **F3.5** | Agenda do painel: visão dia/semana do profissional com status (spec §2.3) + agendamento walk-in | `app/(dashboard)/agenda/**` | F3.2, F2.0 | 4 |

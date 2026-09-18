@@ -26,7 +26,8 @@ Os mocks não são stubs preguiçosos: validam as mesmas regras que o serviço r
 
 ```
 Onda 1   F0                          3 agentes   (após F0.1, que roda sozinha)
-Onda 2   F1                          2 agentes   (após F1.0)
+Onda 2   F1.0  ‖  F3.1  ‖  F3.2       3 agentes   (F3.1/F3.2 são domínio puro)
+Onda 2b  F1.1..F1.4                  3 agentes   (após F1.0)
 Onda 3   F2  ‖  F3                   4 agentes
 Onda 4   F4  ‖  F6  ‖  F7            4 agentes
 Onda 5   F5                          2 agentes

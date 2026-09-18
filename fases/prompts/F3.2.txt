@@ -7,7 +7,9 @@ LEIA NESTA ORDEM:
   4. fases/fase-3-portal-booking.md    (seu escopo: item 3; sua linha: F3.2)
 
 AMBIENTE
-  git worktree add ../wt-f3-2 -b f3.2-hold          (F3.0 já mesclada)
+  git worktree add ../wt-f3-2 -b f3.2-hold          (fundação F0 mesclada; a
+                                                    sua tarefa é domínio puro e
+                                                    NÃO espera o portal)
 
 VOCÊ É DONO DE
   lib/booking/hold.ts, app/api/cron/expire-holds/**
