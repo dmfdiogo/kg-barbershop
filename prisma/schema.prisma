@@ -1,0 +1,589 @@
+// Schema completo da F0.2 — congelado a partir daqui.
+//
+// O detalhamento de cada entidade está em plano-refatoracao.md §4. Campos sem
+// consumidor hoje trazem, em comentário, a tarefa que os usará; não são resto.
+//
+// Invariantes (fases/contexto-comum.md §3):
+//   - dinheiro é Int em centavos;
+//   - tempo é timestamptz (sempre UTC no banco) — por isso todo DateTime leva
+//     @db.Timestamptz(3);
+//   - toda tabela de negócio carrega tenantId, mesmo quando "dá para chegar lá
+//     por join": é o que permite RLS uniforme;
+//   - telefone em E.164;
+//   - IDs expostos em URL são cuid.
+//
+// O generator é o prisma-client-js (legado) de propósito: ele gera para
+// node_modules/@prisma/client, sem criar pasta de artefato no repositório que
+// precise de .gitignore próprio ou ignore de lint. O runtime usa o driver
+// adapter (@prisma/adapter-pg) dentro de lib/tenant/db.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Sem `url` no schema: no Prisma 7 a connection string vive em prisma.config.ts
+// (migrate) e no driver adapter (runtime).
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum TenantStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELED
+}
+
+enum MemberRole {
+  OWNER
+  STAFF
+  CUSTOMER
+}
+
+enum PaymentMode {
+  FULL_PREPAID
+  DEPOSIT
+  ON_SITE
+}
+
+enum BookingStatus {
+  HOLD
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum BookingSource {
+  PORTAL
+  WALK_IN
+}
+
+enum PaymentMethod {
+  PIX
+  CARD
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  EXPIRED
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BillingPlan {
+  SOLO
+  EQUIPE
+  PRO
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+// Ciclos aceitos pelo Asaas Assinaturas (plano §1.1).
+enum MembershipCycle {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMIANNUALLY
+  YEARLY
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  CANCELED
+  SKIPPED
+}
+
+enum MessagingChannel {
+  WHATSAPP
+  PUSH
+  EMAIL
+}
+
+// ---------------------------------------------------------------------------
+// Tenant e identidade
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id                        String       @id @default(cuid())
+  slug                      String       @unique
+  customDomain              String?      @unique
+  name                      String
+  document                  String // CPF ou CNPJ do estabelecimento
+  timezone                  String       @default("America/Sao_Paulo")
+  logoUrl                   String?
+  colorPrimary              String?
+  colorSecondary            String?
+  colorBackground           String?
+  themePreset               String?
+  cancellationWindowHours   Int          @default(24)
+  status                    TenantStatus @default(TRIAL)
+  trialBookingsUsed         Int          @default(0) // F7.1: incrementa na confirmação
+  minAdvanceMinutes         Int          @default(0) // F3.1/F2.5
+  maxAdvanceMinutes         Int? // F3.1/F2.5 — null = sem limite
+  noShowPolicyText          String? // F2.5: texto exibido, sem semântica
+  membershipRequiresDeposit Boolean      @default(false) // F5: pendência clube × sinal
+  createdAt                 DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt                 DateTime     @updatedAt @db.Timestamptz(3)
+
+  members            TenantMember[]
+  staffProfiles      StaffProfile[]
+  workingHours       WorkingHours[]
+  timeOff            TimeOff[]
+  services           Service[]
+  staffServices      StaffService[]
+  bookings           Booking[]
+  payments           Payment[]
+  asaasAccount       AsaasAccount?
+  platformSub        PlatformSub?
+  membershipPlans    MembershipPlan[]
+  membershipBenefits MembershipBenefit[]
+  memberships        Membership[]
+  creditLedger       CreditLedger[]
+  messagingPrefs     MessagingPref[]
+  notificationJobs   NotificationJob[]
+  auditLogs          AuditLog[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  phone        String   @unique // E.164 (ex.: +5548999999999)
+  name         String
+  email        String?
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  memberships    TenantMember[]
+  messagingPrefs MessagingPref[]
+  auditLogs      AuditLog[]      @relation("AuditActor")
+}
+
+model TenantMember {
+  id        String     @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      MemberRole
+  createdAt DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime   @updatedAt @db.Timestamptz(3)
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  staffProfile StaffProfile?
+  bookings     Booking[]     @relation("BookingCustomer")
+  memberships  Membership[]  @relation("MembershipCustomer")
+
+  // Um papel por pessoa por tenant: quem é STAFF deixa de ser CUSTOMER nele.
+  @@unique([tenantId, userId])
+  @@index([tenantId, role])
+  @@index([userId])
+}
+
+model StaffProfile {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenantMemberId String   @unique
+  bio            String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantMember  TenantMember   @relation(fields: [tenantMemberId], references: [id], onDelete: Cascade)
+  workingHours  WorkingHours[]
+  timeOff       TimeOff[]
+  staffServices StaffService[]
+  bookings      Booking[]
+
+  @@index([tenantId, active])
+}
+
+// Jornada semanal. O dia é decidido no fuso do tenant; `weekday` segue a
+// convenção 0=domingo … 6=sábado (mesma de Date#getDay, aplicada no fuso certo,
+// nunca em UTC — ver contexto-comum.md §3.2 e plano §5.4).
+model WorkingHours {
+  id        String   @id @default(cuid())
+  tenantId  String
+  staffId   String
+  weekday   Int
+  startTime DateTime @db.Time(0)
+  endTime   DateTime @db.Time(0)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff  StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, weekday, startTime])
+  @@index([tenantId, staffId, weekday])
+}
+
+model TimeOff {
+  id        String   @id @default(cuid())
+  tenantId  String
+  staffId   String
+  startsAt  DateTime @db.Timestamptz(3)
+  endsAt    DateTime @db.Timestamptz(3)
+  reason    String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff  StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, staffId, startsAt])
+}
+
+// ---------------------------------------------------------------------------
+// Catálogo
+// ---------------------------------------------------------------------------
+
+model Service {
+  id             String      @id @default(cuid())
+  tenantId       String
+  name           String
+  durationMin    Int
+  bufferMin      Int         @default(0)
+  priceCents     Int
+  paymentMode    PaymentMode @default(ON_SITE)
+  depositCents   Int?
+  depositPercent Int?
+  active         Boolean     @default(true)
+  createdAt      DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime    @updatedAt @db.Timestamptz(3)
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffServices      StaffService[]
+  bookings           Booking[]
+  membershipBenefits MembershipBenefit[]
+  creditLedger       CreditLedger[]
+
+  @@index([tenantId, active])
+}
+
+model StaffService {
+  id        String   @id @default(cuid())
+  tenantId  String
+  staffId   String
+  serviceId String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff   StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  service Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, serviceId])
+  @@index([tenantId])
+}
+
+// ---------------------------------------------------------------------------
+// Agendamento e pagamento B2C
+// ---------------------------------------------------------------------------
+
+model Booking {
+  id                 String        @id @default(cuid())
+  tenantId           String
+  customerId         String
+  staffId            String
+  serviceId          String
+  startsAt           DateTime      @db.Timestamptz(3)
+  endsAt             DateTime      @db.Timestamptz(3)
+  blockedUntil       DateTime      @db.Timestamptz(3) // endsAt + buffer do serviço
+  status             BookingStatus
+  holdExpiresAt      DateTime?     @db.Timestamptz(3) // F3.2
+  holdSessionId      String? // F3.2: amarra o hold à sessão/dispositivo
+  priceCents         Int
+  source             BookingSource @default(PORTAL)
+  confirmedAt        DateTime?     @db.Timestamptz(3) // F7.1: trial conta na confirmação
+  completedAt        DateTime?     @db.Timestamptz(3) // F3.5
+  cancelledAt        DateTime?     @db.Timestamptz(3) // F3.4
+  cancelledBy        String? // F3.4: User.id de quem cancelou
+  cancellationReason String? // F3.4
+  noShowAt           DateTime?     @db.Timestamptz(3) // F3.5
+  createdAt          DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime      @updatedAt @db.Timestamptz(3)
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer         TenantMember      @relation("BookingCustomer", fields: [customerId], references: [id])
+  staff            StaffProfile      @relation(fields: [staffId], references: [id])
+  service          Service           @relation(fields: [serviceId], references: [id])
+  payments         Payment[]
+  creditLedger     CreditLedger[]
+  notificationJobs NotificationJob[]
+
+  @@index([tenantId, startsAt])
+  @@index([tenantId, status, startsAt])
+  @@index([staffId, startsAt])
+  @@index([customerId])
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  tenantId         String
+  bookingId        String
+  provider         String // "mock" | "asaas" (o adapter real entra na F8)
+  method           PaymentMethod
+  amountCents      Int
+  platformFeeCents Int           @default(0)
+  asaasId          String?
+  status           PaymentStatus @default(PENDING)
+  paidAt           DateTime?     @db.Timestamptz(3)
+  createdAt        DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @db.Timestamptz(3)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([bookingId])
+  @@index([asaasId])
+}
+
+model AsaasAccount {
+  id             String    @id @default(cuid())
+  tenantId       String    @unique
+  asaasAccountId String
+  walletId       String
+  apiKeyEnc      String // chave da subconta criptografada em repouso (F4.1)
+  pixKey         String
+  kycStatus      KycStatus @default(PENDING)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Billing B2B da plataforma (F7)
+// ---------------------------------------------------------------------------
+
+model PlatformSub {
+  id                   String             @id @default(cuid())
+  tenantId             String             @unique
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  plan                 BillingPlan
+  status               SubscriptionStatus @default(TRIALING)
+  currentPeriodEnd     DateTime?          @db.Timestamptz(3)
+  trialEndedAt         DateTime?          @db.Timestamptz(3)
+  createdAt            DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime           @updatedAt @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Clube de assinatura B2C do tenant (F5)
+// ---------------------------------------------------------------------------
+
+model MembershipPlan {
+  id         String          @id @default(cuid())
+  tenantId   String
+  name       String
+  priceCents Int
+  cycle      MembershipCycle
+  active     Boolean         @default(true)
+  createdAt  DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime        @updatedAt @db.Timestamptz(3)
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  benefits    MembershipBenefit[]
+  memberships Membership[]
+
+  @@index([tenantId, active])
+}
+
+model MembershipBenefit {
+  id               String   @id @default(cuid())
+  tenantId         String
+  planId           String
+  serviceId        String
+  quantityPerCycle Int
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan    MembershipPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  service Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, serviceId])
+  @@index([tenantId])
+}
+
+model Membership {
+  id                  String           @id @default(cuid())
+  tenantId            String
+  customerId          String
+  planId              String
+  asaasSubscriptionId String?
+  status              MembershipStatus @default(ACTIVE)
+  currentPeriodEnd    DateTime?        @db.Timestamptz(3)
+  createdAt           DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime         @updatedAt @db.Timestamptz(3)
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer     TenantMember   @relation("MembershipCustomer", fields: [customerId], references: [id])
+  plan         MembershipPlan @relation(fields: [planId], references: [id])
+  creditLedger CreditLedger[]
+
+  @@index([tenantId, status])
+  @@index([customerId])
+}
+
+// Append-only: saldo é a soma de `delta`, nunca um contador mutável (F5.2).
+model CreditLedger {
+  id           String   @id @default(cuid())
+  tenantId     String
+  membershipId String
+  serviceId    String
+  delta        Int
+  reason       String
+  bookingId    String?
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  service    Service    @relation(fields: [serviceId], references: [id])
+  booking    Booking?   @relation(fields: [bookingId], references: [id])
+
+  @@index([tenantId, membershipId])
+  @@index([membershipId])
+}
+
+// ---------------------------------------------------------------------------
+// Auth, rate limit e consentimento
+// ---------------------------------------------------------------------------
+
+// Global de propósito: identidade é por telefone, não por tenant (plano §4).
+model OtpChallenge {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String // nunca o código em texto puro (F1.1)
+  expiresAt  DateTime  @db.Timestamptz(3)
+  attempts   Int       @default(0)
+  consumedAt DateTime? @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([phone, expiresAt])
+}
+
+// F1.1: em serverless, contador em memória não sobrevive — daí a tabela.
+model RateLimitCounter {
+  id          String   @id @default(cuid())
+  key         String   @unique // ex.: "otp:phone:+5548…" | "otp:ip:…"
+  windowStart DateTime @db.Timestamptz(3)
+  count       Int      @default(0)
+  expiresAt   DateTime @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([expiresAt])
+}
+
+// F6.2: opt-out por canal e registro de consentimento (LGPD).
+model MessagingPref {
+  id            String           @id @default(cuid())
+  tenantId      String
+  userId        String
+  channel       MessagingChannel
+  optedOutAt    DateTime?        @db.Timestamptz(3)
+  consentAt     DateTime?        @db.Timestamptz(3)
+  consentSource String?
+  createdAt     DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, channel])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Infraestrutura: jobs, webhooks e auditoria
+// ---------------------------------------------------------------------------
+
+model NotificationJob {
+  id                String             @id @default(cuid())
+  tenantId          String
+  bookingId         String?
+  template          String // nomes válidos: registro central da F6.0
+  scheduledFor      DateTime           @db.Timestamptz(3)
+  sentAt            DateTime?          @db.Timestamptz(3)
+  providerMessageId String?
+  status            NotificationStatus @default(PENDING)
+  attempts          Int                @default(0) // F6.0: retry com backoff
+  lockedAt          DateTime?          @db.Timestamptz(3) // F6.0: claim do runner
+  lastError         String? // F6.0
+  createdAt         DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime           @updatedAt @db.Timestamptz(3)
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  // Query do runner da F6.0 (a cada 5 minutos).
+  @@index([status, scheduledFor])
+  @@index([tenantId, bookingId])
+}
+
+// Idempotência de webhooks (contexto-comum.md §6): a unique é (provider, eventId).
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  eventId     String
+  payload     Json
+  processedAt DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@unique([provider, eventId])
+  @@index([provider, processedAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  actorId   String? // F1.4: null quando a ação é do sistema (cron/webhook)
+  action    String
+  entity    String
+  entityId  String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor  User?  @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([actorId])
+}
