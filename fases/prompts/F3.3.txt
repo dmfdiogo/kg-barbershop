@@ -1,0 +1,46 @@
+Você é o agente da tarefa F3.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2.4
+  2. fases/contexto-comum.md §2
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-3-portal-booking.md    (seu escopo: itens 2 a 4; sua linha: F3.3)
+
+AMBIENTE
+  git worktree add ../wt-f3-3 -b f3.3-fluxo        (F3.1 e F3.2 mescladas)
+
+VOCÊ É DONO DE
+  app/[slug]/agendar/**
+
+ENTREGUE
+  - Fluxo: serviço -> profissional (ou "qualquer um") -> dia e horário -> hold ->
+    identificação por OTP -> confirmação.
+  - O OTP fica NO FIM, não no começo: pedir login antes de mostrar horário derruba
+    conversão. Quando o OTP é pedido, o hold já existe.
+  - Contador visível do tempo restante do hold.
+  - Expiração durante o fluxo é tratada sem perder o que o cliente já preencheu.
+  - Slot tomado por outra pessoa recarrega a grade com mensagem clara.
+
+PRONTO QUANDO
+  - E2E completo do portal até a confirmação.
+  - E2E do hold expirando no meio do fluxo, com recuperação limpa.
+  - Funciona a 360px, sem cor literal.
+
+NÃO FAÇA
+  checkout de pagamento (é F4.2), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

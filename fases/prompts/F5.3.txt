@@ -1,0 +1,39 @@
+Você é o agente da tarefa F5.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. fases/fase-5-clube-assinatura.md    (seu escopo: item 6; sua linha: F5.3)
+  2. fases/contexto-comum.md §2 e §4
+  3. fases/paralelizacao.md §4 e §5
+
+AMBIENTE
+  git worktree add ../wt-f5-3 -b f5.3-visoes-clube   (F5.1 e F5.2 mescladas)
+
+VOCÊ É DONO DE
+  app/[slug]/clube/**, app/(dashboard)/clube/relatorios/**
+
+ENTREGUE
+  - Cliente: plano atual, saldo de créditos, próxima cobrança, cancelar.
+  - Owner: assinantes, MRR do clube, inadimplentes, consumo por serviço.
+
+PRONTO QUANDO
+  - Assinante do tenant A é invisível no painel do tenant B, com teste.
+  - Saldo exibido vem da soma do ledger, nunca de contador paralelo.
+
+NÃO FAÇA
+  alterar regra de crédito (é F5.2), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

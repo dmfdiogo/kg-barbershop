@@ -1,0 +1,52 @@
+Você é o agente da tarefa F4.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §3.2 (as três modalidades e a blindagem fiscal)
+  2. plano-refatoracao.md §1.1 (restrições reais do provider)
+  3. fases/contexto-comum.md §5
+  4. fases/fase-4-pagamentos.md          (seu escopo: itens 2 e 3; sua linha: F4.2)
+
+AMBIENTE
+  git worktree add ../wt-f4-2 -b f4.2-checkout      (F4.0 já mesclada)
+
+VOCÊ É DONO DE
+  app/[slug]/checkout/**, lib/payments/charge.ts
+
+REGRA QUE SUSTENTA O NEGÓCIO
+  A cobrança do serviço nasce NA SUBCONTA do estabelecimento, com split levando
+  apenas a taxa para a carteira da plataforma. Se a cobrança sair na conta
+  principal e o dinheiro for repassado por transferência, o faturamento dos salões
+  vira receita da empresa de software perante a Receita Federal. Isto não é
+  detalhe de implementação.
+
+ENTREGUE
+  - As três modalidades: integral antecipado (Pix/cartão), sinal (fixo ou
+    percentual) e pagamento no local.
+  - Checkout dentro da janela de 10 minutos do hold, com tempo restante visível.
+  - Pix expirado ou cartão recusado devolve o slot.
+  - Percentual da taxa da plataforma vindo de CONFIGURAÇÃO, nunca número mágico.
+
+PRONTO QUANDO
+  - Teste que FALHA se a cobrança for criada fora da subconta.
+  - Teste de Pix expirado liberando o slot.
+  - As três modalidades passam de ponta a ponta com o mock, incluindo o webhook
+    disparado por /dev/payments.
+
+NÃO FAÇA
+  chamada real ao Asaas, mexer na máquina de estados (é F4.0), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

@@ -1,0 +1,44 @@
+Você é o agente da tarefa F2.5 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §9.2 (menos de 10 minutos) e §3.2 (onboarding financeiro)
+  2. fases/contexto-comum.md
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-2-painel-owner.md    (seu escopo: item 1; sua linha: F2.5)
+
+AMBIENTE
+  git worktree add ../wt-f2-5 -b f2.5-onboarding    (F2.1, F2.2 e F2.3 mescladas)
+
+VOCÊ É DONO DE
+  app/(dashboard)/onboarding/**
+
+ENTREGUE
+  - Passo a passo curto: dados do estabelecimento -> horário de expediente ->
+    primeiro serviço -> link do portal pronto para colar no WhatsApp.
+  - Estado salvo a CADA passo: o dono vai abandonar no meio e voltar.
+  - Coleta de CPF/CNPJ e chave Pix, persistidos, com estado "aguardando ativação".
+    A criação da subconta é da F4 — aqui é só coleta.
+  - REUSE as server actions de F2.1, F2.2 e F2.3. Não duplique formulário nem regra.
+
+PRONTO QUANDO
+  - E2E cronometrado: do zero ao link do portal em menos de 10 minutos.
+  - Abandonar no meio e voltar retoma exatamente onde parou, com teste.
+
+NÃO FAÇA
+  criar subconta de verdade, duplicar lógica das folhas, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

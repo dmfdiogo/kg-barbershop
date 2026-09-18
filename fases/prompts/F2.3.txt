@@ -1,0 +1,50 @@
+Você é o agente da tarefa F2.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §5.1 (os 4 presets, com as paletas)
+  2. fases/contexto-comum.md §2 (tokens, nunca cor literal)
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-2-painel-owner.md    (seu escopo: item 5; sua linha: F2.3)
+
+AMBIENTE
+  git worktree add ../wt-f2-3 -b f2.3-marca         (F2.0 já mesclada)
+
+VOCÊ É DONO DE
+  app/(dashboard)/marca/**, lib/theme/**
+
+ENTREGUE
+  - Upload de logo (PNG/JPG/SVG) com limite de tamanho e validação do tipo pelo
+    CONTEÚDO, não pela extensão. SVG aceita script: sanitize ou sirva com CSP
+    adequada.
+  - Cores primária, secundária e de fundo.
+  - Os 4 presets da spec: Classic Barber, Beauty & Spa, Pet Friendly, Auto Detail.
+  - Preview ao vivo.
+  - Injeção das cores como CSS variables no SSR do portal — é o que evita o flash
+    de tema errado.
+  - Validação de contraste: o dono pode escolher amarelo sobre branco e tornar o
+    próprio portal ilegível. Avise antes de salvar.
+
+PRONTO QUANDO
+  - Trocar o preset muda o portal público sem flash — verificado no HTML do SSR,
+    não só a olho.
+  - SVG com script não executa, com teste.
+  - Combinação de baixo contraste dispara aviso.
+
+NÃO FAÇA
+  alterar schema, mexer no portal além da injeção de tema, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

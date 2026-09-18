@@ -1,0 +1,49 @@
+Você é o agente da tarefa F2.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2.2 e §2.3
+  2. fases/contexto-comum.md §2
+  3. fases/paralelizacao.md §2 (tronco-e-folhas) e §4.1 (evite arquivos-lista)
+  4. fases/fase-2-painel-owner.md    (sua linha: F2.0)
+
+AMBIENTE
+  git worktree add ../wt-f2-0 -b f2.0-shell        (F1 inteira mesclada)
+
+VOCÊ É DONO DE
+  app/(dashboard)/layout.tsx, components/dashboard/**
+
+VOCÊ É O TRONCO
+  Quatro folhas (F2.1 a F2.4) vão construir dentro do seu shell em paralelo.
+  O maior risco de conflito entre elas é um ARQUIVO-LISTA central de navegação
+  onde cada uma acrescenta uma linha.
+
+ENTREGUE
+  - Shell do painel mobile-first (Owner e Staff), com navegação montada por
+    DESCOBERTA: cada feature exporta o seu item em app/(dashboard)/<feature>/nav.ts
+    e o menu é montado varrendo a pasta. Nada de lista central.
+  - Navegação sensível ao papel: Staff não vê as telas de configuração.
+  - Estados padronizados de vazio, carregando e erro, reutilizáveis pelas folhas.
+  - Tokens de tema aplicados (sem cor literal).
+
+PRONTO QUANDO
+  - Uma rota placeholder nova aparece no menu sem editar nenhum arquivo central.
+  - Staff e Owner veem menus diferentes, com teste.
+
+NÃO FAÇA
+  features (serviços, equipe, marca, políticas são das folhas), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

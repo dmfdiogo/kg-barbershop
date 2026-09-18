@@ -1,55 +1,48 @@
-# Dependencies
+# Dependências
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+.pnp
+.pnp.js
 
-# Environment variables
+# Variáveis de ambiente
 .env
 .env.local
 .env.*.local
 
-# Build outputs
-dist/
-build/
+# Next.js
+.next/
+out/
+next-env.d.ts
 *.tsbuildinfo
 
-# Frontend specific
-frontend/dist/
-frontend/build/
+# Build
+dist/
+build/
 
-# Backend specific
-backend/dist/
-backend/build/
+# Testes
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.nyc_output/
 
-# Database
-*.db
-*.db-journal
-postgres-data/
-
-# IDE
+# IDE e SO
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 .DS_Store
 
 # Logs
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Testing
-coverage/
-.nyc_output/
-
-# Prisma
-backend/prisma/migrations/**/migration.sql
-!backend/prisma/migrations/migration_lock.toml
-
-# Temporary files
+# Temporários
 *.tmp
 .cache/
 
-old-docs/
+# ATENÇÃO: migrations do Prisma SÃO versionadas. O .gitignore anterior ignorava
+# "backend/prisma/migrations/**/migration.sql", o que tornava o deploy descrito
+# no guia antigo impossível de funcionar. Não reintroduza essa regra.

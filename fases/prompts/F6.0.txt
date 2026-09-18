@@ -1,0 +1,48 @@
+Você é o agente da tarefa F6.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §4
+  2. plano-refatoracao.md §5.6
+  3. fases/contexto-comum.md §5 (MockWhatsAppProvider)
+  4. fases/fase-6-notificacoes.md        (seu escopo: itens 1 e 2; sua linha: F6.0)
+
+AMBIENTE
+  git worktree add ../wt-f6-0 -b f6.0-jobs          (F3 inteira mesclada)
+
+VOCÊ É DONO DE
+  lib/messaging/jobs.ts, lib/messaging/templates.ts,
+  app/api/cron/send-notifications/**
+
+ENTREGUE
+  - Registro CENTRAL de templates: nome, categoria e variáveis. O mock recusa
+    envio de template não registrado — é o que garante que a aprovação da Meta na
+    F8 não vire retrabalho.
+  - NotificationJob persistido: lembrete é LINHA NO BANCO, não setTimeout.
+    setTimeout não sobrevive a deploy em ambiente serverless.
+  - Runner com lock/claim (UPDATE ... RETURNING) para que cron sobreposto não
+    envie duas vezes.
+  - Cron a cada 5 minutos com janela de tolerância, retry com backoff, limite de
+    tentativas e estado final de falha.
+
+PRONTO QUANDO
+  - Teste: cron rodando duas vezes não envia duas vezes.
+  - Teste: template não registrado é recusado.
+
+NÃO FAÇA
+  Cloud API real (é F8.3), gatilhos de negócio (F6.1), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

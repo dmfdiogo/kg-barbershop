@@ -1,0 +1,44 @@
+Você é o agente da tarefa F3.4 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2.4 (área do cliente)
+  2. fases/contexto-comum.md §3 e §4
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-3-portal-booking.md    (seu escopo: item 5; sua linha: F3.4)
+
+AMBIENTE
+  git worktree add ../wt-f3-4 -b f3.4-minha-conta   (F3.2 já mesclada)
+
+VOCÊ É DONO DE
+  app/[slug]/minha-conta/**
+
+ENTREGUE
+  - Próximos agendamentos e histórico.
+  - Cancelamento dentro da janela configurada pelo tenant. FORA da janela, o botão
+    EXPLICA a política em vez de sumir — sumir parece defeito.
+  - Remarcação: hold novo + liberação do antigo, de forma atômica.
+
+PRONTO QUANDO
+  - Teste: remarcação não deixa o horário antigo preso nem o novo duplicado.
+  - Teste: cancelamento dentro e fora da janela se comporta conforme a política.
+  - Teste de isolamento: cliente não vê agendamento de outro cliente nem de outro
+    tenant.
+
+NÃO FAÇA
+  estorno (é F4.3), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

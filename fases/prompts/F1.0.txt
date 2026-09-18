@@ -1,0 +1,54 @@
+Você é o agente da tarefa F1.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2 (papéis)
+  2. fases/contexto-comum.md §4 (isolamento)
+  3. fases/paralelizacao.md §2 (padrão tronco-e-folhas) e §4
+  4. fases/fase-1-multitenant-auth.md   (seu escopo: itens 1 e 3; sua linha: F1.0)
+
+AMBIENTE
+  git worktree add ../wt-f1-0 -b f1.0-contratos     (F0 inteira mesclada)
+
+VOCÊ É DONO DE
+  middleware.ts, lib/tenant/context.ts, lib/auth/session.ts, lib/auth/rbac.ts,
+  lib/auth/types.ts
+
+VOCÊ É O TRONCO DESTA FASE
+  F1.1, F1.2, F1.3 e F1.4 vão compilar contra o que você entregar, sem se enxergar.
+  Entregue os contratos ANTES de qualquer implementação profunda: tipos de sessão,
+  assinaturas das server actions de auth (mesmo que como stub tipado) e helpers.
+
+ENTREGUE
+  - Middleware resolvendo o tenant nesta ordem: Host casando com Tenant.customDomain,
+    depois subdomínio, depois /[slug]. Só a RESOLUÇÃO — provisionamento de DNS/SSL
+    é fase 2 do produto.
+  - Páginas próprias para tenant inexistente, suspenso ou inativo (não 404 genérico).
+  - Contexto de requisição alimentando o client escopado da F0.
+  - Sessão em cookie httpOnly, secure, sameSite=lax.
+  - requireRole(...) para Server Components e Route Handlers.
+  - REGRA CRÍTICA: o papel NÃO mora no token. É lido de TenantMember para o tenant
+    da requisição — a mesma pessoa pode ser OWNER no salão A e CUSTOMER no salão B.
+
+PRONTO QUANDO
+  - As três formas de resolução de tenant têm teste.
+  - requireRole nega corretamente em RSC e em route handler.
+  - Um agente conseguiria implementar F1.1 e F1.2 lendo só os seus contratos.
+
+NÃO FAÇA
+  OTP (é F1.1), telas (F1.2), envio real de mensagem, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

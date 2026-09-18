@@ -1,0 +1,43 @@
+Você é o agente da tarefa F1.4 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2.1
+  2. fases/contexto-comum.md §4 (caminho do Super Admin)
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-1-multitenant-auth.md   (seu escopo: item 4; sua linha: F1.4)
+
+AMBIENTE
+  git worktree add ../wt-f1-4 -b f1.4-superadmin     (F1.0 já mesclada)
+
+VOCÊ É DONO DE
+  app/(platform)/layout.tsx, lib/audit/**
+
+ENTREGUE
+  - Portão de acesso a (platform) por User.isSuperAdmin.
+  - Acesso a dado de tenant SEMPRE por asPlatformAdmin(), nunca por bypass
+    implícito de RLS.
+  - Modelo e escrita de AuditLog: quem, o quê, qual entidade, quando.
+
+PRONTO QUANDO
+  - Owner comum não acessa nenhuma rota de (platform).
+  - Todo acesso da plataforma a dado de tenant gera registro em AuditLog — com
+    teste que prova.
+
+NÃO FAÇA
+  as telas do painel da plataforma (isso é F7.3), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

@@ -1,0 +1,47 @@
+Você é o agente da tarefa F2.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2.2 e §2.3
+  2. fases/contexto-comum.md §3 (fuso do tenant)
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-2-painel-owner.md    (seu escopo: item 3; sua linha: F2.2)
+
+AMBIENTE
+  git worktree add ../wt-f2-2 -b f2.2-equipe        (F2.0 já mesclada)
+
+VOCÊ É DONO DE
+  app/(dashboard)/equipe/**, lib/staffing/**
+
+ENTREGUE
+  - Convite de membro por telefone; ele vira TenantMember com papel STAFF e entra
+    pelo mesmo OTP dos clientes (não existe senha no sistema).
+  - Jornada semanal por profissional, no fuso do tenant.
+  - Bloqueios pontuais: almoço, folga, emergência.
+  - Vínculo profissional x serviços.
+  - VALIDAÇÃO OBRIGATÓRIA: reduzir jornada ou criar bloqueio sobre agendamento
+    existente NÃO pode apagar o agendamento em silêncio. Liste os conflitos e
+    obrigue uma decisão explícita.
+
+PRONTO QUANDO
+  - Teste: reduzir jornada com agendamento no intervalo apresenta os conflitos e
+    exige decisão; nenhum agendamento desaparece.
+  - Teste de isolamento entre tenants.
+
+NÃO FAÇA
+  alterar schema, mexer na grade de disponibilidade (é F3.1), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

@@ -1,0 +1,67 @@
+Você é o agente da tarefa F0.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md
+  2. plano-refatoracao.md  (§4 modelo de dados, §5 decisões de engenharia)
+  3. fases/contexto-comum.md      (§3 invariantes, §4 isolamento — obrigatórios)
+  4. fases/paralelizacao.md §4 e §5
+  5. fases/fase-0-fundacao.md     (seu escopo: itens 3, 4 e 5; sua linha: F0.2)
+
+AMBIENTE
+  git worktree add ../wt-f0-2 -b f0.2-schema     (parte de F0.1 já mesclada)
+
+VOCÊ É DONO DE
+  prisma/**, lib/tenant/**
+
+JÁ ESTÁ PRONTO PARA VOCÊ (não reinstale, não altere package.json)
+  - prisma e @prisma/client 7.10.0 JÁ instalados e fixados. Não rode
+    "npm install prisma": o dist-tag latest hoje aponta para uma release
+    candidate (8.0.0-rc), e a fundação do projeto não vai em RC.
+  - npm audit acusa vulnerabilidades em mysql2, dependência transitiva do CLI do
+    Prisma. Projeto é Postgres, o CLI é devDependency e nada disso entra no
+    bundle. NÃO rode "npm audit fix --force": ele rebaixa o Prisma para a 6.x.
+  - docker compose up -d sobe o Postgres com btree_gist. O init do volume já
+    cria a extensão; a sua migration deve criá-la também (CREATE EXTENSION IF
+    NOT EXISTS), porque em CI o banco é outro.
+  - package.json e package-lock.json são da F0.1. Precisou de dependência nova?
+    PARE e peça — três agentes editando o lockfile ao mesmo tempo dá conflito.
+
+ENTREGUE
+  - Schema COMPLETO do plano §4 — inclusive tabelas que só as fases 5, 6 e 7 vão
+    usar. O schema é congelado depois desta tarefa; é o que permite fases paralelas.
+  - Migrations versionadas e commitadas.
+  - Client Prisma escopado: abre transação e faz SET LOCAL app.current_tenant antes
+    das queries. Mais asPlatformAdmin() explícito para o Super Admin.
+  - RLS em todas as tabelas com tenantId, por current_setting('app.current_tenant').
+  - Migration com SQL cru: CREATE EXTENSION btree_gist e a exclusion constraint
+    booking_no_overlap sobre tstzrange(starts_at, blocked_until) por staff_id,
+    restrita a status HOLD/PENDING/CONFIRMED.
+  - Tradução do erro 23P01 do Postgres para um erro de domínio (sem isso a F3
+    devolve 500 para "horário ocupado").
+
+PRONTO QUANDO
+  - Teste de isolamento passa E falha se a policy de RLS for removida (prove).
+  - Teste de concorrência: duas transações simultâneas no mesmo slot, uma falha.
+  - Dinheiro é Int em centavos e datas são timestamptz em todo o schema.
+
+ATENÇÃO
+  SET LOCAL só vale dentro de transação; fora dela falha em silêncio. Teste isso.
+
+NÃO FAÇA
+  telas, mocks de provider, integração externa, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

@@ -1,0 +1,49 @@
+Você é o agente da tarefa F4.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §3.2 (onboarding sem fricção)
+  2. plano-refatoracao.md §8.2 (risco de onboarding)
+  3. fases/contexto-comum.md §5
+  4. fases/fase-4-pagamentos.md          (seu escopo: item 1; sua linha: F4.1)
+
+AMBIENTE
+  git worktree add ../wt-f4-1 -b f4.1-subconta      (F4.0 já mesclada)
+
+VOCÊ É DONO DE
+  lib/payments/merchant.ts, app/(dashboard)/financeiro/conta/**
+
+ENTREGUE
+  - createMerchantAccount a partir do CPF/CNPJ e da chave Pix coletados na F2.5.
+  - Persistência em AsaasAccount: accountId, walletId, apiKey CRIPTOGRAFADA em
+    repouso (envelope com chave da aplicação), pixKey, kycStatus.
+    Chave em texto puro é inaceitável: se o banco vazar, vaza o dinheiro dos
+    clientes.
+  - Estados de KYC (PENDING, APPROVED, REJECTED) visíveis no painel com o que
+    falta fazer.
+  - CAMINHO DEGRADADO OBRIGATÓRIO: enquanto não aprovado, o salão opera em
+    ON_SITE (pagamento no balcão). Um cadastro travado não pode virar um salão
+    que não consegue usar o sistema.
+
+PRONTO QUANDO
+  - Dump do banco não revela a chave da subconta, com teste.
+  - KYC reprovado no mock não trava o salão: ele segue agendando em ON_SITE.
+  - Os estados do painel refletem o que o mock devolve.
+
+NÃO FAÇA
+  chamada real ao Asaas, checkout (é F4.2), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

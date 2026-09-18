@@ -1,0 +1,49 @@
+Você é o agente da tarefa F1.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. plano-refatoracao.md §4 ("Decisão de identidade")
+  2. fases/contexto-comum.md §4
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-1-multitenant-auth.md   (sua linha: F1.3)
+
+AMBIENTE
+  git worktree add ../wt-f1-3 -b f1.3-membership     (F1.0 já mesclada)
+
+VOCÊ É DONO DE
+  lib/auth/membership.ts
+
+CONTEXTO DA MODELAGEM
+  User é global (a pessoa faz OTP uma vez e reencontra seus agendamentos em
+  qualquer salão), e o acesso a dados é sempre escopado por tenantId via
+  TenantMember. Nenhum salão pode descobrir que aquele telefone existe em outro.
+
+ENTREGUE
+  - Provisionamento automático de TenantMember com papel CUSTOMER no primeiro
+    acesso da pessoa ao portal daquele tenant.
+  - Troca de contexto quando a mesma pessoa tem papéis em tenants diferentes.
+  - Papel sempre lido por requisição, nunca cacheado no token.
+
+PRONTO QUANDO
+  - Teste com a mesma pessoa OWNER no tenant A e CUSTOMER no tenant B: cada sessão
+    enxerga só o seu papel e só os seus dados.
+  - Teste provando que o tenant A não consegue descobrir a existência do usuário
+    no tenant B.
+
+NÃO FAÇA
+  telas, OTP, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

@@ -1,0 +1,50 @@
+Você é o agente da tarefa F6.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §4 (D-1, H-2 e conteúdo das mensagens)
+  2. fases/contexto-comum.md §3 (fuso)
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-6-notificacoes.md        (seu escopo: item 3; sua linha: F6.1)
+
+AMBIENTE
+  git worktree add ../wt-f6-1 -b f6.1-gatilhos      (F6.0 já mesclada)
+
+VOCÊ É DONO DE
+  lib/messaging/triggers.ts
+
+ENTREGUE
+  - Confirmação imediata: data, hora, profissional, endereço e link do Google Maps.
+  - D-1 (24h antes) com botão de confirmação de presença, e o retorno do clique
+    atualizando o agendamento.
+  - H-2 (2h antes), curto.
+  - Cancelamento e remarcação para cliente E profissional; novo agendamento para
+    o profissional.
+  - Agendamento cancelado CANCELA os lembretes pendentes. Nada pior que lembrete
+    de horário que não existe mais.
+  - Agendamento criado com menos de 24h não gera D-1; com menos de 2h não gera H-2.
+  - Silêncio noturno configurável (não mandar H-2 às 4h da manhã).
+  - "24h antes" é sobre o horário LOCAL do tenant.
+
+PRONTO QUANDO
+  - Avançar o relógio produz D-1 e H-2 na ordem certa, no fuso do tenant.
+  - Cancelar agendamento cancela os jobs pendentes, com teste.
+  - Nenhuma mensagem de um tenant sai com dado de outro.
+
+NÃO FAÇA
+  texto livre fora de template, Cloud API real, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

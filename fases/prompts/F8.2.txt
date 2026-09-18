@@ -1,0 +1,54 @@
+Você é o agente da tarefa F8.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. fases/fase-8-integracoes-reais.md   (seu escopo: §3; sua linha: F8.2)
+  2. plano-refatoracao.md §1.1 e §8.3    (restrições e conformidade fiscal)
+  3. fases/contexto-comum.md §5 e §6
+  4. lib/payments/types.ts e lib/payments/mock.ts — o contrato e o comportamento
+     de referência
+
+PRÉ-REQUISITO
+  Conta Asaas da plataforma aprovada, com API de subcontas e split liberada, e
+  credenciais de SANDBOX no ambiente. Se não estiverem, PARE e avise.
+
+AMBIENTE
+  git worktree add ../wt-f8-2 -b f8.2-asaas          (F5 mesclada)
+
+VOCÊ É DONO DE
+  lib/payments/asaas.ts
+
+ONDE A REALIDADE MORDE MAIS QUE O MOCK
+  - Subcontas: KYC assíncrono, com recusa e pendência. Mapeie os status reais para
+    os nossos e TESTE o caminho degradado (ON_SITE) com uma conta reprovada de
+    verdade.
+  - Split: confirme em sandbox que a cobrança nasce na subconta e só a taxa vai
+    para a plataforma. Se sair invertido, o desenho fiscal do projeto cai por terra.
+  - remoteIp: em produção, atrás de proxy/CDN, vem em header específico. Errar
+    aqui só aparece em produção, com cartão recusado.
+  - Webhooks: token de autenticação, reentrega e ordem imprevisível.
+  - Chaves de subconta: criptografadas em repouso, com rotação prevista.
+
+PRONTO QUANDO
+  - Contrato verde contra mock E sandbox.
+  - git diff mostra que NENHUM arquivo fora de lib/payments/ mudou.
+  - Antes de produção: cobrança real de R$ 1,00 ponta a ponta com split, Pix e
+    cartão, conferida no extrato.
+
+NÃO FAÇA
+  commitar chave, alterar regra de negócio, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

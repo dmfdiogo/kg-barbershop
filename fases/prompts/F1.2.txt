@@ -1,0 +1,45 @@
+Você é o agente da tarefa F1.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2.4
+  2. fases/contexto-comum.md §2 (nada de cor literal) e §5.3 (/dev/outbox)
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-1-multitenant-auth.md   (sua linha: F1.2)
+
+AMBIENTE
+  git worktree add ../wt-f1-2 -b f1.2-telas-auth    (F1.0 já mesclada)
+
+VOCÊ É DONO DE
+  app/(auth)/**
+
+ENTREGUE
+  - Tela de identificação: apenas Nome + WhatsApp. Sem senha em lugar nenhum do
+    sistema.
+  - Tela de código com reenvio, contador e mensagens de erro claras (código
+    expirado, errado, tentativas esgotadas).
+  - Mobile-first de verdade: funciona a 360px de largura.
+  - Consome as server actions definidas pela F1.0; se a assinatura não bastar,
+    PARE e peça — não crie a sua.
+
+PRONTO QUANDO
+  - E2E: login completo lendo o código em /dev/outbox.
+  - Nenhuma cor literal; tudo por token de tema.
+
+NÃO FAÇA
+  lógica de OTP (é F1.1), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

@@ -1,0 +1,46 @@
+Você é o agente da tarefa F7.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §6.2 (trial baseado em valor)
+  2. fases/contexto-comum.md
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-7-billing-superadmin.md  (seu escopo: item 2; sua linha: F7.1)
+
+AMBIENTE
+  git worktree add ../wt-f7-1 -b f7.1-trial         (F7.0 já mesclada)
+
+VOCÊ É DONO DE
+  lib/billing/trial.ts
+
+ENTREGUE
+  - Contador por tenant incrementado na CONFIRMAÇÃO do agendamento, nunca na
+    criação do hold — senão hold abandonado consome trial.
+  - No 8º agendamento: aviso amigável no painel convidando a escolher o plano.
+  - No 11º: bloqueia NOVOS agendamentos, preservando acesso a tudo que já existe.
+    A spec pede suspensão graciosa; derrubar a agenda de um salão em
+    funcionamento é o oposto disso.
+  - DOCUMENTE a decisão: agendamento cancelado desconta do trial? (recomendado:
+    não descontar os cancelados pelo salão; descontar os concluídos).
+
+PRONTO QUANDO
+  - Teste: hold abandonado não consome trial.
+  - Teste: bloqueio no 11º não apaga nem esconde o que já existe.
+
+NÃO FAÇA
+  Stripe real, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

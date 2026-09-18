@@ -1,0 +1,44 @@
+Você é o agente da tarefa F2.4 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2.2 (dashboard) e §9 (políticas)
+  2. fases/contexto-comum.md §3
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-2-painel-owner.md    (seu escopo: itens 4 e 6; sua linha: F2.4)
+
+AMBIENTE
+  git worktree add ../wt-f2-4 -b f2.4-politicas     (F2.0 já mesclada)
+
+VOCÊ É DONO DE
+  app/(dashboard)/configuracoes/**, app/(dashboard)/inicio/**
+
+ENTREGUE
+  - Políticas do tenant: janela de cancelamento (padrão 24h), política de no-show,
+    antecedência mínima e máxima para agendar. Persistidas e legíveis pelo domínio
+    (a regra de 24h foi portada como política configurável na F0.4, não constante).
+  - Dashboard: faturamento do dia e do mês, taxa de ocupação por profissional,
+    agenda do dia. Enquanto a F4 não existe, faturamento vem dos Booking
+    confirmados.
+
+PRONTO QUANDO
+  - Alterar a janela de cancelamento muda o comportamento lido pelo domínio.
+  - Os números batem com o seed da F0.5, com teste.
+
+NÃO FAÇA
+  alterar schema, pagamentos, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

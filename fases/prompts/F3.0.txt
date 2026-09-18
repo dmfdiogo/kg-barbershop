@@ -1,0 +1,48 @@
+Você é o agente da tarefa F3.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2.4 e §5
+  2. fases/contexto-comum.md §2 e §4
+  3. fases/paralelizacao.md §2 e §4
+  4. fases/fase-3-portal-booking.md    (seu escopo: item 1; sua linha: F3.0)
+
+AMBIENTE
+  git worktree add ../wt-f3-0 -b f3.0-portal        (F1 inteira mesclada)
+
+VOCÊ É DONO DE
+  app/[slug]/(portal)/**, components/portal/**
+
+VOCÊ É O TRONCO DA F3
+  F3.1 a F3.5 constroem sobre o seu shell. Entregue contratos e layout cedo.
+
+ENTREGUE
+  - Portal público em /[slug], renderizado no SERVIDOR com o tema do tenant já
+    aplicado (CSS variables no HTML do SSR — sem flash).
+  - Catálogo de serviços com duração e preço.
+  - Shell mobile-first: o público-alvo abre isso no celular, por link de WhatsApp.
+  - Páginas para tenant inexistente, suspenso ou inativo.
+
+PRONTO QUANDO
+  - O tema aparece no HTML servido, verificável sem JavaScript.
+  - Funciona a 360px.
+  - Nenhuma resposta de API do portal expõe dado de outro tenant, com teste.
+
+NÃO FAÇA
+  grade de horários (F3.1), hold (F3.2), fluxo de agendamento (F3.3),
+  push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

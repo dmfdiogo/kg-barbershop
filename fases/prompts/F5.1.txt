@@ -1,0 +1,54 @@
+Você é o agente da tarefa F5.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. fases/fase-5-clube-assinatura.md    (seu escopo: itens 2 e 5; sua linha: F5.1)
+  2. plano-refatoracao.md §1.1           (restrições REAIS do provider — leia inteiro)
+  3. fases/contexto-comum.md §5 e §6
+  4. fases/paralelizacao.md §4 e §5
+
+AMBIENTE
+  git worktree add ../wt-f5-1 -b f5.1-assinatura     (F5.0 já mesclada)
+
+VOCÊ É DONO DE
+  lib/membership/subscription.ts
+
+RESTRIÇÕES REAIS QUE O MOCK JÁ COBRA (não as contorne)
+  - remoteIp é o IP do DISPOSITIVO DO PAGADOR, nunca o do servidor. Atrás de
+    proxy/CDN, extraia do header correto e trate a ausência. Passar o IP do
+    servidor funciona no mock permissivo e é recusado pelo provider real — por
+    isso o nosso mock recusa de propósito.
+  - O token de cartão pertence ao cliente que o originou e NÃO pode ser
+    reaproveitado para outro cliente.
+  - Split em assinatura é suportado, mas NUNCA para a carteira de quem cria a
+    cobrança. A cobrança nasce na subconta do salão, com split para a plataforma.
+
+ENTREGUE
+  - tokenizeCard e createSubscription na subconta, com split.
+  - Ciclo de vida: renovação, falha de cobrança (retentativa e suspensão graciosa),
+    cancelamento pelo cliente e pelo dono, e o destino dos créditos do ciclo
+    corrente ao cancelar.
+  - Tudo por webhook idempotente.
+
+PRONTO QUANDO
+  - Ciclo completo com o mock: assinar, renovar, falhar, suspender, cancelar.
+  - Teste que FALHA se remoteIp for do servidor.
+  - Teste que FALHA se a cobrança sair da conta da plataforma em vez da subconta.
+
+NÃO FAÇA
+  chamada real ao Asaas (é F8.2), créditos (F5.2), push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens de tema. O portal de cada tenant sobrescreve estes valores no SSR
+ * (fase 2, tarefa F2.3) — por isso NENHUM componente de produto deve usar cor
+ * literal. Sempre var(--color-*).
+ */
+:root {
+  --color-primary: #171717;
+  --color-secondary: #525252;
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  --color-muted: #f5f5f5;
+  --color-border: #e5e5e5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #fafafa;
+    --color-secondary: #a3a3a3;
+    --color-background: #0a0a0a;
+    --color-foreground: #fafafa;
+    --color-muted: #171717;
+    --color-border: #262626;
+  }
+}
+
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --color-muted: var(--color-muted);
+  --color-border: var(--color-border);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}

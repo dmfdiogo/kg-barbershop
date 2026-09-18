@@ -1,0 +1,75 @@
+# Fase 6 — Notificações e automações (contra mock)
+
+> **Depende de:** F3 · **Estimativa:** 8 dias · **Paralelismo:** pode rodar junto com F4 e F7.
+> **Leia antes:** [`contexto-comum.md`](contexto-comum.md) §5, spec §4.
+
+## Objetivo
+
+Toda a máquina de comunicação — agendamento, envio, retentativa, log e preferências — contra `MockWhatsAppProvider`. Na F8 entra o provider real e nenhuma regra muda.
+
+## Escopo
+
+### 1. Trabalhos persistidos
+
+Lembretes viram linhas em `NotificationJob` criadas na confirmação do agendamento, executadas por `/api/cron/send-notifications` a cada 5 minutos, com janela de tolerância e marcação de envio.
+
+**`setTimeout` não sobrevive a deploy em ambiente serverless.** Se o lembrete D-1 depende de um timer em memória, ele simplesmente não acontece.
+
+### 2. Templates da spec §4
+
+- OTP (F1 já usa) — categoria *authentication*.
+- Confirmação imediata: data, hora, profissional, endereço, link do Google Maps.
+- **D-1** (24h antes) com botão de confirmação de presença — e o retorno do clique atualizando o agendamento.
+- **H-2** (2h antes), curto.
+- Cancelamento e remarcação, para cliente **e** profissional.
+- Novo agendamento, para o profissional.
+
+Cada template é declarado em um registro central com nome, categoria e variáveis. O mock recusa envio de template não registrado — é o que garante que a aprovação da Meta na F8 não vire retrabalho.
+
+### 3. Regras de envio
+
+- Idempotência: um `NotificationJob` envia **uma** vez, mesmo com cron sobreposto.
+- Agendamento cancelado cancela os lembretes pendentes (nada pior que lembrete de consulta cancelada).
+- Agendamento criado com menos de 24h não gera D-1; com menos de 2h não gera H-2.
+- Silêncio noturno configurável (não mandar H-2 às 4h da manhã para um horário das 6h).
+- Retentativa com backoff, limite de tentativas e estado final de falha visível no painel.
+- Log de entrega (`providerMessageId`, status) — no piloto, "o cliente diz que não recebeu" vai acontecer.
+
+### 4. Preferências e conformidade
+
+Opt-out por cliente, respeitado em tudo que não for transacional crítico. Registro de consentimento (LGPD).
+
+### 5. Web Push (spec §2.3)
+
+Alertas ao profissional para novo agendamento e cancelamento. Se o custo de implementação estourar a fase, **entregue o WhatsApp completo e registre o push como pendência** — não entregue os dois pela metade.
+
+## Fora do escopo
+
+Cloud API real, verificação do Meta Business, aprovação de templates (F8).
+
+## Critérios de aceite
+
+1. Agendar → confirmação no `/dev/outbox`; avançar o relógio → D-1 e H-2 na ordem certa.
+2. Cron rodando duas vezes não envia duas vezes.
+3. Cancelar agendamento cancela os lembretes pendentes.
+4. Template não registrado é recusado pelo mock (teste explícito).
+5. Opt-out bloqueia o que deve bloquear e preserva o que é transacional.
+6. Mensagem de um tenant nunca é enviada com dados de outro.
+7. DoD de `contexto-comum.md` §8.
+
+## Armadilhas conhecidas
+
+- **Cron sobreposto.** Execução longa + intervalo curto = dois workers pegando o mesmo job. Use lock ou `UPDATE ... RETURNING` para reivindicar.
+- **Fuso no agendamento do job.** "24h antes" é sobre o horário local do tenant.
+- **Texto livre.** A API oficial só permite template fora da janela de 24h. Escrever mensagem livre agora é código que a F8 joga fora.
+
+---
+
+## Tarefas
+
+| ID | Tarefa | Dono dos arquivos | Depende | Dias |
+| :--- | :--- | :--- | :--- | :--- |
+| **F6.0** ⟨T0⟩ | Registro central de templates, `NotificationJob`, runner com lock (sem envio duplicado), cron, retry com backoff | `lib/messaging/{jobs,templates}.ts`, `app/api/cron/send-notifications/**` | F3 | 3 |
+| **F6.1** | Gatilhos: confirmação, D-1 com botão, H-2, cancelamento, remarcação, aviso ao profissional; cancelar jobs pendentes | `lib/messaging/triggers.ts` | F6.0 | 2,5 |
+| **F6.2** | Opt-out, registro de consentimento (LGPD) e log de entrega visível no painel | `app/(dashboard)/mensagens/**`, `lib/messaging/preferences.ts` | F6.0 | 2 |
+| **F6.3** | Web Push para o profissional *(opcional — só se não comprometer o resto)* | `lib/push/**` | F6.0 | 2 |

@@ -1,0 +1,47 @@
+Você é o agente da tarefa F7.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §6.1 (tabela de planos)
+  2. fases/contexto-comum.md §5
+  3. fases/paralelizacao.md §2 e §4
+  4. fases/fase-7-billing-superadmin.md  (seu escopo: item 1; sua linha: F7.0)
+
+AMBIENTE
+  git worktree add ../wt-f7-0 -b f7.0-planos        (F2 inteira mesclada)
+
+VOCÊ É DONO DE
+  lib/billing/plans.ts, lib/billing/limits.ts
+
+ENTREGUE
+  - Solo (R$ 39,90, 1 agenda), Equipe (R$ 79,90, até 4 agendas, branding) e
+    Pro (R$ 139,90, agendas ilimitadas, domínio próprio) — em CONFIGURAÇÃO, não
+    espalhados pelo código.
+  - Enforcement no SERVIDOR. Esconder o botão no front não é limite: chamada
+    direta à API fura.
+  - Ultrapassar o limite oferece upgrade com o impacto claro.
+  - Downgrade com uso acima do limite exige decidir quem desativar ANTES de
+    aplicar.
+
+PRONTO QUANDO
+  - Teste: chamada direta à API respeita o limite do plano.
+  - Teste: downgrade acima do limite não aplica sem decisão explícita.
+
+NÃO FAÇA
+  Stripe real (é F8.1), trial (F7.1), telas da plataforma (F7.3),
+  push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

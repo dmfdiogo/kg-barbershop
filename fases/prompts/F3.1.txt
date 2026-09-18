@@ -1,0 +1,46 @@
+Você é o agente da tarefa F3.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. plano-refatoracao.md §5.4 (fuso) e §2.4 (bugs que não podem ser herdados)
+  2. fases/contexto-comum.md §3
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-3-portal-booking.md    (seu escopo: item 2; sua linha: F3.1)
+
+AMBIENTE
+  git worktree add ../wt-f3-1 -b f3.1-grade         (F3.0 já mesclada)
+
+VOCÊ É DONO DE
+  lib/booking/availability.ts    (portado e corrigido na F0.4 — evolua a partir dele)
+
+ENTREGUE
+  - Grade considerando: jornada do profissional, bloqueios, buffer do serviço,
+    agendamentos existentes, antecedência mínima e máxima do tenant.
+  - Holds vigentes ocupam; holds VENCIDOS nunca aparecem como ocupados
+    (status HOLD e holdExpiresAt > now()).
+  - "Qualquer profissional": une as grades e, na confirmação, escolhe distribuindo
+    carga — não sempre o primeiro da lista.
+  - Tudo calculado no fuso do tenant. Proibido getUTCDay()/setUTCHours().
+
+PRONTO QUANDO
+  - Teste de fuso: agendamento às 22h de Brasília cai no dia certo.
+  - Testes de buffer, de bloqueio e de hold vencido.
+  - Teste provando que "qualquer um" não concentra tudo no mesmo profissional.
+
+NÃO FAÇA
+  criar hold (é F3.2), UI (F3.3), alterar schema, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

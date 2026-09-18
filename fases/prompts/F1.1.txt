@@ -1,0 +1,55 @@
+Você é o agente da tarefa F1.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2.4 (autenticação sem fricção)
+  2. fases/contexto-comum.md §5 (você usa o MockWhatsAppProvider)
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-1-multitenant-auth.md   (seu escopo: item 2; sua linha: F1.1)
+
+AMBIENTE
+  git worktree add ../wt-f1-1 -b f1.1-otp          (F1.0 já mesclada)
+
+VOCÊ É DONO DE
+  lib/auth/otp.ts, app/api/auth/**
+
+CONTEXTO
+  Este é o endpoint mais atacável do produto: é anônimo, gera custo por mensagem
+  quando a integração real chegar e dá acesso à conta. Trate as defesas como parte
+  do escopo, não como extra.
+
+ENTREGUE
+  - Desafio com HASH do código (nunca o código em texto puro no banco), 6 dígitos,
+    TTL de 5 minutos, uso único.
+  - Máximo de 5 tentativas por desafio, depois invalida.
+  - Cooldown de reenvio.
+  - Rate limit por telefone E por IP, PERSISTENTE (em serverless, contador em
+    memória não sobrevive).
+  - Comparação em tempo constante.
+  - Resposta e tempo IDÊNTICOS para telefone conhecido e desconhecido — resposta
+    diferente entrega a base de clientes do salão para quem tentar.
+  - Envio pelo WhatsAppProvider (mock); o código aparece em /dev/outbox.
+
+PRONTO QUANDO
+  - Testes de: código expirado, errado 5 vezes, reusado, reenvio em cooldown,
+    rate limit estourado.
+  - Teste provando que o banco não guarda o código legível.
+  - Teste de não-enumeração (resposta e tempo iguais).
+
+NÃO FAÇA
+  telas (F1.2), integração real, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

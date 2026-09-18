@@ -1,0 +1,45 @@
+Você é o agente da tarefa F2.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. spec-executiva.md §2.2 (catálogo de serviços)
+  2. fases/contexto-comum.md §3 (dinheiro em centavos) e §7 (testes)
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-2-painel-owner.md    (seu escopo: item 2; sua linha: F2.1)
+
+AMBIENTE
+  git worktree add ../wt-f2-1 -b f2.1-servicos      (F2.0 já mesclada)
+
+VOCÊ É DONO DE
+  app/(dashboard)/servicos/**, lib/catalog/**
+
+ENTREGUE
+  - CRUD de serviço: nome, duração, buffer entre atendimentos, preço em CENTAVOS,
+    modalidade de cobrança (FULL_PREPAID | DEPOSIT | ON_SITE), valor ou percentual
+    do sinal, profissionais habilitados, ativo/inativo.
+  - Serviço com agendamento futuro NÃO é excluído — é desativado. Ofereça isso em
+    vez de apagar.
+  - Item de menu em app/(dashboard)/servicos/nav.ts (padrão da F2.0).
+
+PRONTO QUANDO
+  - Tentar excluir serviço com agendamento futuro oferece desativar, com teste.
+  - Nenhum valor monetário passa por float em nenhum ponto.
+  - Teste de isolamento: owner do tenant A não lê nem edita serviço do tenant B.
+
+NÃO FAÇA
+  alterar schema, mexer no shell, cobrar de verdade, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

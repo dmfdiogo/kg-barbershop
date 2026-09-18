@@ -1,0 +1,52 @@
+Você é o agente da tarefa F8.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. fases/fase-8-integracoes-reais.md   (seu escopo: §2; sua linha: F8.1)
+  2. fases/contexto-comum.md §5 e §6
+  3. lib/billing/  e  lib/payments/types.ts  — os contratos que você implementa
+
+PRÉ-REQUISITO
+  Conta Stripe criada, cobrança em BRL ativa e chaves de TESTE disponíveis no
+  ambiente. Se não estiverem, PARE e avise — não crie conta nem peça cartão.
+
+AMBIENTE
+  git worktree add ../wt-f8-1 -b f8.1-stripe         (F7 mesclada)
+
+VOCÊ É DONO DE
+  lib/payments/stripe.ts, scripts/stripe-setup.ts
+
+REGRA CENTRAL DESTA FASE
+  Você troca a implementação, não o produto. Se precisar mexer em tela ou em regra
+  de negócio, houve vazamento de abstração numa fase anterior: PARE e reporte, em
+  vez de contornar aqui.
+
+ENTREGUE
+  - Adaptador do BillingProvider contra a API real (test mode).
+  - Produtos e preços dos três planos criados por SCRIPT VERSIONADO, não à mão
+    no painel.
+  - Webhook com verificação de assinatura e a mesma idempotência do mock.
+
+PRONTO QUANDO
+  - A suíte de contrato roda verde contra mock E test mode, sem ramificação por
+    provider no código de produto.
+  - git diff mostra que NENHUM arquivo fora de lib/payments/ e scripts/ mudou.
+  - Rollback para mock por variável de ambiente, testado.
+
+NÃO FAÇA
+  commitar segredo, criar conta, mexer em telas, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

@@ -1,0 +1,64 @@
+Você é o agente da tarefa F0.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. plano-refatoracao.md §1 (decisão D5) e §1.1 (restrições reais do Asaas)
+  2. fases/contexto-comum.md §5 e §6   — é a espinha dorsal da sua tarefa
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-0-fundacao.md          (seu escopo: item 6; sua linha: F0.3)
+
+AMBIENTE
+  git worktree add ../wt-f0-3 -b f0.3-ports     (parte de F0.1 já mesclada)
+
+VOCÊ É DONO DE
+  lib/payments/**, lib/messaging/**, app/dev/**
+
+ATENÇÃO ÀS DEPENDÊNCIAS
+  package.json e package-lock.json são da F0.1, e outros dois agentes estão
+  trabalhando no mesmo repositório agora. Precisou de biblioteca nova (validação
+  de payload, por exemplo)? PARE e peça em vez de instalar — lockfile editado
+  por três agentes ao mesmo tempo dá conflito garantido.
+
+CONTEXTO DA DECISÃO
+  WhatsApp, Asaas e Stripe NÃO serão integrados agora. Todo o produto é construído
+  contra as suas interfaces. Se o seu mock for permissivo, metade do código nasce
+  errado e só descobrimos na integração.
+
+ENTREGUE
+  - Interfaces WhatsAppProvider e PaymentProvider com as assinaturas de
+    fase-0-fundacao.md item 6, e factories por env (mock | real).
+  - Mocks que REPROVAM o que o serviço real reprova:
+      * split apontando para a carteira de quem cria a cobrança;
+      * remoteIp ausente ou de IP privado/servidor em cobrança de cartão;
+      * cobrança em subconta com KYC não aprovado;
+      * template de WhatsApp não registrado; número fora de E.164.
+  - O mock NÃO marca pago de forma síncrona: ele dispara uma requisição real ao
+    próprio endpoint de webhook da aplicação, com payload e assinatura válidos.
+  - /dev/outbox (mensagens e código OTP) e /dev/payments (confirmar, recusar,
+    expirar Pix, aprovar/reprovar KYC, estornar), bloqueados fora de
+    desenvolvimento no servidor — não basta esconder o link.
+  - Suíte de testes de contrato parametrizada por implementação (describe.each),
+    rodando hoje só com o mock. Na F8 o sandbox real entra na mesma lista.
+
+PRONTO QUANDO
+  - Contrato verde contra o mock.
+  - Botão em /dev/payments dispara webhook que muda o estado de verdade.
+  - Cada validação do item 2 acima tem teste que prova a recusa.
+
+NÃO FAÇA
+  chamada de rede a serviço externo, SDK real, telas de produto, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

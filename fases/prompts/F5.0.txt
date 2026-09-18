@@ -1,0 +1,51 @@
+Você é o agente da tarefa F5.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. fases/fase-5-clube-assinatura.md    (leia o aviso do topo; sua linha: F5.0)
+  2. plano-refatoracao.md §1 (decisão D3) e §1.1
+  3. fases/contexto-comum.md §3 e §5
+  4. fases/paralelizacao.md §4 e §5
+
+AVISO IMPORTANTE
+  Este módulo NÃO está na spec-executiva.md. É requisito confirmado do dono do
+  produto, fora do documento. Não o remova por não encontrá-lo na spec.
+
+AMBIENTE
+  git worktree add ../wt-f5-0 -b f5.0-planos-clube   (F4 inteira mesclada)
+
+VOCÊ É DONO DE
+  app/(dashboard)/clube/**, lib/membership/plans.ts
+
+CONTEXTO DA MODELAGEM
+  No MVP antigo a assinatura era da PLATAFORMA, global, via Stripe. Agora ela
+  pertence ao TENANT: preço, benefícios e recebimento são do salão. Não reaproveite
+  as tabelas Subscription/SubscriptionBenefit antigas.
+
+ENTREGUE
+  - CRUD de MembershipPlan (nome, preço em centavos, ciclo, ativo) e de
+    MembershipBenefit (serviço x quantidade por ciclo).
+  - Mudança de preço NÃO altera assinatura vigente sem decisão explícita: quem já
+    assinou continua no preço contratado até o dono decidir o contrário.
+
+PRONTO QUANDO
+  - Teste: alterar o preço do plano não altera a assinatura ativa.
+  - Benefícios só apontam para serviços do próprio tenant, com teste de isolamento.
+
+NÃO FAÇA
+  cobrança (é F5.1), créditos (F5.2), integração real, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

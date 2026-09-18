@@ -1,0 +1,61 @@
+Você é o agente da tarefa F0.4 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. plano-refatoracao.md §2 (o que aproveitar e o que descartar) e §5.4 (fuso)
+  2. fases/contexto-comum.md §3
+  3. fases/paralelizacao.md §4 e §5
+  4. fases/fase-0-fundacao.md          (seu escopo: item 1; sua linha: F0.4)
+
+AMBIENTE
+  git worktree add ../wt-f0-4 -b f0.4-portar     (parte de F0.1 já mesclada)
+
+VOCÊ É DONO DE
+  lib/booking/availability.ts, components/**, e a remoção do código legado
+
+  EXCEÇÃO AUTORIZADA: ao remover backend/ e frontend/, apague também as entradas
+  "backend" e "frontend" do "exclude" em tsconfig.json e do "ignores" em
+  eslint.config.mjs. Elas existem só para o CI não quebrar enquanto o legado
+  ainda está no repo. Esses dois arquivos são da F0.1; você está autorizado a
+  mexer NESSAS LINHAS e em mais nada dentro deles.
+
+JÁ ESTÁ PRONTO PARA VOCÊ (não reinstale, não altere package.json)
+  - date-fns 4.4.0 e date-fns-tz 3.2.0 JÁ instalados. Use-os para o cálculo no
+    fuso do tenant. moment é proibido (contexto-comum.md §2).
+  - package.json e package-lock.json são da F0.1, e outros dois agentes estão no
+    mesmo repositório agora. Precisou de dependência nova? PARE e peça.
+
+ENTREGUE
+  - Portar de backend/src/controllers/appointmentController.ts -> getAvailability o
+    algoritmo de geração de slots (duração + buffer + intervalos + agendamentos),
+    CORRIGINDO o cálculo de fuso: o código antigo usa getUTCDay()/setUTCHours(),
+    o que quebra em UTC-3. Use o timezone do tenant.
+  - Portar a regra de 24h de rescheduleAppointment como política configurável
+    (Tenant.cancellationWindowHours), não constante.
+  - Portar os componentes DatePickerModal, TimePickerModal, CalendarView,
+    SelectionModal, ConfirmationModal, PageHeader e PageLayout, trocando TODA cor
+    literal por token de tema (o white-label depende disso).
+  - Remover: backend/, frontend/, backend/tests/*.hurl, os dois railway.toml.
+
+PRONTO QUANDO
+  - Teste com agendamento às 22h de Brasília cai no dia certo.
+  - Nenhuma cor literal nos componentes portados.
+  - backend/ e frontend/ não existem e nada em lib/ ou app/ importa deles.
+
+NÃO FAÇA
+  schema, mocks, telas novas, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

@@ -1,0 +1,60 @@
+Você é o agente da tarefa F5.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+
+LEIA NESTA ORDEM:
+  1. fases/fase-5-clube-assinatura.md    (seu escopo: itens 3 e 4; sua linha: F5.2)
+  2. fases/contexto-comum.md §3 e §7
+  3. fases/paralelizacao.md §4 (mapa de propriedade)
+  4. lib/booking/  — o código que você vai tocar
+
+ATENÇÃO, ÚNICO PONTO DE DISPUTA DO PROJETO
+  Esta é a única tarefa que toca arquivo de outra fase: o consumo de crédito entra
+  na transação de agendamento da F3. Combine com o dono de lib/booking/ ANTES de
+  começar. Não descubra isso no merge.
+
+AMBIENTE
+  git worktree add ../wt-f5-2 -b f5.2-creditos       (F5.0 já mesclada)
+
+VOCÊ É DONO DE
+  lib/membership/credits.ts + o ponto de integração acordado em lib/booking/
+
+ENTREGUE
+  - CreditLedger APPEND-ONLY (delta, reason, bookingId). Saldo é a SOMA dos
+    lançamentos, nunca um contador mutável — "UPDATE ... SET remaining =
+    remaining - 1" fora da transação do agendamento gera crédito fantasma, e no
+    piloto alguém vai perguntar "por que meu crédito sumiu".
+  - Consumo na MESMA transação do agendamento: nunca dois créditos para um
+    agendamento, nunca crédito debitado sem agendamento.
+  - Cancelamento dentro da política DEVOLVE o crédito como lançamento NOVO, sem
+    editar o antigo.
+  - Renovação do ciclo credita. DECIDA E DOCUMENTE: crédito não usado expira ou
+    acumula? (recomendado: expira, com aviso).
+  - No fluxo de agendamento, havendo crédito, o checkout da F4 é pulado.
+
+PENDÊNCIA DE PRODUTO (não invente a resposta)
+  Cliente do clube ainda paga sinal como garantia contra no-show? Enquanto não
+  houver resposta, implemente SEM sinal e deixe a decisão isolada atrás de uma
+  flag de política do tenant.
+
+PRONTO QUANDO
+  - Teste de concorrência: dois agendamentos simultâneos com UM crédito — um
+    passa, um falha.
+  - Cancelar devolve o crédito e o ledger conta a história inteira.
+
+NÃO FAÇA
+  alterar schema, mexer em lib/booking/ além do ponto acordado, push, PR sem pedido.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana

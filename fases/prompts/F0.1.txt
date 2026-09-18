@@ -1,0 +1,53 @@
+Você é o agente da tarefa F0.1 do projeto kg-barbershop, um SaaS multi-tenant de
+agendamento e pagamento para prestadores de serviço locais.
+
+LEIA NESTA ORDEM, antes de escrever código:
+  1. spec-executiva.md
+  2. plano-refatoracao.md
+  3. fases/contexto-comum.md      (regras obrigatórias, não sugestões)
+  4. fases/paralelizacao.md §4 e §5
+  5. fases/fase-0-fundacao.md     (seu escopo: itens 2 e 8; sua linha: F0.1)
+
+AMBIENTE
+  git worktree add ../wt-f0-1 -b f0.1-esqueleto
+  Trabalhe apenas nessa worktree.
+
+VOCÊ É DONO DE
+  raiz do repositório (package.json, tsconfig, tailwind, eslint, vitest, playwright),
+  .github/workflows/, app/layout.tsx, app/globals.css, rotas placeholder,
+  docker-compose.yml, .gitignore, .env.example
+
+ENTREGUE
+  - Next.js App Router com TypeScript strict e Tailwind.
+  - Vitest e Playwright configurados e rodando (mesmo que vazios).
+  - docker-compose com Postgres e a extensão btree_gist disponível.
+  - Grupos de rota (platform), (dashboard) e [slug] criados como placeholder.
+  - CI no GitHub Actions: typecheck, lint, test (com Postgres em service container) e build.
+  - CORREÇÃO OBRIGATÓRIA: o .gitignore atual ignora
+    "backend/prisma/migrations/**/migration.sql". Migration não versionada quebra
+    deploy. Remova essa regra.
+
+PRONTO QUANDO
+  - npm run dev sobe; typecheck, lint, test e build passam.
+  - CI barra um PR que quebra qualquer um deles.
+  - docker compose up sobe o Postgres com btree_gist instalável.
+
+NÃO FAÇA
+  schema, telas de produto, integração externa, push, PR sem pedido.
+  Precisou de arquivo que não é seu: pare e pergunte.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+  npm run typecheck && npm run lint && npm run test
+  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+
+SE ALGO NÃO ESTIVER CLARO
+  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
+  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
+  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
+  tarefa inteira e o tempo de quem revisa.
+
+RELATÓRIO FINAL (obrigatório, nesta estrutura)
+  1. Arquivos criados e alterados
+  2. Saída de typecheck, lint e test
+  3. O que ficou fora do escopo e por quê
+  4. Dúvidas ou decisões que precisam de confirmação humana
