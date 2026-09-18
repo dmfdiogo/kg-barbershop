@@ -26,8 +26,17 @@ import { runWithRetry } from './retry';
  *
  * Callbacks podem ser reexecutadas: uma transação abortada por deadlock/
  * serialização (P2034, comum quando duas reservas disputam o mesmo slot) é
- * tentada de novo antes de propagar o erro. Nada fora do banco deve acontecer
- * dentro da callback.
+ * tentada de novo antes de propagar o erro (limite em lib/tenant/retry.ts).
+ * Nada fora do banco deve acontecer dentro da callback.
+ *
+ * Nota de diagnóstico (F0.2): o Prisma carrega relações independentes de um
+ * `include` em paralelo, na mesma conexão da transação interativa. Com
+ * @prisma/adapter-pg isso emite o aviso "Calling client.query() when the client
+ * is already executing a query" — o pg@8 enfileira, mas a API deve rejeitar no
+ * pg@9. Isolamento e SET LOCAL não são afetados (mesma sessão); o risco é de
+ * compatibilidade na subida do adapter. Em caminhos com 3+ includes
+ * independentes, prefira queries sequenciais, e rode a suíte com
+ * NODE_OPTIONS=--trace-deprecation ao atualizar o adapter.
  */
 
 export type TenantTransaction = Prisma.TransactionClient;
