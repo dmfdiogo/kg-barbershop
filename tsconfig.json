@@ -39,8 +39,6 @@
   ],
   "exclude": [
     "node_modules",
-    "tests/e2e",
-    "backend",
-    "frontend"
+    "tests/e2e"
   ]
 }

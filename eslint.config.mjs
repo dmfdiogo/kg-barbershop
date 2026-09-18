@@ -8,10 +8,6 @@ const config = [
       'node_modules/**',
       'playwright-report/**',
       'test-results/**',
-      // Código legado do MVP anterior. A remoção é da tarefa F0.4; até lá ele
-      // fica fora do typecheck e do lint para não travar o CI.
-      'backend/**',
-      'frontend/**',
     ],
   },
   ...coreWebVitals,
