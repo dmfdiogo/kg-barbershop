@@ -124,4 +124,6 @@ Ver [`paralelizacao.md`](paralelizacao.md) §4 e §5. **F0.1 roda sozinha**; dep
 | **F0.2** | Schema completo, migrations, RLS, client escopado, exclusion constraint, teste de isolamento e de concorrência | `prisma/**`, `lib/tenant/**` | F0.1 | 3 |
 | **F0.3** | Ports, mocks com validações reais, disparo de webhook, console `/dev`, suíte de contrato | `lib/payments/**`, `lib/messaging/**`, `app/dev/**` | F0.1 | 2,5 |
 | **F0.4** | Portar `availability` (com correção de fuso) e componentes de UI; remover `backend/`, `frontend/`, `.hurl`, `railway.toml` | `lib/booking/availability.ts`, `components/**`, remoções | F0.1 | 2 |
-| **F0.5** | Seed de dois tenants completos + `CLAUDE.md` | `prisma/seed.ts`, `CLAUDE.md` | F0.2, F0.4 | 1 |
+| **F0.5** | Seed de dois tenants completos + `CLAUDE.md` | `prisma/seed.mts`, `CLAUDE.md` | F0.2, F0.4 | 1 |
+
+> **Pendência aberta ao fim da F0.5:** `docker compose up` nunca foi executado — o daemon do Docker não sobe nesta máquina. O arquivo é sintaticamente válido e o `btree_gist` também é criado pela própria migration (`CREATE EXTENSION IF NOT EXISTS`), então o caminho sem Docker está coberto; o que falta provar é o caminho **com** Docker, que é o documentado no `CLAUDE.md`. Quem tiver Docker funcionando deve rodar `npm run db:up && npm run db:reset` e confirmar.

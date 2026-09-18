@@ -13,6 +13,8 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
+    // `prisma migrate reset` roda o seed sozinho — é o caminho de um clone novo.
+    seed: 'node prisma/seed.mts',
   },
   datasource: {
     url: process.env.DATABASE_URL,

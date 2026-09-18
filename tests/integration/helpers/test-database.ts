@@ -190,9 +190,31 @@ export async function createTenantFixture(admin: TenantDb, prefix = 'tenant'): P
   });
 }
 
-/** Remove o tenant e tudo que pende dele (as FKs são ON DELETE CASCADE). */
+/**
+ * Remove o tenant e tudo que pende dele (as FKs são ON DELETE CASCADE) — e
+ * também os `user` que ficariam órfãos.
+ *
+ * `user` é global de propósito (identidade por telefone atravessa tenants), por
+ * isso NÃO cascateia de `tenant`. Sem esta limpeza, cada execução da suíte
+ * abandona linhas: o banco de desenvolvimento acumula lixo e, como `phone` é
+ * unique, uma colisão futura com um telefone sorteado viraria falha
+ * intermitente — o pior tipo de teste para diagnosticar.
+ */
 export async function deleteTenant(admin: TenantDb, tenantId: string): Promise<void> {
-  await admin.asPlatformAdmin((tx) => tx.tenant.delete({ where: { id: tenantId } }));
+  await admin.asPlatformAdmin(async (tx) => {
+    const members = await tx.tenantMember.findMany({
+      where: { tenantId },
+      select: { userId: true },
+    });
+    await tx.tenant.delete({ where: { id: tenantId } });
+    const userIds = members.map((m) => m.userId);
+    if (userIds.length > 0) {
+      // Só apaga quem não sobrou em nenhum outro tenant.
+      await tx.user.deleteMany({
+        where: { id: { in: userIds }, memberships: { none: {} } },
+      });
+    }
+  });
 }
 
 export function createAdminDb(): TenantDb {
