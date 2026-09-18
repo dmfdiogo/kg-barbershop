@@ -1,54 +1,74 @@
 Você é o agente da tarefa F1.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
-  1. spec-executiva.md §2.4 (autenticação sem fricção)
-  2. fases/contexto-comum.md §5 (você usa o MockWhatsAppProvider)
-  3. fases/paralelizacao.md §4 e §5
+  1. CLAUDE.md                          (como rodar, invariantes, armadilhas)
+  2. spec-executiva.md §2.4 (autenticação sem fricção)
+  3. fases/contexto-comum.md §5 (você usa o MockWhatsAppProvider)
   4. fases/fase-1-multitenant-auth.md   (seu escopo: item 2; sua linha: F1.1)
+  5. lib/auth/types.ts e lib/auth/session.ts (contratos que a F1.0 entregou)
 
-AMBIENTE
-  git worktree add ../wt-f1-1 -b f1.1-otp          (F1.0 já mesclada)
+AMBIENTE (leia inteiro, houve mudança desde a onda passada)
+  git worktree add ../wt-f1-1 -b f1.1-otp
+  cd ../wt-f1-1
+  cp ../kg-barbershop/.env.example .env      # RECOPIE do exemplo: fases novas
+                                             # acrescentam variáveis e .env não
+                                             # é versionado. Um .env antigo
+                                             # quebra de forma confusa.
+  createdb kg_f1_1 && edite DATABASE_URL no .env para .../kg_f1_1
+                                             # BANCO PRÓPRIO: há outros agentes
+                                             # rodando agora; banco compartilhado
+                                             # = teste intermitente.
+  npm ci && npm run db:reset
+
+  Se o Docker não subir, use o Postgres local — é o caminho que vem funcionando.
+  A main está em c07be0b, com typecheck, lint, 192 testes, build e e2e verdes.
 
 VOCÊ É DONO DE
   lib/auth/otp.ts, app/api/auth/**
+  E ASSUME lib/auth/actions.ts, que a F1.0 deixou só com as assinaturas e um
+  stub que lança. Preencha delegando para o seu otp.ts. NÃO mude as assinaturas:
+  a F1.2 está compilando contra elas agora.
 
 CONTEXTO
-  Este é o endpoint mais atacável do produto: é anônimo, gera custo por mensagem
-  quando a integração real chegar e dá acesso à conta. Trate as defesas como parte
-  do escopo, não como extra.
+  Este é o endpoint mais atacável do produto: anônimo, gera custo por mensagem
+  quando a integração real chegar, e dá acesso à conta. As defesas são escopo,
+  não extra.
 
 ENTREGUE
-  - Desafio com HASH do código (nunca o código em texto puro no banco), 6 dígitos,
-    TTL de 5 minutos, uso único.
+  - Desafio com HASH do código (nunca o código em texto puro no banco), 6
+    dígitos, TTL de 5 minutos, uso único.
   - Máximo de 5 tentativas por desafio, depois invalida.
   - Cooldown de reenvio.
-  - Rate limit por telefone E por IP, PERSISTENTE (em serverless, contador em
-    memória não sobrevive).
+  - Rate limit por telefone E por IP, PERSISTENTE. A tabela RateLimitCounter já
+    existe no schema (key unique, windowStart, count, expiresAt) — contador em
+    memória não sobrevive em serverless.
   - Comparação em tempo constante.
-  - Resposta e tempo IDÊNTICOS para telefone conhecido e desconhecido — resposta
-    diferente entrega a base de clientes do salão para quem tentar.
+  - Resposta e tempo IDÊNTICOS para telefone conhecido e desconhecido: resposta
+    diferente entrega a base de clientes do salão para quem sondar.
   - Envio pelo WhatsAppProvider (mock); o código aparece em /dev/outbox.
+  - Ao verificar, crie a sessão com o establishSession() da F1.0.
 
 PRONTO QUANDO
   - Testes de: código expirado, errado 5 vezes, reusado, reenvio em cooldown,
-    rate limit estourado.
+    rate limit estourado por telefone e por IP.
   - Teste provando que o banco não guarda o código legível.
   - Teste de não-enumeração (resposta e tempo iguais).
 
-NÃO FAÇA
-  telas (F1.2), integração real, push, PR sem pedido.
-
-VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode, não presuma)
   npm run typecheck && npm run lint && npm run test
-  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+  Cole a saída real no relatório. E se você mexer em algo que o servidor de
+  produção usa, rode também npm run test:e2e — foi assim que a fase 1 quebrou a
+  suíte sem perceber.
 
 SE ALGO NÃO ESTIVER CLARO
-  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
-  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
-  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
-  tarefa inteira e o tempo de quem revisa.
+  Não invente nome de campo, rota nem API. Procure no repositório e leia o
+  código. Se ainda assim não estiver claro, PARE e pergunte.
 
-RELATÓRIO FINAL (obrigatório, nesta estrutura)
+NÃO FAÇA
+  integração real com serviço externo (é a F8), alterar o schema, mudar
+  assinatura de port, editar arquivo de outro dono, git push, PR sem pedido.
+
+RELATÓRIO FINAL
   1. Arquivos criados e alterados
   2. Saída de typecheck, lint e test
   3. O que ficou fora do escopo e por quê

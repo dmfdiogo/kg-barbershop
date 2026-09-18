@@ -1,56 +1,87 @@
 Você é o agente da tarefa F3.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
-  1. spec-executiva.md §9.1 (garantia anti-concorrência)
-  2. plano-refatoracao.md §5.1 e §5.2
-  3. fases/contexto-comum.md §3 e §7
-  4. fases/fase-3-portal-booking.md    (seu escopo: item 3; sua linha: F3.2)
+  1. CLAUDE.md                          (o invariante de retry é o seu)
+  2. spec-executiva.md §9.1 (garantia anti-concorrência)
+  3. plano-refatoracao.md §5.1 e §5.2
+  4. fases/fase-3-portal-booking.md     (seu escopo: itens 3 e 3.1; sua linha: F3.2)
+  5. lib/tenant/db.ts e lib/tenant/errors.ts (client escopado e tradução do 23P01)
 
-AMBIENTE
-  git worktree add ../wt-f3-2 -b f3.2-hold          (fundação F0 mesclada; a
-                                                    sua tarefa é domínio puro e
-                                                    NÃO espera o portal)
+AMBIENTE (leia inteiro, houve mudança desde a onda passada)
+  git worktree add ../wt-f3-2 -b f3.2-hold
+  cd ../wt-f3-2
+  cp ../kg-barbershop/.env.example .env      # RECOPIE do exemplo: fases novas
+                                             # acrescentam variáveis e .env não
+                                             # é versionado. Um .env antigo
+                                             # quebra de forma confusa.
+  createdb kg_f3_2 && edite DATABASE_URL no .env para .../kg_f3_2
+                                             # BANCO PRÓPRIO: há outros agentes
+                                             # rodando agora; banco compartilhado
+                                             # = teste intermitente.
+  npm ci && npm run db:reset
+
+  Se o Docker não subir, use o Postgres local — é o caminho que vem funcionando.
+  A main está em c07be0b, com typecheck, lint, 192 testes, build e e2e verdes.
 
 VOCÊ É DONO DE
-  lib/booking/hold.ts, app/api/cron/expire-holds/**
+  lib/booking/hold.ts, lib/booking/confirm.ts, lib/booking/participants/,
+  app/api/cron/expire-holds/**
+
+  Sua tarefa é domínio puro: não espera o portal nem a autenticação.
 
 CONTEXTO
-  A garantia contra double-booking é a exclusion constraint criada na F0.2, não um
-  if em JavaScript. O código antigo do projeto NÃO validava disponibilidade
-  ("simplified for MVP", no próprio comentário) e permitia reserva dupla. Aqui isso
-  é resolvido no banco.
+  A garantia contra double-booking é a exclusion constraint booking_no_overlap,
+  já criada na fundação — não um if em JavaScript. O código antigo do projeto
+  NÃO validava disponibilidade ("simplified for MVP", no próprio comentário) e
+  permitia reserva dupla.
 
-ENTREGUE
-  - Criação de hold com status HOLD e holdExpiresAt = now() + 10min.
+ENTREGUE — PARTE 1: HOLD
+  - Hold com status HOLD, holdExpiresAt = now() + 10min, amarrado à sessão via
+    holdSessionId. Sem isso um bot segura a agenda inteira por 10 minutos.
   - A MESMA transação apaga, antes de inserir, os holds vencidos daquele
-    profissional. Sem isso um hold abandonado e ainda não coletado bloqueia a
+    profissional. Senão um hold abandonado e ainda não coletado bloqueia a
     constraint e o horário fica preso.
-  - O cron de expiração é rede de segurança, não o mecanismo principal. Endpoint
-    autenticado por secret.
-  - Violação da constraint (erro 23P01) vira erro de domínio "horário acabou de ser
-    reservado" — NUNCA 500.
-  - Amarre o hold à sessão/dispositivo: senão um bot segura a agenda inteira do
-    salão por 10 minutos.
+  - Cron de expiração como rede de segurança, autenticado por CRON_SECRET.
+  - Violação da constraint vira SlotUnavailableError (a tradução já existe em
+    lib/tenant/errors.ts) — NUNCA 500.
+
+ENTREGUE — PARTE 2: PONTOS DE EXTENSÃO (item 3.1 da fase)
+  Três tarefas futuras precisam reagir à confirmação: crédito do clube (F5.2),
+  lembretes (F6.1) e contador de trial (F7.1). Se cada uma editar a transação,
+  três agentes disputam o mesmo arquivo. Entregue:
+  1. Participantes da transação — módulos em lib/booking/participants/*.ts,
+     descobertos por convenção, executados DENTRO da transação. Quem lança,
+     aborta a confirmação inteira.
+  2. Eventos pós-commit — BookingConfirmed, BookingCancelled,
+     BookingRescheduled, para efeitos que não podem derrubar o agendamento.
+  Sem arquivo-lista central: cada feature deixa o seu arquivo na pasta.
+
+  REGRA QUE VEM DO CLIENT ESCOPADO: a callback da transação pode RODAR DUAS
+  VEZES (retry em P2034 sob disputa). Todo participante precisa ser reexecutável
+  e viver no banco. Escreva isso no contrato que as outras três vão ler.
 
 PRONTO QUANDO
   - Teste de concorrência: 20 requisições simultâneas no mesmo slot resultam em
-    exatamente 1 hold e 19 erros tratados.
+    exatamente 1 hold e 19 erros tratados, nunca 500.
   - Hold expirado volta à grade mesmo com o cron desligado.
+  - Um participante de exemplo prova que aborta a confirmação ao lançar e que
+    reexecuta sem duplicar efeito.
 
-NÃO FAÇA
-  UI (F3.3), pagamento (F4), push, PR sem pedido.
-
-VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode, não presuma)
   npm run typecheck && npm run lint && npm run test
-  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+  Cole a saída real no relatório. E se você mexer em algo que o servidor de
+  produção usa, rode também npm run test:e2e — foi assim que a fase 1 quebrou a
+  suíte sem perceber.
 
 SE ALGO NÃO ESTIVER CLARO
-  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
-  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
-  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
-  tarefa inteira e o tempo de quem revisa.
+  Não invente nome de campo, rota nem API. Procure no repositório e leia o
+  código. Se ainda assim não estiver claro, PARE e pergunte.
 
-RELATÓRIO FINAL (obrigatório, nesta estrutura)
+NÃO FAÇA
+  integração real com serviço externo (é a F8), alterar o schema, mudar
+  assinatura de port, editar arquivo de outro dono, git push, PR sem pedido.
+
+RELATÓRIO FINAL
   1. Arquivos criados e alterados
   2. Saída de typecheck, lint e test
   3. O que ficou fora do escopo e por quê

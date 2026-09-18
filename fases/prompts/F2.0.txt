@@ -1,48 +1,68 @@
 Você é o agente da tarefa F2.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
-  1. spec-executiva.md §2.2 e §2.3
-  2. fases/contexto-comum.md §2
-  3. fases/paralelizacao.md §2 (tronco-e-folhas) e §4.1 (evite arquivos-lista)
-  4. fases/fase-2-painel-owner.md    (sua linha: F2.0)
+  1. CLAUDE.md                          (como rodar, invariantes, armadilhas)
+  2. spec-executiva.md §2.2 e §2.3 (o que Owner e Staff fazem)
+  3. fases/contexto-comum.md §2 (nada de cor literal)
+  4. fases/paralelizacao.md §2 (tronco-e-folhas) e §4.1 (evite arquivos-lista)
+  5. fases/fase-2-painel-owner.md       (sua linha: F2.0)
+  6. lib/auth/rbac.ts                   (requireRole, entregue pela F1.0)
 
-AMBIENTE
-  git worktree add ../wt-f2-0 -b f2.0-shell        (F1 inteira mesclada)
+AMBIENTE (leia inteiro, houve mudança desde a onda passada)
+  git worktree add ../wt-f2-0 -b f2.0-shell
+  cd ../wt-f2-0
+  cp ../kg-barbershop/.env.example .env      # RECOPIE do exemplo: fases novas
+                                             # acrescentam variáveis e .env não
+                                             # é versionado. Um .env antigo
+                                             # quebra de forma confusa.
+  createdb kg_f2_0 && edite DATABASE_URL no .env para .../kg_f2_0
+                                             # BANCO PRÓPRIO: há outros agentes
+                                             # rodando agora; banco compartilhado
+                                             # = teste intermitente.
+  npm ci && npm run db:reset
+
+  Se o Docker não subir, use o Postgres local — é o caminho que vem funcionando.
+  A main está em c07be0b, com typecheck, lint, 192 testes, build e e2e verdes.
 
 VOCÊ É DONO DE
   app/(dashboard)/layout.tsx, components/dashboard/**
 
-VOCÊ É O TRONCO
-  Quatro folhas (F2.1 a F2.4) vão construir dentro do seu shell em paralelo.
-  O maior risco de conflito entre elas é um ARQUIVO-LISTA central de navegação
-  onde cada uma acrescenta uma linha.
+VOCÊ É O TRONCO DA FASE 2
+  Quatro folhas (F2.1 serviços, F2.2 equipe, F2.3 marca, F2.4 políticas) vão
+  construir dentro do seu shell EM PARALELO. O maior risco de conflito entre elas
+  é um arquivo-lista central de navegação onde cada uma acrescenta uma linha.
 
 ENTREGUE
-  - Shell do painel mobile-first (Owner e Staff), com navegação montada por
-    DESCOBERTA: cada feature exporta o seu item em app/(dashboard)/<feature>/nav.ts
-    e o menu é montado varrendo a pasta. Nada de lista central.
-  - Navegação sensível ao papel: Staff não vê as telas de configuração.
+  - Shell do painel mobile-first, com navegação montada por DESCOBERTA: cada
+    feature exporta o seu item em app/(dashboard)/<feature>/nav.ts e o menu é
+    montado varrendo a pasta. Nada de lista central.
+  - Navegação sensível ao papel: Staff não vê as telas de configuração. Use o
+    requireRole da F1.0; o papel vem de TenantMember por requisição, nunca do
+    token.
   - Estados padronizados de vazio, carregando e erro, reutilizáveis pelas folhas.
-  - Tokens de tema aplicados (sem cor literal).
+  - Tokens de tema aplicados. Marca (--color-primary/secondary/background) é
+    customizável pelo tenant; status (--color-success/warning/danger) é fixo.
 
 PRONTO QUANDO
   - Uma rota placeholder nova aparece no menu sem editar nenhum arquivo central.
   - Staff e Owner veem menus diferentes, com teste.
+  - Teste de isolamento: o painel de um tenant não expõe dado de outro.
 
-NÃO FAÇA
-  features (serviços, equipe, marca, políticas são das folhas), push, PR sem pedido.
-
-VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode, não presuma)
   npm run typecheck && npm run lint && npm run test
-  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+  Cole a saída real no relatório. E se você mexer em algo que o servidor de
+  produção usa, rode também npm run test:e2e — foi assim que a fase 1 quebrou a
+  suíte sem perceber.
 
 SE ALGO NÃO ESTIVER CLARO
-  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
-  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
-  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
-  tarefa inteira e o tempo de quem revisa.
+  Não invente nome de campo, rota nem API. Procure no repositório e leia o
+  código. Se ainda assim não estiver claro, PARE e pergunte.
 
-RELATÓRIO FINAL (obrigatório, nesta estrutura)
+NÃO FAÇA
+  integração real com serviço externo (é a F8), alterar o schema, mudar
+  assinatura de port, editar arquivo de outro dono, git push, PR sem pedido.
+
+RELATÓRIO FINAL
   1. Arquivos criados e alterados
   2. Saída de typecheck, lint e test
   3. O que ficou fora do escopo e por quê
