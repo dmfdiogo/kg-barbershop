@@ -102,7 +102,10 @@ Todas as tabelas de negócio carregam `tenantId`. Valores monetários em **centa
 ```
 Tenant            slug(unique), customDomain(unique?), name, document(CPF/CNPJ), timezone,
                   logoUrl, colorPrimary, colorSecondary, colorBackground, themePreset,
-                  cancellationWindowHours, status, trialBookingsUsed
+                  cancellationWindowHours, status, trialBookingsUsed,
+                  minAdvanceMinutes(default 0), maxAdvanceMinutes?,      # F3.1/F2.4
+                  noShowPolicyText?,                                     # texto exibido; sem semântica
+                  membershipRequiresDeposit(default false)               # pendência de produto da F5.2
 
 User              phone(E.164, unique), name, email?, isSuperAdmin      # identidade global
 TenantMember      tenantId, userId, role(OWNER|STAFF|CUSTOMER)          # papel por tenant
@@ -117,7 +120,10 @@ StaffService      staffId, serviceId
 Booking           tenantId, customerId, staffId, serviceId,
                   startsAt, endsAt, blockedUntil,                       # blockedUntil = endsAt + buffer
                   status(HOLD|PENDING|CONFIRMED|COMPLETED|CANCELLED|NO_SHOW),
-                  holdExpiresAt, priceCents, source(PORTAL|WALK_IN)
+                  holdExpiresAt, holdSessionId?,                       # F3.2: hold amarrado ao dispositivo
+                  priceCents, source(PORTAL|WALK_IN),
+                  confirmedAt?, completedAt?, cancelledAt?, cancelledBy?, cancellationReason?,
+                  noShowAt?                                             # F3.4/F3.5/F6.1
 Payment           tenantId, bookingId, provider, method(PIX|CARD|CASH),
                   amountCents, platformFeeCents, asaasId, status, paidAt
 
@@ -131,10 +137,18 @@ Membership        tenantId, customerId, planId, asaasSubscriptionId, status, cur
 CreditLedger      membershipId, serviceId, delta, reason, bookingId?    # saldo = soma; auditável
 
 OtpChallenge      phone, codeHash, expiresAt, attempts, consumedAt
-NotificationJob   tenantId, bookingId, template, scheduledFor, sentAt, providerMessageId, status
+RateLimitCounter  key(unique: "otp:phone:+55…" / "otp:ip:…"), windowStart, count, expiresAt
+                                                                        # F1.1: em serverless, contador em memória não sobrevive
+MessagingPref     tenantId, userId, channel, optedOutAt?, consentAt?, consentSource
+                                                                        # F6.2: opt-out e consentimento LGPD
+NotificationJob   tenantId, bookingId, template, scheduledFor, sentAt, providerMessageId, status,
+                  attempts(default 0), lockedAt?, lastError?            # F6.0: claim, retry e backoff
+                  índice em (status, scheduledFor) para a query do runner
 WebhookEvent      provider, eventId(unique), payload, processedAt       # idempotência
 AuditLog          tenantId, actorId, action, entity, entityId, createdAt
 ```
+
+**Campos que existem por causa de fases futuras.** O schema é congelado na F0 para que as fases paralelas não disputem migrations. Isso só funciona se ele nascer com o que as fases seguintes já sabidamente precisam — por isso a lista acima inclui campos sem consumidor hoje, cada um marcado com a tarefa que o usará. Um campo a mais, nulo, custa nada; uma migration disputada por dois agentes custa uma tarde.
 
 **Decisão de identidade:** `User` é global (o cliente faz OTP uma vez e reencontra seus agendamentos em qualquer salão), e o acesso a dados é sempre escopado por `tenantId` via `TenantMember` + RLS. Nenhum salão consegue enxergar que aquele telefone existe em outro salão, atendendo §9.3. A alternativa (um registro de cliente por tenant) isola fisicamente, mas obriga o cliente a fazer OTP de novo em cada salão e duplica PII — pior para LGPD, não melhor.
 
