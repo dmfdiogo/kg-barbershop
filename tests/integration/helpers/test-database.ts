@@ -58,6 +58,13 @@ let ensured = false;
 /**
  * Garante banco migrado e role de RLS criada. Idempotente e serializado por
  * advisory lock, porque arquivos de teste rodam em workers paralelos.
+ *
+ * O retry envolve a TRANSAÇÃO INTEIRA, não cada comando: `CREATE ROLE`/`ALTER
+ * ROLE` concorrentes abortam a transação corrente (`XX000 tuple concurrently
+ * updated`, depois `25P02`), e reexecutar um comando dentro da transação já
+ * abortada é garantia de novo 25P02. Reiniciar a transação re-adquire o lock e
+ * relê o catálogo já consistente — a segunda passada encontra a role criada e
+ * segue. Foi um flake real sob a suíte completa em workers paralelos.
  */
 export async function ensureTestDatabase(): Promise<void> {
   if (ensured) return;
@@ -66,15 +73,17 @@ export async function ensureTestDatabase(): Promise<void> {
     adapter: new PrismaPg({ connectionString: ownerDatabaseUrl() }),
   });
   try {
-    await admin.$transaction(
-      async (tx) => {
-        // $executeRaw porque pg_advisory_xact_lock devolve `void`, que $queryRaw
-        // não consegue desserializar.
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('kg_test_database_setup'))`;
-        runMigrations();
-        await ensureRlsRole(tx);
-      },
-      { timeout: 180_000, maxWait: 30_000 },
+    await withRoleRetry(() =>
+      admin.$transaction(
+        async (tx) => {
+          // $executeRaw porque pg_advisory_xact_lock devolve `void`, que $queryRaw
+          // não consegue desserializar.
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('kg_test_database_setup'))`;
+          runMigrations();
+          await ensureRlsRole(tx);
+        },
+        { timeout: 180_000, maxWait: 30_000 },
+      ),
     );
     ensured = true;
   } finally {
@@ -106,10 +115,12 @@ function runMigrations(): void {
 }
 
 /**
- * `ALTER ROLE` em paralelo devolve `XX000 tuple concurrently updated` — o
- * catálogo de roles é global e não tem trava por linha. Acontece quando a suíte
- * roda em workers paralelos ou quando um `db:reset` coincide com os testes.
- * Repetir resolve; o comando é idempotente.
+ * `CREATE ROLE`/`ALTER ROLE` em paralelo devolve `XX000 tuple concurrently
+ * updated` — o catálogo de roles é global e não tem trava por linha. Acontece
+ * quando a suíte roda em workers paralelos ou quando um `db:reset` coincide com
+ * os testes. Repetir resolve; o comando é idempotente. `25P02` entra na lista
+ * porque a transação abortada pelo próprio `XX000` responde a qualquer comando
+ * seguinte com "current transaction is aborted".
  */
 async function withRoleRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
   let lastError: unknown;
@@ -119,7 +130,11 @@ async function withRoleRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> 
     } catch (error) {
       const code = (error as { meta?: { code?: string } })?.meta?.code;
       const message = error instanceof Error ? error.message : String(error);
-      const concurrent = code === 'XX000' || message.includes('tuple concurrently updated');
+      const concurrent =
+        code === 'XX000' ||
+        code === '25P02' ||
+        message.includes('tuple concurrently updated') ||
+        message.includes('current transaction is aborted');
       if (!concurrent) throw error;
       lastError = error;
       await new Promise((resolve) => setTimeout(resolve, 50 * (i + 1)));
@@ -136,9 +151,7 @@ async function ensureRlsRole(tx: Prisma.TransactionClient): Promise<void> {
       END IF;
     END $$;
   `);
-  await withRoleRetry(() =>
-    tx.$executeRawUnsafe(`ALTER ROLE ${RLS_ROLE} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`),
-  );
+  await tx.$executeRawUnsafe(`ALTER ROLE ${RLS_ROLE} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`);
   await tx.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO ${RLS_ROLE}`);
   await tx.$executeRawUnsafe(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ${RLS_ROLE}`);
   await tx.$executeRawUnsafe(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${RLS_ROLE}`);
