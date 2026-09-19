@@ -42,6 +42,8 @@ Janela de cancelamento (padrão 24h), política de no-show, antecedência mínim
 
 Upload de logo (PNG/JPG/SVG, com limite de tamanho e validação de tipo real, não só extensão), cores primária/secundária/fundo, e os 4 presets da spec §5.1 (*Classic Barber*, *Beauty & Spa*, *Pet Friendly*, *Auto Detail*). Preview ao vivo.
 
+**Preset grava cores, não vínculo.** Ao aplicar um preset, persista as três cores nas colunas do `Tenant`; `themePreset` fica apenas como rótulo de qual preset foi o ponto de partida. O `lib/theme/resolve.ts` da F3.0 ignora o campo de propósito. O motivo é de produto: se o preset fosse vínculo vivo, mexer na paleta "Classic Barber" mudaria a identidade visual de todos os salões que a usam, sem que eles pedissem — e o dono não conseguiria ajustar uma cor isolada sem sair do preset.
+
 As cores viram CSS variables injetadas no SSR do portal — é o que evita o flash de tema errado. **A injeção em si é da F3.0** (`lib/theme/resolve.ts`, entregue com valores padrão); você entrega a tela de edição, os presets (`lib/theme/presets.ts`) e o preview, consumindo aquele resolvedor. Não reimplemente a injeção. **Valide contraste**: um dono pode escolher amarelo sobre branco e tornar o próprio portal ilegível. Avise antes de salvar.
 
 ### 6. Dashboard operacional

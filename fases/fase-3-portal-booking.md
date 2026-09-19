@@ -49,6 +49,8 @@ Entregue, portanto, **dois pontos de extensão** em `lib/booking/confirm.ts`:
 
 Sem arquivo-lista central: cada feature deixa o seu próprio arquivo na pasta. Documente o contrato dos dois pontos — F5.2, F6.1 e F7.1 vão implementar contra ele sem te consultar.
 
+**Contrato de entrada vindo da F3.0:** o catálogo já aponta para `/<slug>/agendar?servico=<id>`. Use exatamente esse caminho e esse nome de parâmetro — o link já existe em produção do portal, e mudar aqui quebraria o CTA sem ninguém perceber até alguém clicar.
+
 ### 4. Identificação do cliente
 
 OTP da F1 **no fim do fluxo**, não no começo: pedir login antes de mostrar horário derruba conversão. O hold já existe quando o OTP é pedido.
