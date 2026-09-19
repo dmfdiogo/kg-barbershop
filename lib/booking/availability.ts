@@ -35,13 +35,32 @@ export interface TimeOff {
 }
 
 /**
+ * Só o que a grade precisa saber do `BookingStatus` do schema. Mantido como
+ * união local para preservar a pureza do módulo (nenhum import de Prisma).
+ */
+export type BookingOccupancyStatus =
+  | 'HOLD'
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'NO_SHOW';
+
+/**
  * Agendamento que ocupa a agenda. `blockedUntil` = `endsAt` + buffer do serviço
  * (`plano-refatoracao.md` §4), ou seja, o intervalo que a constraint do banco
  * também protege.
+ *
+ * `status`/`holdExpiresAt` alimentam `isBookingOccupying`, que espelha a
+ * exclusion constraint do banco. Quando `status` é omitido o agendamento ocupa
+ * — preserva o contrato da F0.4 e é fail-closed para linhas sem status.
  */
 export interface BusyBooking {
   startsAt: Date;
   blockedUntil: Date;
+  status?: BookingOccupancyStatus;
+  /** Só tem efeito para `status: 'HOLD'`. */
+  holdExpiresAt?: Date | null;
 }
 
 export interface AvailabilityService {
@@ -62,6 +81,13 @@ export interface AvailabilityInput {
   now?: Date;
   /** Intervalo entre o início de slots consecutivos; padrão 15 min. */
   slotIntervalMin?: number;
+  /** `Tenant.minAdvanceMinutes`: antecedência mínima para agendar. Padrão 0. */
+  minAdvanceMinutes?: number;
+  /**
+   * `Tenant.maxAdvanceMinutes`: horizonte máximo para agendar. `null`/ausente =
+   * sem limite (o padrão do schema).
+   */
+  maxAdvanceMinutes?: number | null;
 }
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -84,29 +110,75 @@ export function tenantDayRange(date: string, timezone: string): { start: Date; e
 }
 
 /**
+ * Decide se um agendamento ocupa a grade agora.
+ *
+ * Alinhado à exclusion constraint `booking_no_overlap`, que ocupa apenas com
+ * `status IN ('HOLD','PENDING','CONFIRMED')`:
+ *
+ * - HOLD ocupa enquanto vigente: `holdExpiresAt > now`. Um hold vencido nunca
+ *   aparece como ocupado — o horário volta à grade mesmo antes de a limpeza da
+ *   F3.2 recolhê-lo. HOLD sem `holdExpiresAt` ocupa (fail-closed: a constraint
+ *   também o barraria).
+ * - COMPLETED, CANCELLED e NO_SHOW nunca ocupam.
+ * - Qualquer outro status (ou `status` omitido) ocupa — fail-closed para linhas
+ *   carregadas sem status.
+ */
+export function isBookingOccupying(booking: BusyBooking, now: Date): boolean {
+  if (
+    booking.status === 'COMPLETED' ||
+    booking.status === 'CANCELLED' ||
+    booking.status === 'NO_SHOW'
+  ) {
+    return false;
+  }
+  if (booking.status === 'HOLD') {
+    return booking.holdExpiresAt == null || booking.holdExpiresAt.getTime() > now.getTime();
+  }
+  return true;
+}
+
+interface ResolvedOptions {
+  now: Date;
+  slotIntervalMin: number;
+  minAdvanceMinutes: number;
+  maxAdvanceMinutes: number | null;
+}
+
+interface DaySlotInput extends ResolvedOptions {
+  /** Dia local do tenant, "YYYY-MM-DD". */
+  date: string;
+  timezone: string;
+  workingHours: WorkingHours[];
+  service: AvailabilityService;
+  bookings: BusyBooking[];
+  timeOff: TimeOff[];
+}
+
+/**
  * Gera os horários disponíveis de um dia, como instantes UTC em ISO 8601.
- * Regras (as mesmas do código antigo, agora no fuso certo):
- * duração do serviço + buffer, intervalos de jornada, bloqueios e agendamentos.
+ * Regras: duração do serviço + buffer, intervalos de jornada, bloqueios,
+ * agendamentos (holds vencidos não contam) e antecedência mínima/máxima.
  */
 export function getAvailability(input: AvailabilityInput): string[] {
-  const {
+  const { date, timezone, workingHours, service, bookings = [], timeOff = [] } = input;
+
+  assertValidDate(date);
+  assertServiceDuration(service);
+  const options = resolveOptions(input);
+
+  return computeDaySlots({
     date,
     timezone,
     workingHours,
     service,
-    bookings = [],
-    timeOff = [],
-    slotIntervalMin = DEFAULT_SLOT_INTERVAL_MIN,
-  } = input;
-  const now = input.now ?? new Date();
+    bookings,
+    timeOff,
+    ...options,
+  });
+}
 
-  assertValidDate(date);
-  if (service.durationMin <= 0) {
-    throw new Error('Service duration must be greater than zero');
-  }
-  if (slotIntervalMin <= 0) {
-    throw new Error('Slot interval must be greater than zero');
-  }
+function computeDaySlots(input: DaySlotInput): string[] {
+  const { date, timezone, workingHours, service, bookings, timeOff, now, slotIntervalMin } = input;
 
   const dayStart = fromZonedTime(`${date}T00:00:00`, timezone);
   // `toZonedTime` devolve o relógio de parede do tenant; `getDay()` daí é o dia
@@ -114,12 +186,17 @@ export function getAvailability(input: AvailabilityInput): string[] {
   const weekday = toZonedTime(dayStart, timezone).getDay();
 
   const blockMs = (service.durationMin + service.bufferMin) * MINUTE_MS;
+  const nowMs = now.getTime();
+  const minAdvanceMs = input.minAdvanceMinutes * MINUTE_MS;
+  const maxAdvanceMs = input.maxAdvanceMinutes === null ? null : input.maxAdvanceMinutes * MINUTE_MS;
 
   const busy = [
-    ...bookings.map((booking) => ({
-      start: booking.startsAt.getTime(),
-      end: booking.blockedUntil.getTime(),
-    })),
+    ...bookings
+      .filter((booking) => isBookingOccupying(booking, now))
+      .map((booking) => ({
+        start: booking.startsAt.getTime(),
+        end: booking.blockedUntil.getTime(),
+      })),
     ...timeOff.map((interval) => ({
       start: interval.startsAt.getTime(),
       end: interval.endsAt.getTime(),
@@ -139,7 +216,10 @@ export function getAvailability(input: AvailabilityInput): string[] {
     for (let minute = startMinute; minute + service.durationMin <= endMinute; minute += slotIntervalMin) {
       const slotStart = slotInstant(date, minute, timezone);
       const slotStartMs = slotStart.getTime();
-      if (slotStartMs < now.getTime()) continue;
+
+      const advanceMs = slotStartMs - nowMs;
+      if (advanceMs < minAdvanceMs) continue;
+      if (maxAdvanceMs !== null && advanceMs > maxAdvanceMs) continue;
 
       const slotBlockEndMs = slotStartMs + blockMs;
       const overlaps = busy.some((interval) => slotStartMs < interval.end && slotBlockEndMs > interval.start);
@@ -150,6 +230,126 @@ export function getAvailability(input: AvailabilityInput): string[] {
   }
 
   return [...slots].sort((a, b) => Date.parse(a) - Date.parse(b));
+}
+
+/** Agenda de um profissional no dia consultado (F3.1). */
+export interface StaffSchedule {
+  staffId: string;
+  workingHours: WorkingHours[];
+  bookings?: BusyBooking[];
+  timeOff?: TimeOff[];
+}
+
+export interface AnyStaffAvailabilityInput {
+  /** Dia local do tenant, no formato "YYYY-MM-DD". */
+  date: string;
+  timezone: string;
+  service: AvailabilityService;
+  staff: StaffSchedule[];
+  now?: Date;
+  slotIntervalMin?: number;
+  minAdvanceMinutes?: number;
+  maxAdvanceMinutes?: number | null;
+}
+
+/**
+ * "Qualquer profissional": une as grades de todos os profissionais do serviço.
+ * O slot aparece uma única vez, mesmo quando vários podem atendê-lo. Quem
+ * escolhe o profissional na confirmação é `selectStaffForSlot`.
+ */
+export function getAnyStaffAvailability(input: AnyStaffAvailabilityInput): string[] {
+  const { date, timezone, service, staff } = input;
+
+  assertValidDate(date);
+  assertServiceDuration(service);
+  const options = resolveOptions(input);
+
+  const union = new Set<string>();
+
+  for (const member of staff) {
+    const slots = computeDaySlots({
+      date,
+      timezone,
+      workingHours: member.workingHours,
+      service,
+      bookings: member.bookings ?? [],
+      timeOff: member.timeOff ?? [],
+      ...options,
+    });
+
+    for (const slot of slots) union.add(slot);
+  }
+
+  return [...union].sort((a, b) => Date.parse(a) - Date.parse(b));
+}
+
+export interface SelectStaffForSlotInput {
+  /** Dia local do tenant, "YYYY-MM-DD", coerente com a grade já exibida. */
+  date: string;
+  timezone: string;
+  service: AvailabilityService;
+  staff: StaffSchedule[];
+  /** Slot pretendido (UTC), como devolvido por `getAnyStaffAvailability`. */
+  slot: Date | string;
+  /**
+   * Carga atual por `staffId` — ex.: nº de agendamentos futuros (HOLD vigente ou
+   * CONFIRMED). Ausente = 0. É o critério de distribuição.
+   */
+  loads?: Record<string, number>;
+  now?: Date;
+  slotIntervalMin?: number;
+  minAdvanceMinutes?: number;
+  maxAdvanceMinutes?: number | null;
+}
+
+/**
+ * Escolhe, para um slot, o profissional livre de menor carga (`loads[staffId]`).
+ * Empate resolve por `staffId`, em ordem estável. Retorna `null` se ninguém
+ * puder atender.
+ *
+ * É a metade "na confirmação" do "qualquer profissional": a grade une as
+ * agendas, e este seletor evita concentrar tudo no primeiro da lista. Quem
+ * chama deve recontar/atualizar `loads` a cada escolha (somar o novo
+ * agendamento, por exemplo) — é isso que produz a distribuição.
+ */
+export function selectStaffForSlot(input: SelectStaffForSlotInput): string | null {
+  const { date, timezone, service, staff } = input;
+  const slotDate = typeof input.slot === 'string' ? new Date(input.slot) : input.slot;
+  assertFiniteDate(slotDate, 'slot');
+  const slotIso = slotDate.toISOString();
+
+  assertValidDate(date);
+  assertServiceDuration(service);
+  const options = resolveOptions(input);
+
+  let selected: { staffId: string; load: number } | null = null;
+
+  for (const member of staff) {
+    const freeSlots = new Set(
+      computeDaySlots({
+        date,
+        timezone,
+        workingHours: member.workingHours,
+        service,
+        bookings: member.bookings ?? [],
+        timeOff: member.timeOff ?? [],
+        ...options,
+      }),
+    );
+
+    if (!freeSlots.has(slotIso)) continue;
+
+    const load = input.loads?.[member.staffId] ?? 0;
+    if (
+      selected === null ||
+      load < selected.load ||
+      (load === selected.load && member.staffId < selected.staffId)
+    ) {
+      selected = { staffId: member.staffId, load };
+    }
+  }
+
+  return selected?.staffId ?? null;
 }
 
 export interface CancellationWindowInput {
@@ -187,6 +387,36 @@ export function cancellationWindowEndsAt(startsAt: Date, cancellationWindowHours
   }
 
   return new Date(startsAt.getTime() - cancellationWindowHours * HOUR_MS);
+}
+
+function resolveOptions(input: {
+  now?: Date;
+  slotIntervalMin?: number;
+  minAdvanceMinutes?: number;
+  maxAdvanceMinutes?: number | null;
+}): ResolvedOptions {
+  const now = input.now ?? new Date();
+  const slotIntervalMin = input.slotIntervalMin ?? DEFAULT_SLOT_INTERVAL_MIN;
+  const minAdvanceMinutes = input.minAdvanceMinutes ?? 0;
+  const maxAdvanceMinutes = input.maxAdvanceMinutes ?? null;
+
+  if (slotIntervalMin <= 0) {
+    throw new Error('Slot interval must be greater than zero');
+  }
+  if (!Number.isFinite(minAdvanceMinutes) || minAdvanceMinutes < 0) {
+    throw new Error('minAdvanceMinutes must be a non-negative number');
+  }
+  if (maxAdvanceMinutes !== null && (!Number.isFinite(maxAdvanceMinutes) || maxAdvanceMinutes < 0)) {
+    throw new Error('maxAdvanceMinutes must be null or a non-negative number');
+  }
+
+  return { now, slotIntervalMin, minAdvanceMinutes, maxAdvanceMinutes };
+}
+
+function assertServiceDuration(service: AvailabilityService): void {
+  if (service.durationMin <= 0) {
+    throw new Error('Service duration must be greater than zero');
+  }
 }
 
 function slotInstant(date: string, minuteOfDay: number, timezone: string): Date {
