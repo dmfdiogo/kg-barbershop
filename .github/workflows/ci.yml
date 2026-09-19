@@ -50,6 +50,12 @@ jobs:
 
       - run: npm ci
 
+      # O DATABASE_URL aponta para kg_app (sem superuser, para a RLS valer).
+      # O container do Postgres só cria o dono; a role de aplicação é criada
+      # aqui. As migrations vêm antes para que o GRANT alcance as tabelas.
+      - name: Preparar banco e role de aplicação
+        run: npm run db:deploy && node scripts/ensure-app-role.mts
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -101,6 +107,9 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Preparar banco e role de aplicação
+        run: npm run db:deploy && node scripts/ensure-app-role.mts
 
       - name: Instalar navegadores do Playwright
         run: npx playwright install --with-deps chromium
