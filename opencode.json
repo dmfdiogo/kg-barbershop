@@ -29,7 +29,12 @@
       "git branch -D*": "ask",
       "git tag -d*": "ask",
       "gh pr merge*": "ask",
-      "dropdb*": "ask"
+      "dropdb*": "ask",
+      "rm -rf *": "allow",
+      "rm -r *": "allow",
+      "rm -r /*": "deny",
+      "rm -r ~*": "deny",
+      "rm -r ..*": "deny"
     },
     "external_directory": "ask"
   }
