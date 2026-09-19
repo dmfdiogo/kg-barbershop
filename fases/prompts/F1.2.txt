@@ -1,45 +1,83 @@
 Você é o agente da tarefa F1.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
-  1. spec-executiva.md §2.4
-  2. fases/contexto-comum.md §2 (nada de cor literal) e §5.3 (/dev/outbox)
-  3. fases/paralelizacao.md §4 e §5
+  1. CLAUDE.md
+  2. spec-executiva.md §2.4 (autenticação sem fricção)
+  3. fases/contexto-comum.md §2 (nada de cor literal) e §5.3 (/dev/outbox)
   4. fases/fase-1-multitenant-auth.md   (sua linha: F1.2)
-
-AMBIENTE
-  git worktree add ../wt-f1-2 -b f1.2-telas-auth    (F1.0 já mesclada)
+  5. lib/auth/actions.ts                (requestOtpAction, verifyOtpAction — prontas)
 
 VOCÊ É DONO DE
   app/(auth)/**
 
+  EXCEÇÃO AUTORIZADA: quando /entrar existir, troque o redirect('/') de
+  app/(platform)/plataforma/layout.tsx por /entrar?next=/plataforma. Só essa
+  linha, mais nada nesse arquivo — é repasse combinado com a F1.4.
+
+VOCÊ FECHA A FASE 1
+  O fluxo de OTP já funciona por API: a F1.1 entregou requestOtpAction e
+  verifyOtpAction, e o código aparece em /dev/outbox. Falta a tela. Depois de
+  você, dá para entrar no sistema pelo navegador — é o primeiro marco
+  demonstrável do projeto.
+
 ENTREGUE
-  - Tela de identificação: apenas Nome + WhatsApp. Sem senha em lugar nenhum do
-    sistema.
-  - Tela de código com reenvio, contador e mensagens de erro claras (código
-    expirado, errado, tentativas esgotadas).
-  - Mobile-first de verdade: funciona a 360px de largura.
-  - Consome as server actions definidas pela F1.0; se a assinatura não bastar,
-    PARE e peça — não crie a sua.
+  - Tela de identificação: apenas Nome + WhatsApp. Não existe senha em lugar
+    nenhum do sistema, e não invente uma.
+  - Tela de código com reenvio, contador de cooldown e erros claros: expirado,
+    errado (mostrando tentativas restantes), tentativas esgotadas, rate limit.
+  - Mobile-first de verdade: funciona a 360px. O cliente final abre isto no
+    celular, por link de WhatsApp.
+  - Consome as server actions existentes. Se a assinatura não bastar, PARE e
+    peça — a F1.1 compilou contra elas.
+  - O nome do primeiro acesso viaja num cookie assinado de 5 minutos criado pela
+    F1.1; a sua tela de código não precisa reenviá-lo, mas precisa avisar quando
+    ele expirar junto com o desafio.
 
 PRONTO QUANDO
-  - E2E: login completo lendo o código em /dev/outbox.
+  - E2E em Playwright: login completo lendo o código em /dev/outbox. É o critério
+    principal desta tarefa.
+  - E2E do caminho de erro: código errado e depois o certo.
   - Nenhuma cor literal; tudo por token de tema.
+  - Cookie de sessão é secure mesmo em dev; para testar em aparelho real use
+    npx next dev --experimental-https (está no CLAUDE.md).
 
-NÃO FAÇA
-  lógica de OTP (é F1.1), push, PR sem pedido.
+AMBIENTE
+  git worktree add ../wt-f1-2 -b f1.2-telas-auth
+  cd ../wt-f1-2
+  cp ../kg-barbershop/.env.example .env
+  createdb kg_f1_2
+  # No .env, aponte OS DOIS para o seu banco:
+  #   DATABASE_URL        .../kg_f1_2   (role kg_app, SEM superuser)
+  #   DIRECT_DATABASE_URL .../kg_f1_2   (role dona: migrations, seed, criação da role)
+  npm ci && npm run db:reset
 
-VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode os comandos, não presuma)
-  npm run typecheck && npm run lint && npm run test
-  Cole a saída real no seu relatório. Tarefa sem essa saída não está entregue.
+  A main está em a1af930: fundação e fase 1 completas, 250 testes, typecheck,
+  lint, build e e2e verdes. Docker não sobe nestas máquinas; use Postgres local.
+
+O QUE MUDOU E VOCÊ PRECISA SABER
+  - A RLS vale em desenvolvimento agora. Consulta sem escopo de tenant devolve
+    ZERO LINHAS — é o comportamento correto, não um bug. Passe pelo client
+    escopado (lib/tenant/db.ts), nunca por PrismaClient cru.
+  - Importar asPlatformAdmin fora dos caminhos legítimos é ERRO DE LINT. Acesso
+    de plataforma a dado de tenant usa withPlatformAudit() (lib/audit).
+  - Duas armadilhas do Next já documentadas no CLAUDE.md: notFound() no layout de
+    um GRUPO escapa para o 404 da raiz, e renderizar a negação em vez de lançar
+    serializa a página protegida no payload RSC de quem foi negado.
+
+VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode, não presuma)
+  npm run typecheck && npm run lint && npm run test && npm run test:e2e
+  Cole a saída real no relatório.
 
 SE ALGO NÃO ESTIVER CLARO
-  Não invente nome de campo, de arquivo, de rota nem de API. Procure no
-  repositório (rg/grep) e leia o código antes de escrever. Se ainda assim não
-  estiver claro, PARE e pergunte: uma pergunta custa minutos, um chute custa a
-  tarefa inteira e o tempo de quem revisa.
+  Não invente nome de campo, rota nem API. Procure no repositório e leia o
+  código. Se ainda assim não estiver claro, PARE e pergunte.
 
-RELATÓRIO FINAL (obrigatório, nesta estrutura)
+NÃO FAÇA
+  integração real com serviço externo (é a F8), alterar o schema, editar arquivo
+  de outro dono sem autorização explícita, git push, PR sem pedido.
+
+RELATÓRIO FINAL
   1. Arquivos criados e alterados
-  2. Saída de typecheck, lint e test
+  2. Saída de typecheck, lint, test e e2e
   3. O que ficou fora do escopo e por quê
   4. Dúvidas ou decisões que precisam de confirmação humana

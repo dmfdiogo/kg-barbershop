@@ -1,69 +1,82 @@
 Você é o agente da tarefa F2.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
-  1. CLAUDE.md                          (como rodar, invariantes, armadilhas)
+  1. CLAUDE.md
   2. spec-executiva.md §2.2 e §2.3 (o que Owner e Staff fazem)
-  3. fases/contexto-comum.md §2 (nada de cor literal)
+  3. fases/contexto-comum.md §2
   4. fases/paralelizacao.md §2 (tronco-e-folhas) e §4.1 (evite arquivos-lista)
   5. fases/fase-2-painel-owner.md       (sua linha: F2.0)
-  6. lib/auth/rbac.ts                   (requireRole, entregue pela F1.0)
-
-AMBIENTE (leia inteiro, houve mudança desde a onda passada)
-  git worktree add ../wt-f2-0 -b f2.0-shell
-  cd ../wt-f2-0
-  cp ../kg-barbershop/.env.example .env      # RECOPIE do exemplo: fases novas
-                                             # acrescentam variáveis e .env não
-                                             # é versionado. Um .env antigo
-                                             # quebra de forma confusa.
-  createdb kg_f2_0 && edite DATABASE_URL no .env para .../kg_f2_0
-                                             # BANCO PRÓPRIO: há outros agentes
-                                             # rodando agora; banco compartilhado
-                                             # = teste intermitente.
-  npm ci && npm run db:reset
-
-  Se o Docker não subir, use o Postgres local — é o caminho que vem funcionando.
-  A main está em c07be0b, com typecheck, lint, 192 testes, build e e2e verdes.
+  6. lib/auth/rbac.ts                   (requireRole, withRole — prontos)
 
 VOCÊ É DONO DE
   app/(dashboard)/layout.tsx, components/dashboard/**
 
 VOCÊ É O TRONCO DA FASE 2
-  Quatro folhas (F2.1 serviços, F2.2 equipe, F2.3 marca, F2.4 políticas) vão
-  construir dentro do seu shell EM PARALELO. O maior risco de conflito entre elas
+  Quatro folhas vão construir dentro do seu shell EM PARALELO: F2.1 serviços,
+  F2.2 equipe, F2.3 marca, F2.4 políticas. O maior risco de conflito entre elas
   é um arquivo-lista central de navegação onde cada uma acrescenta uma linha.
 
 ENTREGUE
   - Shell do painel mobile-first, com navegação montada por DESCOBERTA: cada
     feature exporta o seu item em app/(dashboard)/<feature>/nav.ts e o menu é
     montado varrendo a pasta. Nada de lista central.
-  - Navegação sensível ao papel: Staff não vê as telas de configuração. Use o
-    requireRole da F1.0; o papel vem de TenantMember por requisição, nunca do
-    token.
+  - Navegação sensível ao papel: Staff não vê as telas de configuração. Use
+    requireRole; o papel vem de TenantMember por requisição, nunca do token — a
+    mesma pessoa pode ser OWNER num salão e CUSTOMER em outro, e o seed tem os
+    dois tenants para você provar isso.
   - Estados padronizados de vazio, carregando e erro, reutilizáveis pelas folhas.
-  - Tokens de tema aplicados. Marca (--color-primary/secondary/background) é
-    customizável pelo tenant; status (--color-success/warning/danger) é fixo.
+  - Tokens de tema: marca (--color-primary/secondary/background) é do tenant;
+    status (--color-success/warning/danger) é fixo.
+
+ATENÇÃO AO PORTÃO
+  O painel exige sessão. Repare em como a F1.4 fez o portão da plataforma
+  (app/(platform)/plataforma/layout.tsx): LANÇAR redirect/notFound, nunca
+  renderizar a negação com children montados atrás — isso vazaria o conteúdo no
+  payload RSC. E há um teste estrutural garantindo cobertura do portão lá;
+  considere um equivalente aqui.
 
 PRONTO QUANDO
   - Uma rota placeholder nova aparece no menu sem editar nenhum arquivo central.
   - Staff e Owner veem menus diferentes, com teste.
   - Teste de isolamento: o painel de um tenant não expõe dado de outro.
 
+AMBIENTE
+  git worktree add ../wt-f2-0 -b f2.0-shell
+  cd ../wt-f2-0
+  cp ../kg-barbershop/.env.example .env
+  createdb kg_f2_0
+  # No .env, aponte OS DOIS para o seu banco:
+  #   DATABASE_URL        .../kg_f2_0   (role kg_app, SEM superuser)
+  #   DIRECT_DATABASE_URL .../kg_f2_0   (role dona: migrations, seed, criação da role)
+  npm ci && npm run db:reset
+
+  A main está em a1af930: fundação e fase 1 completas, 250 testes, typecheck,
+  lint, build e e2e verdes. Docker não sobe nestas máquinas; use Postgres local.
+
+O QUE MUDOU E VOCÊ PRECISA SABER
+  - A RLS vale em desenvolvimento agora. Consulta sem escopo de tenant devolve
+    ZERO LINHAS — é o comportamento correto, não um bug. Passe pelo client
+    escopado (lib/tenant/db.ts), nunca por PrismaClient cru.
+  - Importar asPlatformAdmin fora dos caminhos legítimos é ERRO DE LINT. Acesso
+    de plataforma a dado de tenant usa withPlatformAudit() (lib/audit).
+  - Duas armadilhas do Next já documentadas no CLAUDE.md: notFound() no layout de
+    um GRUPO escapa para o 404 da raiz, e renderizar a negação em vez de lançar
+    serializa a página protegida no payload RSC de quem foi negado.
+
 VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode, não presuma)
-  npm run typecheck && npm run lint && npm run test
-  Cole a saída real no relatório. E se você mexer em algo que o servidor de
-  produção usa, rode também npm run test:e2e — foi assim que a fase 1 quebrou a
-  suíte sem perceber.
+  npm run typecheck && npm run lint && npm run test && npm run test:e2e
+  Cole a saída real no relatório.
 
 SE ALGO NÃO ESTIVER CLARO
   Não invente nome de campo, rota nem API. Procure no repositório e leia o
   código. Se ainda assim não estiver claro, PARE e pergunte.
 
 NÃO FAÇA
-  integração real com serviço externo (é a F8), alterar o schema, mudar
-  assinatura de port, editar arquivo de outro dono, git push, PR sem pedido.
+  integração real com serviço externo (é a F8), alterar o schema, editar arquivo
+  de outro dono sem autorização explícita, git push, PR sem pedido.
 
 RELATÓRIO FINAL
   1. Arquivos criados e alterados
-  2. Saída de typecheck, lint e test
+  2. Saída de typecheck, lint, test e e2e
   3. O que ficou fora do escopo e por quê
   4. Dúvidas ou decisões que precisam de confirmação humana

@@ -1,28 +1,12 @@
 Você é o agente da tarefa F3.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
-  1. CLAUDE.md                          (como rodar, invariantes, armadilhas)
+  1. CLAUDE.md
   2. spec-executiva.md §2.4 e §5 (portal do cliente e white-label)
   3. fases/contexto-comum.md §2 e §4
   4. fases/fase-3-portal-booking.md     (seu escopo: item 1; sua linha: F3.0)
   5. lib/tenant/context.ts, app/[slug]/layout.tsx, app/tenant-status.tsx
-     (o que a F1.0 já entregou e você herda)
-
-AMBIENTE (leia inteiro, houve mudança desde a onda passada)
-  git worktree add ../wt-f3-0 -b f3.0-portal
-  cd ../wt-f3-0
-  cp ../kg-barbershop/.env.example .env      # RECOPIE do exemplo: fases novas
-                                             # acrescentam variáveis e .env não
-                                             # é versionado. Um .env antigo
-                                             # quebra de forma confusa.
-  createdb kg_f3_0 && edite DATABASE_URL no .env para .../kg_f3_0
-                                             # BANCO PRÓPRIO: há outros agentes
-                                             # rodando agora; banco compartilhado
-                                             # = teste intermitente.
-  npm ci && npm run db:reset
-
-  Se o Docker não subir, use o Postgres local — é o caminho que vem funcionando.
-  A main está em c07be0b, com typecheck, lint, 192 testes, build e e2e verdes.
+     (o que a F1.0 entregou e você HERDA)
 
 VOCÊ É DONO DE
   app/[slug]/(portal)/**, components/portal/**, lib/theme/resolve.ts
@@ -31,43 +15,66 @@ HERANÇA DA F1.0 — ESTENDA, NÃO SUBSTITUA
   app/[slug]/layout.tsx já existe: é o portão que traduz status do tenant em
   página própria (CANCELED vira 404, SUSPENDED mostra aviso). Preserve o uso de
   getTenantContext(slug) — é ele que memoiza a resolução por requisição com
-  cache(). Se você refizer isso, passa a haver duas resoluções por request.
+  cache(). Refazer isso criaria duas resoluções por request.
 
-VOCÊ É O TRONCO DA FASE 3
+VOCÊ É O TRONCO DA FASE 3, E A F2.3 DEPENDE DE VOCÊ
   F3.3 (fluxo de agendamento) e F3.4 (área do cliente) constroem sobre o seu
-  shell. Entregue layout e contratos cedo.
+  shell. E a F2.3 (tela de marca, na fase 2) CONSOME o seu lib/theme/resolve.ts
+  em vez de reimplementar a injeção — entregue-o cedo e com contrato claro.
 
 ENTREGUE
   - Portal público em /[slug], renderizado no SERVIDOR com o tema do tenant já
     aplicado: CSS variables no HTML servido, sem flash de tema errado.
-  - lib/theme/resolve.ts: leitura das cores do tenant e injeção, COM VALORES
-    PADRÃO quando o dono ainda não configurou nada. A F2.3 entrega a tela de
-    edição e os presets, e consome o seu resolvedor — ela depende de você, não o
-    contrário.
-  - Catálogo de serviços com duração e preço (centavos, formatados na exibição).
+  - lib/theme/resolve.ts: lê as cores do tenant e injeta, COM VALORES PADRÃO
+    quando o dono ainda não configurou nada. O seed tem um tenant com tema
+    (carlosbarber, preset classic-barber) e outro sem (petspaluna).
+  - Catálogo de serviços com duração e preço (centavos no banco, formatados na
+    exibição).
   - Shell mobile-first: o público-alvo abre isto no celular, por link de WhatsApp.
 
 PRONTO QUANDO
   - O tema aparece no HTML servido, verificável sem JavaScript.
   - Funciona a 360px.
+  - Tenant sem tema configurado renderiza com os padrões, sem quebrar.
   - Nenhuma resposta de API do portal expõe dado de outro tenant, com teste.
 
+AMBIENTE
+  git worktree add ../wt-f3-0 -b f3.0-portal
+  cd ../wt-f3-0
+  cp ../kg-barbershop/.env.example .env
+  createdb kg_f3_0
+  # No .env, aponte OS DOIS para o seu banco:
+  #   DATABASE_URL        .../kg_f3_0   (role kg_app, SEM superuser)
+  #   DIRECT_DATABASE_URL .../kg_f3_0   (role dona: migrations, seed, criação da role)
+  npm ci && npm run db:reset
+
+  A main está em a1af930: fundação e fase 1 completas, 250 testes, typecheck,
+  lint, build e e2e verdes. Docker não sobe nestas máquinas; use Postgres local.
+
+O QUE MUDOU E VOCÊ PRECISA SABER
+  - A RLS vale em desenvolvimento agora. Consulta sem escopo de tenant devolve
+    ZERO LINHAS — é o comportamento correto, não um bug. Passe pelo client
+    escopado (lib/tenant/db.ts), nunca por PrismaClient cru.
+  - Importar asPlatformAdmin fora dos caminhos legítimos é ERRO DE LINT. Acesso
+    de plataforma a dado de tenant usa withPlatformAudit() (lib/audit).
+  - Duas armadilhas do Next já documentadas no CLAUDE.md: notFound() no layout de
+    um GRUPO escapa para o 404 da raiz, e renderizar a negação em vez de lançar
+    serializa a página protegida no payload RSC de quem foi negado.
+
 VERIFIQUE ANTES DE DIZER QUE TERMINOU (rode, não presuma)
-  npm run typecheck && npm run lint && npm run test
-  Cole a saída real no relatório. E se você mexer em algo que o servidor de
-  produção usa, rode também npm run test:e2e — foi assim que a fase 1 quebrou a
-  suíte sem perceber.
+  npm run typecheck && npm run lint && npm run test && npm run test:e2e
+  Cole a saída real no relatório.
 
 SE ALGO NÃO ESTIVER CLARO
   Não invente nome de campo, rota nem API. Procure no repositório e leia o
   código. Se ainda assim não estiver claro, PARE e pergunte.
 
 NÃO FAÇA
-  integração real com serviço externo (é a F8), alterar o schema, mudar
-  assinatura de port, editar arquivo de outro dono, git push, PR sem pedido.
+  integração real com serviço externo (é a F8), alterar o schema, editar arquivo
+  de outro dono sem autorização explícita, git push, PR sem pedido.
 
 RELATÓRIO FINAL
   1. Arquivos criados e alterados
-  2. Saída de typecheck, lint e test
+  2. Saída de typecheck, lint, test e e2e
   3. O que ficou fora do escopo e por quê
   4. Dúvidas ou decisões que precisam de confirmação humana
