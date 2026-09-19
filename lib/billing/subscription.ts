@@ -210,13 +210,23 @@ export function planSubscriptionTransition(
 export function validateSubscriptionPayload(
   local: { stripeSubscriptionId: string | null; stripeCustomerId: string | null },
   payload: BillingWebhookSubscriptionData,
+  options: { creating?: boolean } = {},
 ): void {
-  if (!local.stripeSubscriptionId) {
-    throw new SubscriptionPayloadError('Registro local não tem assinatura do provedor.');
-  }
-  if (payload.id !== local.stripeSubscriptionId) {
+  // Na CRIAÇÃO ainda não há assinatura local: é este evento que a traz. A
+  // âncora que sobra é o cliente, gravado antes do redirecionamento — e ele
+  // continua sendo conferido logo abaixo, então o payload não escolhe o tenant.
+  if (!options.creating) {
+    if (!local.stripeSubscriptionId) {
+      throw new SubscriptionPayloadError('Registro local não tem assinatura do provedor.');
+    }
+    if (payload.id !== local.stripeSubscriptionId) {
+      throw new SubscriptionPayloadError(
+        `Assinatura do payload (${payload.id}) diverge do registro local (${local.stripeSubscriptionId}).`,
+      );
+    }
+  } else if (local.stripeSubscriptionId && payload.id !== local.stripeSubscriptionId) {
     throw new SubscriptionPayloadError(
-      `Assinatura do payload (${payload.id}) diverge do registro local (${local.stripeSubscriptionId}).`,
+      `Já existe assinatura local (${local.stripeSubscriptionId}) diferente da criada (${payload.id}).`,
     );
   }
   if (!local.stripeCustomerId || payload.customerId !== local.stripeCustomerId) {
@@ -255,6 +265,16 @@ export function incomingStatusForEvent(
   payload: BillingWebhookSubscriptionData,
 ): BillingSubscriptionStatus {
   switch (type) {
+    case 'SUBSCRIPTION_CREATED':
+      // O Checkout hospedado pode concluir em trial (nasce TRIALING) ou já
+      // cobrando (ACTIVE). Qualquer outro status na criação é payload
+      // inconsistente: assinatura não nasce vencida nem cancelada.
+      if (payload.status !== 'TRIALING' && payload.status !== 'ACTIVE') {
+        throw new SubscriptionPayloadError(
+          `SUBSCRIPTION_CREATED exige status TRIALING ou ACTIVE (recebido: ${payload.status}).`,
+        );
+      }
+      return payload.status;
     case 'INVOICE_PAID':
       if (payload.status !== 'ACTIVE') {
         throw new SubscriptionPayloadError(
@@ -383,31 +403,44 @@ export interface BillingCardInput {
   ccv: string;
 }
 
-export interface SubscribeInput {
+export interface StartCheckoutInput {
   tenantId: string;
   plan: BillingPlanCode;
-  card: BillingCardInput;
+  /** Para onde o provedor devolve o dono ao concluir. URL absoluta. */
+  successUrl: string;
+  /** Para onde devolve se ele desistir. URL absoluta. */
+  cancelUrl: string;
   /** Trial de COBRANÇA do provedor; ortogonal à trial por valor da F7.1. */
   trialEndsAt?: string;
   /** Injetável em teste; o padrão é a factory por `BILLING_PROVIDER`. */
   provider?: BillingProvider;
 }
 
-export type SubscribeResult =
-  | { ok: true; subscription: LocalSubscription; providerSubscription: BillingSubscription }
+export type StartCheckoutResult =
+  | { ok: true; url: string; sessionId: string; expiresAt: string }
   | { ok: false; code: 'TENANT_NOT_FOUND' | 'SUBSCRIBER_ALREADY_EXISTS'; message: string };
 
 /**
- * Assina um plano. O cliente de cobrança e a assinatura nascem no provedor
- * (fora da transação) e só então o `PlatformSub` local é gravado — o webhook
- * que o provedor disparar dali em diante encontra o `stripeSubscriptionId` para
- * resolver o tenant.
+ * Começa a assinatura: cria o cliente de cobrança, guarda o id dele e devolve
+ * a URL hospedada para onde redirecionar o dono.
+ *
+ * QUANDO ESTA FUNÇÃO RETORNA, NÃO EXISTE ASSINATURA. O cartão é digitado na
+ * página do provedor — nunca aqui, que é o motivo de o port ter mudado — e a
+ * assinatura nasce lá. Ela chega até nós por `SUBSCRIPTION_CREATED`. É o mesmo
+ * desenho do checkout B2C do Asaas, pelo mesmo motivo: quem confirma é quem
+ * recebeu o dinheiro.
+ *
+ * O `stripeCustomerId` é gravado ANTES do redirecionamento, e é isso que
+ * permite ao webhook achar o tenant quando o evento chegar — nesse momento
+ * ainda não há `stripeSubscriptionId` para resolver por ele.
  *
  * O porteiro local (`SUBSCRIBER_ALREADY_EXISTS`) evita assinatura dupla: um
- * segundo POST do dono não cria uma segunda cobrança. Se a assinatura estiver
- * `CANCELED`, assinar de novo é permitido e reaproveita o cliente de cobrança.
+ * segundo clique do dono não abre uma segunda cobrança. Se a assinatura
+ * estiver `CANCELED`, assinar de novo é permitido e reaproveita o cliente.
  */
-export async function subscribe(input: SubscribeInput): Promise<SubscribeResult> {
+export async function startSubscriptionCheckout(
+  input: StartCheckoutInput,
+): Promise<StartCheckoutResult> {
   const provider = input.provider ?? getBillingProvider();
 
   const tenant = await forTenant(input.tenantId, (tx) =>
@@ -441,25 +474,32 @@ export async function subscribe(input: SubscribeInput): Promise<SubscribeResult>
         document: tenant.document,
       });
 
-  const { token } = await provider.tokenizeCard({
-    customerId: customer.id,
-    holderName: input.card.holderName,
-    number: input.card.number,
-    expiryMonth: input.card.expiryMonth,
-    expiryYear: input.card.expiryYear,
-    ccv: input.card.ccv,
-  });
+  // Grava o cliente antes de redirecionar: é a única âncora que o webhook terá
+  // para resolver o tenant até a assinatura existir. `plan` fica registrado
+  // como intenção; a verdade vem do payload de `SUBSCRIPTION_CREATED`.
+  await forTenant(input.tenantId, (tx) =>
+    tx.platformSub.upsert({
+      where: { tenantId: input.tenantId },
+      create: {
+        tenantId: input.tenantId,
+        stripeCustomerId: customer.id,
+        plan: input.plan,
+        status: 'TRIALING',
+      },
+      update: { stripeCustomerId: customer.id },
+    }),
+  );
 
-  const providerSubscription = await provider.createSubscription({
+  const session = await provider.createCheckoutSession({
     customerId: customer.id,
     plan: input.plan,
-    cardToken: token,
+    successUrl: input.successUrl,
+    cancelUrl: input.cancelUrl,
     externalReference: input.tenantId,
     ...(input.trialEndsAt ? { trialEndsAt: input.trialEndsAt } : {}),
   });
 
-  const subscription = await persistSubscription(input.tenantId, providerSubscription);
-  return { ok: true, subscription, providerSubscription };
+  return { ok: true, url: session.url, sessionId: session.id, expiresAt: session.expiresAt };
 }
 
 export interface ChangeSubscriptionPlanInput {
@@ -578,48 +618,49 @@ export async function changePlan(
   }
 }
 
-export interface UpdatePaymentMethodInput {
+export interface OpenBillingPortalInput {
   tenantId: string;
-  card: BillingCardInput;
+  /** Para onde o dono volta ao fechar o portal. URL absoluta. */
+  returnUrl: string;
   provider?: BillingProvider;
 }
 
-export type UpdatePaymentMethodResult =
-  | { ok: true; providerSubscription: BillingSubscription }
+export type OpenBillingPortalResult =
+  | { ok: true; url: string; expiresAt: string }
   | { ok: false; code: 'NO_SUBSCRIPTION'; message: string };
 
 /**
- * Troca o cartão da assinatura. O cartão é tokenizado pelo provedor e o token
- * nunca é persistido localmente: guardar token de cartão seria dado de
- * pagamento que não precisamos.
+ * Abre o portal hospedado do provedor: trocar cartão, ver e baixar faturas.
+ *
+ * Substituiu `updatePaymentMethod`, que recebia PAN e CCV. O cartão não passa
+ * mais por aqui — nem pela nossa tela — e por isso o produto não carrega PCI.
+ *
+ * O portal NÃO oferece troca de plano nem cancelamento de propósito: os dois
+ * continuam em `changePlan`/`cancelSubscription`, porque o downgrade tem regra
+ * nossa (desativar profissional excedente) que o provedor não conhece. Ao
+ * configurar o portal no provedor, essas duas funcionalidades ficam
+ * desligadas; um portal com elas ligadas contorna a regra pelas costas do
+ * produto. Vale um item de checklist na F8.1.
  */
-export async function updatePaymentMethod(
-  input: UpdatePaymentMethodInput,
-): Promise<UpdatePaymentMethodResult> {
+export async function openBillingPortal(
+  input: OpenBillingPortalInput,
+): Promise<OpenBillingPortalResult> {
   const provider = input.provider ?? getBillingProvider();
 
   const existing = await getLocalSubscription(input.tenantId);
-  if (!existing || !existing.stripeSubscriptionId || !existing.stripeCustomerId) {
+  if (!existing || !existing.stripeCustomerId) {
     return {
       ok: false,
       code: 'NO_SUBSCRIPTION',
-      message: 'Não há assinatura para atualizar o meio de pagamento.',
+      message: 'Não há assinatura para gerenciar o meio de pagamento.',
     };
   }
 
-  const { token } = await provider.tokenizeCard({
+  const session = await provider.createPortalSession({
     customerId: existing.stripeCustomerId,
-    holderName: input.card.holderName,
-    number: input.card.number,
-    expiryMonth: input.card.expiryMonth,
-    expiryYear: input.card.expiryYear,
-    ccv: input.card.ccv,
+    returnUrl: input.returnUrl,
   });
-  const providerSubscription = await provider.updatePaymentMethod(
-    existing.stripeSubscriptionId,
-    token,
-  );
-  return { ok: true, providerSubscription };
+  return { ok: true, url: session.url, expiresAt: session.expiresAt };
 }
 
 export interface CancelSubscriptionInput {

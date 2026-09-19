@@ -2,7 +2,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { MockBillingProvider } from '@/lib/billing/mock';
 import { createMockBillingStore } from '@/lib/billing/mock-store';
-import { BillingProviderError, type BillingProvider } from '@/lib/billing/types';
+import {
+  BillingProviderError,
+  type BillingProvider,
+  type BillingSubscription,
+} from '@/lib/billing/types';
 
 /**
  * Suíte de contrato do BillingProvider (contexto-comum.md §5.5).
@@ -14,9 +18,17 @@ import { BillingProviderError, type BillingProvider } from '@/lib/billing/types'
  *
  * O que NÃO existe aqui, de propósito: split, subconta, KYC. O Stripe Billing
  * cobra só a mensalidade do software, na conta única da plataforma (spec §3.1).
+ *
+ * E nada de cartão. A captura acontece na página hospedada do provedor; o
+ * contrato daqui vai até a URL da sessão, e retoma quando o webhook conta que
+ * a assinatura nasceu. Concluir o pagamento é um GANCHO da fixture, porque
+ * cada implementação simula isso do seu jeito — o mock tem
+ * `completeCheckoutSession`, o test mode do Stripe tem o helper dele.
  */
 interface ProviderFixtureInstance {
   provider: BillingProvider;
+  /** Simula o dono pagando na página hospedada. Devolve a assinatura criada. */
+  completeCheckout(sessionId: string): Promise<BillingSubscription>;
   markInvoicePaid(subscriptionId: string): Promise<void>;
   markInvoicePaymentFailed(subscriptionId: string): Promise<void>;
 }
@@ -43,6 +55,10 @@ const fixtures: ProviderFixture[] = [
       });
       return {
         provider,
+        completeCheckout: async (sessionId) => {
+          const { subscription } = await provider.completeCheckoutSession(sessionId);
+          return subscription;
+        },
         markInvoicePaid: async (subscriptionId) => {
           await provider.simulateInvoicePaid(subscriptionId);
         },
@@ -68,27 +84,36 @@ async function captureError(promise: Promise<unknown>): Promise<BillingProviderE
 
 describe.each(fixtures)('BillingProvider: $name', (fixture) => {
   let provider!: BillingProvider;
+  let completeCheckout!: (sessionId: string) => Promise<BillingSubscription>;
   let markInvoicePaid!: (subscriptionId: string) => Promise<void>;
   let markInvoicePaymentFailed!: (subscriptionId: string) => Promise<void>;
+
+  const SUCCESS_URL = 'https://app.exemplo.com.br/painel/assinatura?ok=1';
+  const CANCEL_URL = 'https://app.exemplo.com.br/painel/assinatura?cancelado=1';
 
   async function createCustomer(tenantId = 'tenant_1') {
     return provider.createCustomer({ tenantId, name: 'Barbearia Teste' });
   }
 
-  async function tokenize(customerId: string, number = '4111111111111111') {
-    const { token } = await provider.tokenizeCard({
+  /** Percorre o fluxo inteiro: abre a sessão e conclui o pagamento. */
+  async function subscribeVia(
+    customerId: string,
+    plan: 'SOLO' | 'EQUIPE' | 'PRO',
+    trialEndsAt?: string,
+  ): Promise<BillingSubscription> {
+    const session = await provider.createCheckoutSession({
       customerId,
-      holderName: 'Dono do Salão',
-      number,
-      expiryMonth: '12',
-      expiryYear: '2030',
-      ccv: '123',
+      plan,
+      successUrl: SUCCESS_URL,
+      cancelUrl: CANCEL_URL,
+      ...(trialEndsAt ? { trialEndsAt } : {}),
     });
-    return token;
+    return completeCheckout(session.id);
   }
 
   beforeEach(async () => {
-    ({ provider, markInvoicePaid, markInvoicePaymentFailed } = await fixture.setup());
+    ({ provider, completeCheckout, markInvoicePaid, markInvoicePaymentFailed } =
+      await fixture.setup());
   });
 
   it('cria e lê o cliente de cobrança', async () => {
@@ -103,47 +128,27 @@ describe.each(fixtures)('BillingProvider: $name', (fixture) => {
     expect(missing.code).toBe('CUSTOMER_NOT_FOUND');
   });
 
-  it('tokeniza cartão válido e recusa número inválido e cartão vencido', async () => {
+  it('abre a sessão hospedada sem criar assinatura, e só o webhook a cria', async () => {
     const customer = await createCustomer();
-    const token = await tokenize(customer.id);
-    expect(token).not.toHaveLength(0);
-
-    const invalidNumber = await captureError(
-      provider.tokenizeCard({
-        customerId: customer.id,
-        holderName: 'Dono do Salão',
-        number: '4111111111111112',
-        expiryMonth: '12',
-        expiryYear: '2030',
-        ccv: '123',
-      }),
-    );
-    expect(invalidNumber.code).toBe('INVALID_CARD');
-
-    const expired = await captureError(
-      provider.tokenizeCard({
-        customerId: customer.id,
-        holderName: 'Dono do Salão',
-        number: '4111111111111111',
-        expiryMonth: '12',
-        expiryYear: '2025',
-        ccv: '123',
-      }),
-    );
-    expect(expired.code).toBe('INVALID_CARD');
-  });
-
-  it('cria assinatura resolvendo o preço do plano na configuração', async () => {
-    const customer = await createCustomer();
-    const token = await tokenize(customer.id);
-
-    const subscription = await provider.createSubscription({
+    const session = await provider.createCheckoutSession({
       customerId: customer.id,
       plan: 'SOLO',
-      cardToken: token,
+      successUrl: SUCCESS_URL,
+      cancelUrl: CANCEL_URL,
       externalReference: customer.tenantId,
     });
 
+    expect(session.url).toMatch(/^https?:\/\//);
+    expect(session.id).not.toHaveLength(0);
+    // A validade é do provedor (24h no Stripe), não do nosso relógio: o
+    // contrato só promete uma data ISO utilizável.
+    expect(Number.isNaN(new Date(session.expiresAt).getTime())).toBe(false);
+
+    // O ponto do desenho: abrir a sessão NÃO assina ninguém.
+    const beforePaying = await captureError(provider.getSubscription(session.id));
+    expect(beforePaying.code).toBe('SUBSCRIPTION_NOT_FOUND');
+
+    const subscription = await completeCheckout(session.id);
     expect(subscription.status).toBe('ACTIVE');
     expect(subscription.plan).toBe('SOLO');
     expect(subscription.amountCents).toBe(3990);
@@ -151,98 +156,89 @@ describe.each(fixtures)('BillingProvider: $name', (fixture) => {
     expect(subscription.cancelAtPeriodEnd).toBe(false);
   });
 
-  it('cria assinatura em trial quando recebe trialEndsAt', async () => {
+  it('a sessão nasce em trial quando recebe trialEndsAt', async () => {
     const customer = await createCustomer();
-    const token = await tokenize(customer.id);
-
-    const subscription = await provider.createSubscription({
-      customerId: customer.id,
-      plan: 'EQUIPE',
-      cardToken: token,
-      trialEndsAt: '2026-02-01T00:00:00.000Z',
-    });
+    const subscription = await subscribeVia(customer.id, 'EQUIPE', '2026-02-01T00:00:00.000Z');
 
     expect(subscription.status).toBe('TRIALING');
     expect(subscription.amountCents).toBe(7990);
     expect(subscription.currentPeriodEnd).toBe('2026-02-01T00:00:00.000Z');
   });
 
-  it('recusa plano desconhecido e cliente desconhecido', async () => {
+  it('recusa plano desconhecido, cliente desconhecido e URL de retorno relativa', async () => {
     const customer = await createCustomer();
-    const token = await tokenize(customer.id);
 
     const unknownPlan = await captureError(
-      provider.createSubscription({
+      provider.createCheckoutSession({
         customerId: customer.id,
         // @ts-expect-error: simula payload adulterado vindo de fora do tipo.
         plan: 'ENTERPRISE',
-        cardToken: token,
+        successUrl: SUCCESS_URL,
+        cancelUrl: CANCEL_URL,
       }),
     );
     expect(unknownPlan.code).toBe('UNKNOWN_PLAN');
 
     const unknownCustomer = await captureError(
-      provider.createSubscription({
+      provider.createCheckoutSession({
         customerId: 'cus_inexistente',
         plan: 'SOLO',
-        cardToken: token,
+        successUrl: SUCCESS_URL,
+        cancelUrl: CANCEL_URL,
       }),
     );
     expect(unknownCustomer.code).toBe('CUSTOMER_NOT_FOUND');
-  });
 
-  it('recusa token de cartão de outro cliente', async () => {
-    const customerA = await createCustomer('tenant_a');
-    const customerB = await createCustomer('tenant_b');
-    const tokenA = await tokenize(customerA.id);
-
-    const error = await captureError(
-      provider.createSubscription({
-        customerId: customerB.id,
+    // URL relativa não serve: quem redireciona é o provedor, de outro domínio.
+    const relative = await captureError(
+      provider.createCheckoutSession({
+        customerId: customer.id,
         plan: 'SOLO',
-        cardToken: tokenA,
+        successUrl: '/painel/assinatura',
+        cancelUrl: CANCEL_URL,
       }),
     );
-    expect(error.code).toBe('CARD_TOKEN_INVALID');
+    expect(relative.code).toBe('VALIDATION');
   });
 
-  it('recusa uma segunda assinatura ativa para o mesmo cliente', async () => {
+  it('recusa abrir sessão para quem já tem assinatura ativa', async () => {
     const customer = await createCustomer();
-    const token = await tokenize(customer.id);
-    const first = await provider.createSubscription({
-      customerId: customer.id,
-      plan: 'SOLO',
-      cardToken: token,
-    });
+    const first = await subscribeVia(customer.id, 'SOLO');
 
     const duplicate = await captureError(
-      provider.createSubscription({
+      provider.createCheckoutSession({
         customerId: customer.id,
         plan: 'PRO',
-        cardToken: token,
+        successUrl: SUCCESS_URL,
+        cancelUrl: CANCEL_URL,
       }),
     );
     expect(duplicate.code).toBe('SUBSCRIPTION_ALREADY_EXISTS');
 
-    // Depois de cancelar, uma nova assinatura é permitida.
+    // Depois de cancelar, assinar de novo é permitido.
     await provider.cancelSubscription(first.id);
-    const second = await provider.createSubscription({
-      customerId: customer.id,
-      plan: 'PRO',
-      cardToken: token,
-    });
+    const second = await subscribeVia(customer.id, 'PRO');
     expect(second.plan).toBe('PRO');
     expect(second.status).toBe('ACTIVE');
   });
 
+  it('o portal do cliente devolve URL absoluta e recusa cliente desconhecido', async () => {
+    const customer = await createCustomer();
+    const portal = await provider.createPortalSession({
+      customerId: customer.id,
+      returnUrl: SUCCESS_URL,
+    });
+    expect(portal.url).toMatch(/^https?:\/\//);
+
+    const missing = await captureError(
+      provider.createPortalSession({ customerId: 'cus_inexistente', returnUrl: SUCCESS_URL }),
+    );
+    expect(missing.code).toBe('CUSTOMER_NOT_FOUND');
+  });
+
   it('troca de plano com proração e recusa trocar para o mesmo plano ou após cancelar', async () => {
     const customer = await createCustomer();
-    const token = await tokenize(customer.id);
-    const subscription = await provider.createSubscription({
-      customerId: customer.id,
-      plan: 'SOLO',
-      cardToken: token,
-    });
+    const subscription = await subscribeVia(customer.id, 'SOLO');
 
     const upgraded = await provider.changePlan(subscription.id, 'EQUIPE');
     expect(upgraded.plan).toBe('EQUIPE');
@@ -256,36 +252,9 @@ describe.each(fixtures)('BillingProvider: $name', (fixture) => {
     expect(afterCancel.code).toBe('SUBSCRIPTION_NOT_ACTIVE');
   });
 
-  it('atualiza o meio de pagamento e recusa token alheio', async () => {
-    const customer = await createCustomer();
-    const token = await tokenize(customer.id);
-    const otherCustomer = await createCustomer('tenant_2');
-    const otherToken = await tokenize(otherCustomer.id);
-
-    const subscription = await provider.createSubscription({
-      customerId: customer.id,
-      plan: 'SOLO',
-      cardToken: token,
-    });
-
-    const updated = await provider.updatePaymentMethod(subscription.id, token);
-    expect(updated.id).toBe(subscription.id);
-
-    const foreign = await captureError(
-      provider.updatePaymentMethod(subscription.id, otherToken),
-    );
-    expect(foreign.code).toBe('CARD_TOKEN_INVALID');
-  });
-
   it('cancela na hora e no fim do período, recusando assinatura inexistente', async () => {
     const customer = await createCustomer();
-    const token = await tokenize(customer.id);
-
-    const immediate = await provider.createSubscription({
-      customerId: customer.id,
-      plan: 'SOLO',
-      cardToken: token,
-    });
+    const immediate = await subscribeVia(customer.id, 'SOLO');
     const canceled = await provider.cancelSubscription(immediate.id);
     expect(canceled.status).toBe('CANCELED');
     expect(canceled.canceledAt).toBeTruthy();
@@ -293,12 +262,7 @@ describe.each(fixtures)('BillingProvider: $name', (fixture) => {
     expect(again.code).toBe('SUBSCRIPTION_NOT_ACTIVE');
 
     const customerB = await createCustomer('tenant_b');
-    const tokenB = await tokenize(customerB.id);
-    const atPeriodEnd = await provider.createSubscription({
-      customerId: customerB.id,
-      plan: 'EQUIPE',
-      cardToken: tokenB,
-    });
+    const atPeriodEnd = await subscribeVia(customerB.id, 'EQUIPE');
     const scheduled = await provider.cancelSubscription(atPeriodEnd.id, true);
     expect(scheduled.status).toBe('ACTIVE');
     expect(scheduled.cancelAtPeriodEnd).toBe(true);
@@ -309,12 +273,7 @@ describe.each(fixtures)('BillingProvider: $name', (fixture) => {
 
   it('inadimplência marca PAST_DUE e o pagamento reativa e renova o período', async () => {
     const customer = await createCustomer();
-    const token = await tokenize(customer.id);
-    const subscription = await provider.createSubscription({
-      customerId: customer.id,
-      plan: 'PRO',
-      cardToken: token,
-    });
+    const subscription = await subscribeVia(customer.id, 'PRO');
     expect(subscription.currentPeriodEnd).toBe('2026-02-01T12:00:00.000Z');
 
     await markInvoicePaymentFailed(subscription.id);

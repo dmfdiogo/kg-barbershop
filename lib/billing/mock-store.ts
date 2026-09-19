@@ -1,10 +1,22 @@
 import type { BillingCustomer, BillingSubscription } from './types';
 
-export interface BillingCardTokenRecord {
-  token: string;
+/**
+ * Sessão hospedada pendente. É o que o Stripe chama de Checkout Session: existe
+ * antes de haver assinatura, e some quando o pagamento conclui ou a URL vence.
+ * Guardar o plano aqui é o que permite criar a assinatura certa na conclusão,
+ * sem confiar em nada que volte pela URL de retorno.
+ */
+export interface BillingCheckoutSessionRecord {
+  id: string;
   customerId: string;
-  last4: string;
+  plan: string;
+  status: 'PENDING' | 'COMPLETED' | 'EXPIRED';
+  trialEndsAt?: string;
+  externalReference?: string;
+  successUrl: string;
+  cancelUrl: string;
   createdAt: string;
+  expiresAt: string;
 }
 
 export interface BillingWebhookDeliveryLogEntry {
@@ -35,7 +47,7 @@ export interface MockBillingStore {
   /** Verdade do provedor. */
   customers: Map<string, BillingCustomer>;
   subscriptions: Map<string, BillingSubscription>;
-  cardTokens: Map<string, BillingCardTokenRecord>;
+  checkoutSessions: Map<string, BillingCheckoutSessionRecord>;
   appliedWebhookEvents: Map<string, string>;
   webhookDeliveries: BillingWebhookDeliveryLogEntry[];
 }
@@ -47,7 +59,7 @@ export function createMockBillingStore(): MockBillingStore {
     sequence: 0,
     customers: new Map(),
     subscriptions: new Map(),
-    cardTokens: new Map(),
+    checkoutSessions: new Map(),
     appliedWebhookEvents: new Map(),
     webhookDeliveries: [],
   };

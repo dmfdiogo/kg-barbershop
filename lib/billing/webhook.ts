@@ -75,6 +75,11 @@ export async function resolveBillingWebhookUrl(): Promise<string> {
 }
 
 export const BILLING_WEBHOOK_EVENT_TYPES = [
+  // Nasce da conclusão do Checkout hospedado: é por este evento, e só por ele,
+  // que o `PlatformSub` local passa a existir. Antes do Checkout a assinatura
+  // era criada de forma síncrona na chamada do produto; agora ela nasce do
+  // lado do provedor, como no B2C do Asaas.
+  'SUBSCRIPTION_CREATED',
   'INVOICE_PAID',
   'INVOICE_PAYMENT_FAILED',
   'SUBSCRIPTION_UPDATED',

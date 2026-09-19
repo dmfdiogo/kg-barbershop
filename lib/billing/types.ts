@@ -13,6 +13,23 @@ import type { BillingPlanCode } from './plans';
  * `MockBillingProvider` que reprova o que o Stripe reprovaria, factory por
  * `BILLING_PROVIDER`, e suíte de contrato parametrizada que a F8.1 reusa contra
  * o test mode. Nenhum código de produto importa o SDK do Stripe diretamente.
+ *
+ * O CARTÃO NUNCA CHEGA AO NOSSO SERVIDOR. O port nasceu com `tokenizeCard`
+ * recebendo PAN e CCV, espelhando o Asaas — que aceita isso porque exige o IP
+ * do pagador e assume a captura. O Stripe só libera as "raw card data APIs"
+ * mediante certificação PCI DSS nossa; a integração recomendada tokeniza no
+ * cliente. Então a captura do cartão saiu do port e virou REDIRECIONAMENTO:
+ * `createCheckoutSession` devolve uma URL hospedada onde o dono paga, e o
+ * webhook conta o que aconteceu. `createPortalSession` faz o mesmo para
+ * trocar cartão e ver faturas.
+ *
+ * O QUE **NÃO** FOI PARA O PORTAL HOSPEDADO: troca de plano e cancelamento.
+ * Os dois continuam métodos daqui, chamados do nosso servidor, porque o
+ * downgrade tem regra nossa (`lib/billing/limits.ts`: não dá para cair para o
+ * Solo com três profissionais ativos sem decidir quem desativar). Se o dono
+ * trocasse de plano dentro do portal do Stripe, essa regra seria contornada
+ * pelas costas do produto. Nenhum dos dois toca em cartão, então nenhum dos
+ * dois traz PCI junto.
  */
 
 export type BillingSubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED';
@@ -34,25 +51,13 @@ export interface BillingCustomer {
   createdAt: string;
 }
 
-/**
- * Cartão do dono do salão, tokenizado antes de sair do cliente. O port nunca vê
- * o PAN em claro fora da tokenização. Sem `remoteIp`: exigir IP do pagador é
- * regra do Asaas (B2C), não do Stripe.
- */
-export interface NewBillingCard {
-  customerId: string;
-  holderName: string;
-  number: string;
-  expiryMonth: string;
-  expiryYear: string;
-  ccv: string;
-}
-
-export interface NewBillingSubscription {
+export interface NewCheckoutSession {
   customerId: string;
   plan: BillingPlanCode;
-  /** Obtido via `tokenizeCard`. */
-  cardToken: string;
+  /** Para onde o provedor manda o dono de volta ao concluir. */
+  successUrl: string;
+  /** Para onde manda se ele desistir. */
+  cancelUrl: string;
   externalReference?: string;
   /**
    * Quando definido, a assinatura nasce `TRIALING` até esta data (ISO 8601). O
@@ -60,6 +65,23 @@ export interface NewBillingSubscription {
    * de cobrança do provedor, ortogonal a ele.
    */
   trialEndsAt?: string;
+}
+
+/**
+ * Sessão hospedada. `url` é para onde redirecionar; o produto não guarda nada
+ * dela além do id, que serve para reconciliar o webhook com quem iniciou.
+ */
+export interface HostedSession {
+  id: string;
+  url: string;
+  /** Expiração da URL, ISO 8601. Sessão vencida exige criar outra. */
+  expiresAt: string;
+}
+
+export interface NewPortalSession {
+  customerId: string;
+  /** Para onde o dono volta ao fechar o portal. */
+  returnUrl: string;
 }
 
 export interface BillingSubscription {
@@ -82,15 +104,18 @@ export interface BillingSubscription {
 export interface BillingProvider {
   createCustomer(input: NewBillingCustomer): Promise<BillingCustomer>;
   getCustomer(customerId: string): Promise<BillingCustomer>;
-  tokenizeCard(input: NewBillingCard): Promise<{ token: string }>;
-  createSubscription(input: NewBillingSubscription): Promise<BillingSubscription>;
+  /**
+   * Abre a página hospedada onde o dono assina. A assinatura NÃO existe quando
+   * esta chamada retorna: ela nasce no provedor quando o pagamento conclui, e
+   * chega até nós por webhook (`SUBSCRIPTION_CREATED`). Quem chamar isto e
+   * esperar um `BillingSubscription` de volta entendeu o fluxo ao contrário.
+   */
+  createCheckoutSession(input: NewCheckoutSession): Promise<HostedSession>;
+  /** Portal hospedado: trocar cartão, ver faturas, baixar recibo. */
+  createPortalSession(input: NewPortalSession): Promise<HostedSession>;
   getSubscription(subscriptionId: string): Promise<BillingSubscription>;
   /** Troca de plano com proração (o provedor calcula o ajuste). */
   changePlan(subscriptionId: string, nextPlan: BillingPlanCode): Promise<BillingSubscription>;
-  updatePaymentMethod(
-    subscriptionId: string,
-    cardToken: string,
-  ): Promise<BillingSubscription>;
   cancelSubscription(
     subscriptionId: string,
     atPeriodEnd?: boolean,
@@ -100,8 +125,6 @@ export interface BillingProvider {
 export type BillingErrorCode =
   | 'VALIDATION'
   | 'CUSTOMER_NOT_FOUND'
-  | 'INVALID_CARD'
-  | 'CARD_TOKEN_INVALID'
   | 'UNKNOWN_PLAN'
   | 'SUBSCRIPTION_NOT_FOUND'
   | 'SUBSCRIPTION_ALREADY_EXISTS'

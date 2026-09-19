@@ -9,6 +9,7 @@ import {
   copy,
   getMockBillingStore,
   nextMockBillingId,
+  type BillingCheckoutSessionRecord,
   type BillingWebhookDeliveryLogEntry,
   type MockBillingStore,
 } from './mock-store';
@@ -28,10 +29,34 @@ import {
   type BillingCustomer,
   type BillingProvider,
   type BillingSubscription,
-  type NewBillingCard,
+  type HostedSession,
   type NewBillingCustomer,
-  type NewBillingSubscription,
+  type NewCheckoutSession,
+  type NewPortalSession,
 } from './types';
+
+/** Validade da URL hospedada. O Stripe usa 24h para Checkout Session. */
+const CHECKOUT_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Base da URL do console de simulação. Em produção o mock não roda; aqui o
+ * valor só precisa formar uma URL absoluta, como a do provedor de verdade.
+ */
+function mockConsoleBase(): string {
+  return process.env.APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+}
+
+function requireAbsoluteUrl(value: string, field: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new BillingProviderError('VALIDATION', `${field} precisa ser uma URL absoluta.`);
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new BillingProviderError('VALIDATION', `${field} precisa ser http ou https.`);
+  }
+}
 
 export interface MockBillingSimulationResult {
   eventId: string;
@@ -107,51 +132,21 @@ export class MockBillingProvider implements BillingProvider {
     return copy(this.requireCustomer(customerId));
   }
 
-  async tokenizeCard(input: NewBillingCard): Promise<{ token: string }> {
-    this.requireCustomer(input.customerId);
-    if (input.holderName.trim().length < 2) {
-      throw new BillingProviderError('VALIDATION', 'Nome do portador é obrigatório.');
-    }
-
-    const number = input.number.replace(/\D/g, '');
-    if (number.length < 13 || number.length > 19 || !luhnValid(number)) {
-      throw new BillingProviderError('INVALID_CARD', 'Número de cartão inválido.');
-    }
-    const month = Number(input.expiryMonth);
-    if (!Number.isInteger(month) || month < 1 || month > 12) {
-      throw new BillingProviderError('INVALID_CARD', 'Mês de validade inválido.');
-    }
-    if (!/^\d{4}$/.test(input.expiryYear)) {
-      throw new BillingProviderError('INVALID_CARD', 'Ano de validade inválido.');
-    }
-    if (!/^\d{3,4}$/.test(input.ccv)) {
-      throw new BillingProviderError('INVALID_CARD', 'CCV inválido.');
-    }
-
-    const expiryEnd = new Date(
-      Date.UTC(Number(input.expiryYear), month, 0, 23, 59, 59, 999),
-    );
-    if (expiryEnd.getTime() < this.now().getTime()) {
-      throw new BillingProviderError('INVALID_CARD', 'Cartão com validade expirada.');
-    }
-
-    const token = `tok_billing_mock_${randomUUID()}`;
-    // Nunca guardamos o PAN, só o suficiente para identificar o cartão.
-    this.store.cardTokens.set(token, {
-      token,
-      customerId: input.customerId,
-      last4: number.slice(-4),
-      createdAt: this.now().toISOString(),
-    });
-    return { token };
-  }
-
-  async createSubscription(input: NewBillingSubscription): Promise<BillingSubscription> {
+  /**
+   * Abre a sessão hospedada. NÃO cria assinatura: devolve uma URL e espera.
+   *
+   * A URL aponta para `/dev/billing`, onde se conclui ou abandona o pagamento —
+   * é o equivalente de billing ao `/dev/payments` do B2C. Concluir dispara
+   * `SUBSCRIPTION_CREATED` de verdade contra a própria aplicação, que é o
+   * caminho que a produção vai percorrer.
+   */
+  async createCheckoutSession(input: NewCheckoutSession): Promise<HostedSession> {
     this.requireCustomer(input.customerId);
     if (!isBillingPlanCode(input.plan)) {
       throw new BillingProviderError('UNKNOWN_PLAN', `Plano desconhecido: ${String(input.plan)}`);
     }
-    this.requireCardToken(input.cardToken, input.customerId);
+    requireAbsoluteUrl(input.successUrl, 'successUrl');
+    requireAbsoluteUrl(input.cancelUrl, 'cancelUrl');
 
     if (input.trialEndsAt !== undefined) {
       requireDate(input.trialEndsAt, 'trialEndsAt');
@@ -160,6 +155,8 @@ export class MockBillingProvider implements BillingProvider {
       }
     }
 
+    // O Stripe recusa uma segunda assinatura ativa para o mesmo cliente; o mock
+    // recusa já na abertura da sessão, para o dono não digitar cartão à toa.
     for (const subscription of this.store.subscriptions.values()) {
       if (subscription.customerId === input.customerId && subscription.status !== 'CANCELED') {
         throw new BillingProviderError(
@@ -169,23 +166,82 @@ export class MockBillingProvider implements BillingProvider {
       }
     }
 
-    const plan = BILLING_PLANS[input.plan];
-    const createdAt = this.now().toISOString();
-    const subscription: BillingSubscription = {
-      id: nextMockBillingId(this.store, 'sub_billing_mock'),
+    const id = nextMockBillingId(this.store, 'cs_billing_mock');
+    const createdAt = this.now();
+    const record: BillingCheckoutSessionRecord = {
+      id,
       customerId: input.customerId,
       plan: input.plan,
-      amountCents: plan.priceCents,
-      currency: 'BRL',
-      status: input.trialEndsAt ? 'TRIALING' : 'ACTIVE',
-      currentPeriodEnd: input.trialEndsAt ?? addMonths(this.now(), 1).toISOString(),
-      cancelAtPeriodEnd: false,
-      createdAt,
+      status: 'PENDING',
+      successUrl: input.successUrl,
+      cancelUrl: input.cancelUrl,
+      createdAt: createdAt.toISOString(),
+      expiresAt: new Date(createdAt.getTime() + CHECKOUT_TTL_MS).toISOString(),
       ...(input.trialEndsAt ? { trialEndsAt: input.trialEndsAt } : {}),
       ...(input.externalReference ? { externalReference: input.externalReference } : {}),
     };
+    this.store.checkoutSessions.set(id, record);
+
+    return { id, url: `${mockConsoleBase()}/dev/billing?sessao=${id}`, expiresAt: record.expiresAt };
+  }
+
+  /**
+   * Portal do cliente. No Stripe é onde o dono troca cartão e baixa fatura; no
+   * mock é a mesma tela de `/dev/billing`, filtrada pelo cliente.
+   */
+  async createPortalSession(input: NewPortalSession): Promise<HostedSession> {
+    this.requireCustomer(input.customerId);
+    requireAbsoluteUrl(input.returnUrl, 'returnUrl');
+    const expiresAt = new Date(this.now().getTime() + CHECKOUT_TTL_MS).toISOString();
+    return {
+      id: nextMockBillingId(this.store, 'bps_billing_mock'),
+      url: `${mockConsoleBase()}/dev/billing?cliente=${input.customerId}`,
+      expiresAt,
+    };
+  }
+
+  /**
+   * Conclui o pagamento da sessão — o que o dono faria na página do provedor.
+   * É aqui que a assinatura passa a existir, e o `SUBSCRIPTION_CREATED` sai.
+   * Idempotente: concluir de novo não cria uma segunda assinatura.
+   */
+  async completeCheckoutSession(
+    sessionId: string,
+  ): Promise<{ subscription: BillingSubscription; delivery: MockBillingSimulationResult }> {
+    const session = this.store.checkoutSessions.get(sessionId);
+    if (!session) {
+      throw new BillingProviderError('VALIDATION', `Sessão não encontrada: ${sessionId}`);
+    }
+    if (session.status === 'COMPLETED') {
+      throw new BillingProviderError('VALIDATION', 'Sessão já concluída.');
+    }
+    if (new Date(session.expiresAt).getTime() <= this.now().getTime()) {
+      session.status = 'EXPIRED';
+      throw new BillingProviderError('VALIDATION', 'Sessão expirada; abra outra.');
+    }
+    if (!isBillingPlanCode(session.plan)) {
+      throw new BillingProviderError('UNKNOWN_PLAN', `Plano desconhecido: ${session.plan}`);
+    }
+
+    const plan = BILLING_PLANS[session.plan];
+    const subscription: BillingSubscription = {
+      id: nextMockBillingId(this.store, 'sub_billing_mock'),
+      customerId: session.customerId,
+      plan: session.plan,
+      amountCents: plan.priceCents,
+      currency: 'BRL',
+      status: session.trialEndsAt ? 'TRIALING' : 'ACTIVE',
+      currentPeriodEnd: session.trialEndsAt ?? addMonths(this.now(), 1).toISOString(),
+      cancelAtPeriodEnd: false,
+      createdAt: this.now().toISOString(),
+      ...(session.trialEndsAt ? { trialEndsAt: session.trialEndsAt } : {}),
+      ...(session.externalReference ? { externalReference: session.externalReference } : {}),
+    };
     this.store.subscriptions.set(subscription.id, subscription);
-    return copy(subscription);
+    session.status = 'COMPLETED';
+
+    const delivery = await this.deliverEvent('SUBSCRIPTION_CREATED', { subscription });
+    return { subscription: copy(subscription), delivery };
   }
 
   async getSubscription(subscriptionId: string): Promise<BillingSubscription> {
@@ -210,15 +266,6 @@ export class MockBillingProvider implements BillingProvider {
     subscription.plan = nextPlan;
     subscription.amountCents = BILLING_PLANS[nextPlan].priceCents;
     await this.deliverEvent('SUBSCRIPTION_UPDATED', { subscription });
-    return copy(subscription);
-  }
-
-  async updatePaymentMethod(
-    subscriptionId: string,
-    cardToken: string,
-  ): Promise<BillingSubscription> {
-    const subscription = this.requireActiveSubscription(subscriptionId);
-    this.requireCardToken(cardToken, subscription.customerId);
     return copy(subscription);
   }
 
@@ -357,15 +404,6 @@ export class MockBillingProvider implements BillingProvider {
     return subscription;
   }
 
-  private requireCardToken(token: string, customerId: string): void {
-    const record = this.store.cardTokens.get(token);
-    if (!record || record.customerId !== customerId) {
-      throw new BillingProviderError(
-        'CARD_TOKEN_INVALID',
-        'Token de cartão não pertence ao cliente informado.',
-      );
-    }
-  }
 }
 
 function subscriptionWebhookData(
@@ -394,26 +432,6 @@ function requireDate(value: string, field: string): void {
   }
 }
 
-function luhnValid(digits: string): boolean {
-  let sum = 0;
-  let double = false;
-  for (let index = digits.length - 1; index >= 0; index -= 1) {
-    const char = digits[index];
-    if (char === undefined) {
-      return false;
-    }
-    let digit = Number(char);
-    if (double) {
-      digit *= 2;
-      if (digit > 9) {
-        digit -= 9;
-      }
-    }
-    sum += digit;
-    double = !double;
-  }
-  return sum % 10 === 0;
-}
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

@@ -5,10 +5,9 @@ import {
   cancelSubscription,
   changePlan,
   getLocalSubscription,
-  subscribe,
+  openBillingPortal,
+  startSubscriptionCheckout,
   SubscriptionSuspendedError,
-  updatePaymentMethod,
-  type BillingCardInput,
 } from '@/lib/billing/subscription';
 import { createHold } from '@/lib/booking/hold';
 import { createTenantDb, type TenantDb } from '@/lib/tenant/db';
@@ -40,15 +39,8 @@ import {
 
 const SECRET = 'integration-billing-secret';
 
-function card(number = '4111111111111111'): BillingCardInput {
-  return {
-    holderName: 'Dono do Salão',
-    number,
-    expiryMonth: '12',
-    expiryYear: '2030',
-    ccv: '123',
-  };
-}
+const SUCCESS_URL = 'https://app.exemplo.com.br/painel/assinatura?ok=1';
+const CANCEL_URL = 'https://app.exemplo.com.br/painel/assinatura?cancelado=1';
 
 function makeProvider(store: MockBillingStore, deliveries: WebhookDeliveryRequest[]) {
   return new MockBillingProvider({
@@ -120,15 +112,31 @@ describe('billing: ciclo de cobrança', () => {
     return getLocalSubscription(tenantId);
   }
 
+  /**
+   * O fluxo inteiro de assinar: abre a sessão hospedada e conclui o pagamento.
+   *
+   * Duas etapas de propósito — é o desenho novo. `startSubscriptionCheckout`
+   * só devolve URL; quem cria o `PlatformSub` é o `SUBSCRIPTION_CREATED` que
+   * a conclusão dispara, e o transporte deste arquivo entrega esse webhook no
+   * processador de verdade.
+   */
+  async function subscribeTenant(tenantId: string, plan: 'SOLO' | 'EQUIPE' | 'PRO') {
+    const started = await startSubscriptionCheckout({
+      tenantId,
+      plan,
+      successUrl: SUCCESS_URL,
+      cancelUrl: CANCEL_URL,
+      provider,
+    });
+    if (!started.ok) return started;
+    const { subscription } = await provider.completeCheckoutSession(started.sessionId);
+    return { ok: true as const, providerSubscription: subscription };
+  }
+
   it('assinar → trocar → inadimplir → suspender → reativar', async () => {
     const tenant = await makeTenant('sub-cycle');
 
-    const subscribed = await subscribe({
-      tenantId: tenant.tenantId,
-      plan: 'SOLO',
-      card: card(),
-      provider,
-    });
+    const subscribed = await subscribeTenant(tenant.tenantId, 'SOLO');
     expect(subscribed.ok).toBe(true);
     if (!subscribed.ok) return;
     const subscriptionId = subscribed.providerSubscription.id;
@@ -179,12 +187,7 @@ describe('billing: ciclo de cobrança', () => {
 
   it('a suspensão preserva dados e acesso ao que já existe', async () => {
     const tenant = await makeTenant('sub-preserve');
-    const subscribed = await subscribe({
-      tenantId: tenant.tenantId,
-      plan: 'EQUIPE',
-      card: card(),
-      provider,
-    });
+    const subscribed = await subscribeTenant(tenant.tenantId, 'EQUIPE');
     expect(subscribed.ok).toBe(true);
     if (!subscribed.ok) return;
 
@@ -209,12 +212,7 @@ describe('billing: ciclo de cobrança', () => {
 
   it('cancelar encerra a assinatura e bloqueia o novo', async () => {
     const tenant = await makeTenant('sub-cancel');
-    const subscribed = await subscribe({
-      tenantId: tenant.tenantId,
-      plan: 'SOLO',
-      card: card(),
-      provider,
-    });
+    const subscribed = await subscribeTenant(tenant.tenantId, 'SOLO');
     expect(subscribed.ok).toBe(true);
     if (!subscribed.ok) return;
 
@@ -234,56 +232,48 @@ describe('billing: ciclo de cobrança', () => {
     ).rejects.toBeInstanceOf(SubscriptionSuspendedError);
   });
 
-  it('atualizar o meio de pagamento não altera o estado da assinatura', async () => {
+  it('abrir o portal do cliente devolve URL e não altera o estado da assinatura', async () => {
     const tenant = await makeTenant('sub-card');
-    const subscribed = await subscribe({
-      tenantId: tenant.tenantId,
-      plan: 'PRO',
-      card: card(),
-      provider,
-    });
+    const subscribed = await subscribeTenant(tenant.tenantId, 'PRO');
     expect(subscribed.ok).toBe(true);
     if (!subscribed.ok) return;
 
-    const updated = await updatePaymentMethod({
+    const portal = await openBillingPortal({
       tenantId: tenant.tenantId,
-      card: card('5555555555554444'),
+      returnUrl: SUCCESS_URL,
       provider,
     });
-    expect(updated.ok).toBe(true);
-    if (updated.ok) {
-      expect(updated.providerSubscription.id).toBe(subscribed.providerSubscription.id);
-    }
+    expect(portal.ok).toBe(true);
+    if (portal.ok) expect(portal.url).toMatch(/^https?:\/\//);
+
+    // O portal é do provedor: nada muda do nosso lado só por abri-lo. Quem
+    // conta que o cartão trocou é o webhook, se e quando trocar.
     expect((await readSub(tenant.tenantId))?.status).toBe('ACTIVE');
+  });
+
+  it('sem assinatura, o portal é recusado em vez de abrir URL vazia', async () => {
+    const tenant = await makeTenant('sub-no-portal');
+    const portal = await openBillingPortal({
+      tenantId: tenant.tenantId,
+      returnUrl: SUCCESS_URL,
+      provider,
+    });
+    expect(portal.ok).toBe(false);
+    if (!portal.ok) expect(portal.code).toBe('NO_SUBSCRIPTION');
   });
 
   it('assinar duas vezes não cria cobrança dupla', async () => {
     const tenant = await makeTenant('sub-double');
-    const first = await subscribe({
-      tenantId: tenant.tenantId,
-      plan: 'SOLO',
-      card: card(),
-      provider,
-    });
+    const first = await subscribeTenant(tenant.tenantId, 'SOLO');
     expect(first.ok).toBe(true);
 
-    const second = await subscribe({
-      tenantId: tenant.tenantId,
-      plan: 'SOLO',
-      card: card(),
-      provider,
-    });
+    const second = await subscribeTenant(tenant.tenantId, 'SOLO');
     expect(second).toMatchObject({ ok: false, code: 'SUBSCRIBER_ALREADY_EXISTS' });
   });
 
   it('webhook reentregue não renova nem credita duas vezes', async () => {
     const tenant = await makeTenant('sub-idem');
-    const subscribed = await subscribe({
-      tenantId: tenant.tenantId,
-      plan: 'SOLO',
-      card: card(),
-      provider,
-    });
+    const subscribed = await subscribeTenant(tenant.tenantId, 'SOLO');
     expect(subscribed.ok).toBe(true);
     if (!subscribed.ok) return;
 
@@ -312,8 +302,8 @@ describe('billing: ciclo de cobrança', () => {
     const tenantA = await makeTenant('sub-iso-a');
     const tenantB = await makeTenant('sub-iso-b');
 
-    const a = await subscribe({ tenantId: tenantA.tenantId, plan: 'SOLO', card: card(), provider });
-    const b = await subscribe({ tenantId: tenantB.tenantId, plan: 'PRO', card: card(), provider });
+    const a = await subscribeTenant(tenantA.tenantId, 'SOLO');
+    const b = await subscribeTenant(tenantB.tenantId, 'PRO');
     expect(a.ok && b.ok).toBe(true);
     if (!a.ok || !b.ok) return;
 

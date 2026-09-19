@@ -181,7 +181,11 @@ async function applySubscriptionEvent(
       trialEndedAt: true,
     },
   });
-  if (!local || !local.stripeSubscriptionId) {
+  // Na criação, o registro local existe mas ainda não tem assinatura: ele foi
+  // gravado com o `stripeCustomerId` antes de o dono ir para a página do
+  // provedor. Nos demais eventos, assinatura local ausente é inconsistência.
+  const creating = event.type === 'SUBSCRIPTION_CREATED';
+  if (!local || (!creating && !local.stripeSubscriptionId)) {
     throw new WebhookProcessingError(
       404,
       'Assinatura local não encontrada no tenant do evento.',
@@ -196,6 +200,7 @@ async function applySubscriptionEvent(
         stripeCustomerId: local.stripeCustomerId,
       },
       payload,
+      { creating },
     );
     incoming = incomingStatusForEvent(event.type, payload);
   } catch (error) {
@@ -209,6 +214,25 @@ async function applySubscriptionEvent(
     // `validateSubscriptionPayload` já garante isto; a checagem existe para
     // estreitar o tipo antes de gravar.
     throw new WebhookProcessingError(400, `Plano desconhecido no payload: ${payload.plan}.`);
+  }
+
+  if (creating) {
+    // Reentrega: a assinatura já foi criada e nada muda. Sem isto, um segundo
+    // `SUBSCRIPTION_CREATED` reescreveria o estado por cima de eventos mais
+    // novos (uma fatura paga, por exemplo) que chegaram no meio.
+    if (local.stripeSubscriptionId === payload.id) {
+      return { description: `subscription:${payload.id}:created:already` };
+    }
+    await tx.platformSub.update({
+      where: { tenantId },
+      data: {
+        stripeSubscriptionId: payload.id,
+        plan: payload.plan,
+        status: incoming,
+        currentPeriodEnd: new Date(payload.currentPeriodEnd),
+      },
+    });
+    return { description: `subscription:${payload.id}:created:${incoming}` };
   }
 
   const decision = planSubscriptionTransition(local.status, incoming);
