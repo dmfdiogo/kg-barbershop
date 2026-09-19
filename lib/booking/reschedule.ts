@@ -3,7 +3,6 @@ import { forTenant } from '@/lib/tenant/db';
 import { isWithinCancellationWindow } from './availability';
 import {
   confirmBookingInTransaction,
-  discoverParticipants,
   emitBookingEvent,
   type BookingParticipant,
   type BookingRescheduledEvent,
