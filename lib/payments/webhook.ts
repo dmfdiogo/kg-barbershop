@@ -187,6 +187,37 @@ export interface PaymentWebhookResult {
 /** Erro de payload: gera 400 e não deve ser mascarado como falha do servidor. */
 class WebhookPayloadError extends Error {}
 
+export interface PaymentWebhookAuthResult {
+  ok: boolean;
+  status: 200 | 401 | 500;
+  error?: string;
+}
+
+/**
+ * Verificação de token isolada e reusável pela rota real (F4.0). É o PRIMEIRO
+ * passo do webhook: nada de parse, banco ou estado antes disto.
+ *
+ * Distinguir 500 de 401 importa: em produção sem `PAYMENTS_WEBHOOK_SECRET`
+ * configurado, responder 401 faria o provedor reentregar para sempre um segredo
+ * que não existe — é erro de servidor, não credencial inválida.
+ */
+export function verifyPaymentWebhookToken(
+  headers: Headers | Readonly<Record<string, string | undefined>>,
+): PaymentWebhookAuthResult {
+  let expectedToken: string;
+  try {
+    expectedToken = getPaymentsWebhookSecret();
+  } catch (error) {
+    return { ok: false, status: 500, error: errorMessage(error) };
+  }
+
+  const providedToken = readHeader(headers, PAYMENTS_WEBHOOK_TOKEN_HEADER);
+  if (!providedToken || !safeEqual(providedToken, expectedToken)) {
+    return { ok: false, status: 401, error: 'token inválido' };
+  }
+  return { ok: true, status: 200 };
+}
+
 export async function handlePaymentWebhook(
   input: PaymentWebhookInput,
   store: MockPaymentStore = getMockPaymentStore(),
@@ -321,7 +352,7 @@ const CHARGE_STATUSES: readonly ChargeStatus[] = [
 
 const KYC_STATUSES: readonly KycStatus[] = ['PENDING', 'APPROVED', 'REJECTED'];
 
-function parsePaymentWebhookEvent(rawBody: string): PaymentWebhookEvent | null {
+export function parsePaymentWebhookEvent(rawBody: string): PaymentWebhookEvent | null {
   let value: unknown;
   try {
     value = JSON.parse(rawBody);
