@@ -1,3 +1,4 @@
+import { appendFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import type { TemplateName } from './templates';
 
@@ -34,6 +35,30 @@ function getStore(): OutboxStore {
   return globalStore[GLOBAL_KEY];
 }
 
+/**
+ * Espelho em arquivo, para testes end-to-end.
+ *
+ * O `/dev/outbox` responde 404 fora de desenvolvimento, e o Playwright sobe o
+ * servidor com `next start` — em produção, de propósito, porque foi assim que
+ * pegamos a falta de `APP_DOMAIN`. As duas coisas se anulavam: o e2e do login
+ * precisa do código do OTP e não tinha por onde lê-lo.
+ *
+ * A saída não é afrouxar o guard da rota, e sim dar ao mock um canal próprio:
+ * quando `MESSAGING_OUTBOX_FILE` aponta para um caminho, cada mensagem é
+ * anexada lá como JSON por linha. Isso não enfraquece nada em produção de
+ * verdade, porque o mock só existe quando `MESSAGING_PROVIDER=mock` — e em
+ * produção o provider é o real.
+ */
+function mirrorToFile(message: OutboxMessage): void {
+  const target = process.env.MESSAGING_OUTBOX_FILE;
+  if (!target) return;
+  try {
+    appendFileSync(target, `${JSON.stringify(message)}\n`, 'utf8');
+  } catch {
+    // Espelho é conveniência de teste: falhar aqui não pode derrubar um envio.
+  }
+}
+
 export function recordOutboxMessage(
   message: Omit<OutboxMessage, 'id' | 'sentAt'> & { sentAt?: string },
 ): OutboxMessage {
@@ -47,6 +72,7 @@ export function recordOutboxMessage(
   if (store.messages.length > MAX_MESSAGES) {
     store.messages.length = MAX_MESSAGES;
   }
+  mirrorToFile(stored);
   return stored;
 }
 

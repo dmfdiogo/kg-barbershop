@@ -1,7 +1,13 @@
+import os from 'node:os';
+import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const baseURL = `http://127.0.0.1:${PORT}`;
+
+/** Espelho das mensagens do mock, lido pelos testes que precisam do código OTP. */
+export const OUTBOX_FILE =
+  process.env.MESSAGING_OUTBOX_FILE ?? path.join(os.tmpdir(), 'kg-e2e-outbox.jsonl');
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -30,6 +36,10 @@ export default defineConfig({
     env: {
       APP_DOMAIN: process.env.APP_DOMAIN ?? `127.0.0.1:${PORT}`,
       AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET ?? 'e2e-session-secret',
+      // O /dev/outbox responde 404 em produção, e é aqui que o servidor roda em
+      // produção de propósito. O mock espelha as mensagens neste arquivo para
+      // que o e2e do login consiga ler o código do OTP sem afrouxar o guard.
+      MESSAGING_OUTBOX_FILE: OUTBOX_FILE,
     },
   },
 });

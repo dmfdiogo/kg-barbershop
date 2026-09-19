@@ -46,6 +46,10 @@ Defesas obrigatórias, porque é o endpoint mais atacável do produto:
 
 **Rate limit por IP e a realidade brasileira.** O limite por telefone é a defesa precisa; o por IP é rede grossa contra automação. Calibre-os de forma diferente: operadoras móveis no Brasil usam CGNAT em larga escala, então **milhares de clientes reais compartilham um mesmo IP público**. Um teto apertado por IP não barra o atacante (que troca de IP) e barra a cliente no 4G num sábado de manhã — com uma mensagem que ela não entende. Mantenha o teto por IP folgado, conte de preferência só as tentativas que falham, e registre quando ele disparar: se estiver batendo, provavelmente está batendo em gente de verdade.
 
+**Como o e2e lê o código do OTP (contradição que a F1.2 encontrou e que já foi resolvida).** O critério de aceite pede e2e lendo o código, mas o `/dev/outbox` responde 404 fora de desenvolvimento e o Playwright sobe o servidor com `next start` — em produção, de propósito, porque foi assim que pegamos a falta de `APP_DOMAIN`. As duas regras se anulavam.
+
+A saída não foi afrouxar o guard da rota: o mock ganhou um canal próprio. Quando `MESSAGING_OUTBOX_FILE` aponta para um caminho, cada mensagem é anexada lá em JSON por linha, e o `playwright.config.ts` já exporta `OUTBOX_FILE` com o caminho padrão. O teste lê o arquivo. Nada disso enfraquece produção, porque o mock só existe quando `MESSAGING_PROVIDER=mock`.
+
 ### 3. Sessão e RBAC
 
 Sessão em cookie `httpOnly`, `secure`, `sameSite=lax`. O papel **não** mora no token: é lido de `TenantMember` para o tenant da requisição — a mesma pessoa pode ser `OWNER` no salão A e `CUSTOMER` no salão B.
