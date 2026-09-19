@@ -249,6 +249,7 @@ model Tenant {
   membershipBenefits MembershipBenefit[]
   memberships        Membership[]
   creditLedger       CreditLedger[]
+  refunds            Refund[]
   messagingPrefs     MessagingPref[]
   notificationJobs   NotificationJob[]
   auditLogs          AuditLog[]
@@ -460,13 +461,38 @@ model Payment {
   createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  refunds Refund[]
 
   @@index([tenantId, status])
   @@index([bookingId])
   @@index([asaasId])
   @@map("payment")
+}
+
+// Lançamento de estorno (F4.3). Append-only como o CreditLedger: o valor
+// estornado de um pagamento é a SOMA das linhas, nunca um contador mutável.
+// A linha nasce no processador do webhook da F4.0 — fonte única e idempotente:
+// reentrega do mesmo evento não passa da unique (provider, eventId) e não
+// duplica o lançamento. Fica FORA do `Payment` de propósito: um estorno parcial
+// repetido precisa de uma linha por evento, e um contador só guardaria o total.
+model Refund {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  paymentId   String   @map("payment_id")
+  provider    String
+  amountCents Int      @map("amount_cents")
+  reason      String?
+  occurredAt  DateTime @map("occurred_at") @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([paymentId])
+  @@map("refund")
 }
 
 model AsaasAccount {
