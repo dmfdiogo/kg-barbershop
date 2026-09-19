@@ -2,6 +2,7 @@ import type { BookingSource } from '@prisma/client';
 import { forTenant } from '@/lib/tenant/db';
 import { listAllTenantIds } from '@/lib/tenant/context';
 import { assertTrialAllowsNewBooking } from '@/lib/billing/trial';
+import { assertSubscriptionAllowsNewBooking } from '@/lib/billing/subscription';
 import type { TenantTransaction } from '@/lib/tenant/db';
 
 /**
@@ -102,11 +103,18 @@ export interface CreatedHold {
  * `TrialLimitError`. Ele NÃO está em `createHoldInTransaction` de propósito — a
  * remarcação usa o núcleo direto e remarcar não é criar agendamento novo, então
  * mover um horário existente continua permitido mesmo com a trial esgotada.
+ *
+ * PORTÃO DE ASSINATURA (F7.2): na mesma transação e pela mesma porta, a
+ * suspensão graciosa da inadimplência (`PlatformSub.status` em `PAST_DUE` ou
+ * `CANCELED`) recusa a criação com `SubscriptionSuspendedError`. Bloqueia só o
+ * NOVO: nada do que já existe é apagado ou escondido, pela mesma razão de
+ * produto do portão de trial.
  */
 export async function createHold(input: CreateHoldInput): Promise<CreatedHold> {
   validateCreateHold(input);
   return forTenant(input.tenantId, async (tx) => {
     await assertTrialAllowsNewBooking(tx, input.tenantId);
+    await assertSubscriptionAllowsNewBooking(tx, input.tenantId);
     return createHoldInTransaction(tx, input);
   });
 }
