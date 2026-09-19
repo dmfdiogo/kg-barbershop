@@ -88,7 +88,11 @@ async function seedTenantA(tx: TenantTransaction): Promise<void> {
       name: 'Barbearia do Carlos',
       document: '12345678000190',
       timezone: TZ,
-      colorPrimary: '#1c1917',
+      // Classic Barber: a primária é a cor de AÇÃO (âmbar), não o tom escuro.
+      // Com primária quase preta sobre fundo quase preto, a tela de marca
+      // dispara o aviso de contraste logo ao abrir — e o seed é o que todo
+      // agente e toda demonstração enxergam primeiro.
+      colorPrimary: '#d97706',
       colorSecondary: '#b45309',
       colorBackground: '#0c0a09',
       themePreset: 'classic-barber',
