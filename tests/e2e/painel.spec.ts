@@ -15,6 +15,6 @@ test('o painel exige sessão e devolve o visitante para a raiz', async ({ page }
 });
 
 test('uma subrota do painel também passa pelo portão', async ({ page }) => {
-  await page.goto('/painel/exemplo');
+  await page.goto('/painel/servicos');
   await expect(page).toHaveURL(/\/$/);
 });
