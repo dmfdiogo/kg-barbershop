@@ -9,6 +9,7 @@ import {
 import { BILLING_PLANS, isBillingPlanCode, type BillingPlanCode } from './plans';
 import {
   BillingProviderError,
+  type BillingCustomer,
   type BillingProvider,
   type BillingSubscription,
   type BillingSubscriptionStatus,
@@ -466,13 +467,12 @@ export async function startSubscriptionCheckout(
     };
   }
 
-  const customer = existing?.stripeCustomerId
-    ? await provider.getCustomer(existing.stripeCustomerId)
-    : await provider.createCustomer({
-        tenantId: input.tenantId,
-        name: tenant.name,
-        document: tenant.document,
-      });
+  const customer = await resolveBillingCustomer(provider, {
+    tenantId: input.tenantId,
+    name: tenant.name,
+    document: tenant.document,
+    knownCustomerId: existing?.stripeCustomerId ?? null,
+  });
 
   // Grava o cliente antes de redirecionar: é a única âncora que o webhook terá
   // para resolver o tenant até a assinatura existir. `plan` fica registrado
@@ -708,40 +708,39 @@ export async function cancelSubscription(
 // Persistência
 // ---------------------------------------------------------------------------
 
-async function persistSubscription(
-  tenantId: string,
-  providerSubscription: BillingSubscription,
-): Promise<LocalSubscription> {
-  const currentPeriodEnd = new Date(providerSubscription.currentPeriodEnd);
-  const trialEndedAt = providerSubscription.trialEndsAt
-    ? new Date(providerSubscription.trialEndsAt)
-    : null;
-
-  const row = await forTenant(tenantId, (tx) =>
-    tx.platformSub.upsert({
-      where: { tenantId },
-      create: {
-        tenantId,
-        stripeCustomerId: providerSubscription.customerId,
-        stripeSubscriptionId: providerSubscription.id,
-        plan: providerSubscription.plan,
-        status: providerSubscription.status,
-        currentPeriodEnd,
-        trialEndedAt,
-      },
-      update: {
-        stripeCustomerId: providerSubscription.customerId,
-        stripeSubscriptionId: providerSubscription.id,
-        plan: providerSubscription.plan,
-        status: providerSubscription.status,
-        currentPeriodEnd,
-        trialEndedAt,
-      },
-      select: LOCAL_SUBSCRIPTION_SELECT,
-    }),
-  );
-  return toLocalSubscription(row);
+/**
+ * Cliente de cobrança do tenant: reusa o que já temos, ou cria.
+ *
+ * Um id guardado que o provedor não conhece NÃO pode travar o tenant para
+ * sempre. Acontece de verdade — cliente apagado no painel do provedor, base
+ * restaurada de backup, ou troca de conta entre ambientes — e o sintoma seria
+ * o dono clicar em "assinar" e receber um erro que ele não tem como resolver.
+ * Nesse caso criamos um cliente novo; o id velho é substituído no
+ * `PlatformSub` logo em seguida.
+ */
+async function resolveBillingCustomer(
+  provider: BillingProvider,
+  input: { tenantId: string; name: string; document: string | null; knownCustomerId: string | null },
+): Promise<BillingCustomer> {
+  if (input.knownCustomerId) {
+    try {
+      return await provider.getCustomer(input.knownCustomerId);
+    } catch (error) {
+      const unknown =
+        error instanceof BillingProviderError && error.code === 'CUSTOMER_NOT_FOUND';
+      if (!unknown) throw error;
+      console.warn(
+        `[billing] cliente ${input.knownCustomerId} do tenant ${input.tenantId} não existe no provedor; criando outro.`,
+      );
+    }
+  }
+  return provider.createCustomer({
+    tenantId: input.tenantId,
+    name: input.name,
+    ...(input.document ? { document: input.document } : {}),
+  });
 }
+
 
 /** Desfaz a troca local quando o provedor recusa a proração. */
 async function revertLocalPlanChange(
