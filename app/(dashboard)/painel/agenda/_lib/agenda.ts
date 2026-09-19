@@ -3,6 +3,7 @@ import { addDays, format, parseISO } from 'date-fns';
 import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { confirmBooking, ConfirmBookingError } from '@/lib/booking/confirm';
 import { createHold, HoldError } from '@/lib/booking/hold';
+import { TrialLimitError } from '@/lib/billing/trial';
 import { isSlotUnavailableError } from '@/lib/tenant/errors';
 import { forTenant, type TenantTransaction } from '@/lib/tenant/db';
 import type {
@@ -435,6 +436,11 @@ export async function createWalkIn(input: CreateWalkInInput): Promise<WalkInResu
       now,
     });
   } catch (error) {
+    if (error instanceof TrialLimitError) {
+      // Trial por valor esgotado (F7.1): o dono precisa escolher um plano. A
+      // agenda existente segue acessível; só o agendamento novo é recusado.
+      return { ok: false, code: 'TRIAL_LIMIT', message: error.message };
+    }
     if (isSlotUnavailableError(error)) {
       return {
         ok: false,

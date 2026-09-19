@@ -73,7 +73,8 @@ export type AgendaErrorCode =
   | 'NOT_FOUND'
   | 'SLOT_UNAVAILABLE'
   | 'INVALID_STATE'
-  | 'FORBIDDEN';
+  | 'FORBIDDEN'
+  | 'TRIAL_LIMIT';
 
 export type AgendaField = 'staffId' | 'serviceId' | 'customerName' | 'customerPhone' | 'startsAt';
 export type AgendaFieldErrors = Partial<Record<AgendaField, string>>;

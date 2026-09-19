@@ -1,5 +1,6 @@
 import { requireRole } from '@/lib/auth/rbac';
 import { formatCentsToBRL } from '@/lib/catalog/money';
+import type { TrialStatus } from '@/lib/billing/trial';
 import { loadDashboard, type AgendaEntry, type DashboardOverview } from './data';
 
 /**
@@ -25,10 +26,37 @@ export default async function InicioPage() {
         </p>
       </header>
 
+      <TrialBanner trial={overview.trial} />
       <RevenueCards overview={overview} />
       <OccupancyCard occupancy={overview.occupancy} />
       <AgendaCard agenda={overview.agenda} timezone={context.tenant.timezone} />
     </section>
+  );
+}
+
+/**
+ * Aviso da trial por valor (F7.1): a partir do 8º agendamento o dono é
+ * convidado a escolher um plano; no 11º o tom muda para explicar que só os
+ * agendamentos NOVOS estão bloqueados — os existentes seguem disponíveis.
+ * Some quando não há nada a avisar (trial no começo ou já convertido).
+ */
+function TrialBanner({ trial }: { trial: TrialStatus }) {
+  if (!trial.message) return null;
+
+  const exhausted = trial.phase === 'EXHAUSTED';
+  const palette = exhausted
+    ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]'
+    : 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]';
+
+  return (
+    <aside role="status" className={`rounded-xl px-4 py-3 text-sm ${palette}`}>
+      <p className="font-medium">{trial.message}</p>
+      {trial.upgrade ? (
+        <p className="mt-1 text-xs opacity-90">
+          Plano {trial.upgrade.name} — {formatCentsToBRL(trial.upgrade.priceCents)}/mês.
+        </p>
+      ) : null}
+    </aside>
   );
 }
 

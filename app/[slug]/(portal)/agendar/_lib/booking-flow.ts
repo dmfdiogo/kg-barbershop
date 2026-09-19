@@ -1,6 +1,7 @@
 import { confirmBooking, ConfirmBookingError } from '@/lib/booking/confirm';
 import { createHold, HoldError, type CreatedHold } from '@/lib/booking/hold';
 import { selectStaffForSlot } from '@/lib/booking/availability';
+import { TrialLimitError } from '@/lib/billing/trial';
 import type { TenantContext } from '@/lib/tenant/context';
 import { isSlotUnavailableError } from '@/lib/tenant/errors';
 import {
@@ -28,6 +29,7 @@ const ERROR_STATUS: Record<BookingErrorCode, number> = {
   BOOKING_NOT_FOUND: 404,
   UNAUTHENTICATED: 401,
   CONFLICT: 409,
+  TRIAL_LIMIT: 402,
 };
 
 export class PortalBookingError extends Error {
@@ -142,6 +144,11 @@ export async function createBookingHold(params: CreateHoldParams): Promise<HoldI
       now,
     });
   } catch (error) {
+    if (error instanceof TrialLimitError) {
+      // Trial por valor esgotado (F7.1): o salão precisa escolher um plano. O
+      // agendamento novo não existe; o que já está marcado continua de pé.
+      throw new PortalBookingError('TRIAL_LIMIT', error.message);
+    }
     if (isSlotUnavailableError(error)) {
       throw new PortalBookingError('SLOT_UNAVAILABLE', 'O horário acabou de ser reservado. Escolha outro.');
     }
