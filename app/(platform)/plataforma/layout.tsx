@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { AuthError, requireSuperAdmin } from '@/lib/auth/rbac';
+import { AuthError, requireSuperAdmin, type SuperAdminContext } from '@/lib/auth/rbac';
+import { PlatformShell } from './_components/PlatformShell';
 
 /**
  * Portão do painel da plataforma (tarefa F1.4).
@@ -31,10 +32,16 @@ import { AuthError, requireSuperAdmin } from '@/lib/auth/rbac';
  * Este layout só decide se a rota renderiza; telas e shell são a F7.3. Ele NÃO
  * dá acesso a dado de tenant: quem lê dado de negócio usa `withPlatformAudit()`
  * (`lib/audit`), que revalida este mesmo portão e grava o `AuditLog`.
+ *
+ * A F7.3 ESTENDE este layout com a casca (`PlatformShell`), sem tocar na
+ * decisão de acesso: o `requireSuperAdmin()` continua sendo a única porta, e
+ * nada é renderizado antes de ele passar. A casca recebe o nome do Super Admin
+ * já autenticado.
  */
 export default async function PlatformLayout({ children }: { children: ReactNode }) {
+  let admin: SuperAdminContext;
   try {
-    await requireSuperAdmin();
+    admin = await requireSuperAdmin();
   } catch (error) {
     if (error instanceof AuthError) {
       if (error.code === 'UNAUTHENTICATED') redirect('/entrar?next=/plataforma');
@@ -43,5 +50,5 @@ export default async function PlatformLayout({ children }: { children: ReactNode
     throw error;
   }
 
-  return <>{children}</>;
+  return <PlatformShell userName={admin.user.name}>{children}</PlatformShell>;
 }

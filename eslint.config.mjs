@@ -47,6 +47,11 @@ const config = [
     //                       global (User, sem tenantId) ainda é cliente de
     //                       outro salão antes de apagá-la; a checagem atravessa
     //                       tenants por definição e grava AuditLog (F6.2);
+    //  - lib/platform/**    diretório global do painel (F7.3). O AuditLog é por
+    //                       tenant e não representa uma leitura que atravessa
+    //                       todos; o acesso auditado é a ficha de UM tenant
+    //                       (lib/platform/support.ts, via withPlatformAudit),
+    //                       não o agregado. overview.ts revalida o portão.
     //  - tests/**           montam cenário entre tenants de propósito.
     files: [
       'lib/tenant/**/*.ts',
@@ -54,6 +59,7 @@ const config = [
       'lib/auth/membership.ts',
       'lib/auth/rbac.ts',
       'lib/privacy/**/*.ts',
+      'lib/platform/**/*.ts',
       'tests/**/*.ts',
       'prisma/**/*.mts',
       'scripts/**/*.mts',
