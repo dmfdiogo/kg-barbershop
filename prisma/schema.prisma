@@ -213,6 +213,27 @@ model OnboardingProgress {
 // Tenant e identidade
 // ---------------------------------------------------------------------------
 
+/// FKs ESCOPADAS POR TENANT.
+///
+/// A RLS valida o `tenant_id` da própria linha, não a procedência do id que
+/// ela referencia — e a checagem de FK do Postgres roda como dono da tabela,
+/// ignorando RLS. Sem a chave composta, uma linha `(tenant_id = A,
+/// service_id = <serviço de B>)` passaria: os ids trafegam em formulário
+/// (`/agendar?servico=…`) e o portal de qualquer salão é público.
+///
+/// Por isso as FKs entre tabelas de negócio carregam o `tenant_id`, com
+/// `@@unique([tenantId, id])` no alvo. A validação na aplicação continua —
+/// esta é a segunda camada, como a RLS é a segunda camada do client escopado.
+///
+/// TRÊS FICAM DE FORA, de propósito: `booking.customer_id`,
+/// `credit_ledger.booking_id` e `notification_job.booking_id` são opcionais e
+/// usam `ON DELETE SET NULL`. Numa chave composta o Postgres tentaria anular
+/// o `tenant_id` junto, que é NOT NULL; a forma correta
+/// (`ON DELETE SET NULL (coluna)`, PG 15+) o Prisma não sabe escrever, e
+/// escrevê-la à mão deixaria desvio permanente a cada `migrate dev`. Nenhuma
+/// das três nasce de entrada do usuário: são ids gerados internamente ou
+/// derivados da sessão.
+
 model Tenant {
   id                        String       @id @default(cuid())
   slug                      String       @unique
@@ -292,6 +313,7 @@ model TenantMember {
   @@unique([tenantId, userId])
   @@index([tenantId, role])
   @@index([userId])
+  @@unique([tenantId, id])
   @@map("tenant_member")
 }
 
@@ -305,13 +327,17 @@ model StaffProfile {
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tenantMember  TenantMember   @relation(fields: [tenantMemberId], references: [id], onDelete: Cascade)
+  tenantMember  TenantMember   @relation(fields: [tenantId, tenantMemberId], references: [tenantId, id], onDelete: Cascade)
   workingHours  WorkingHours[]
   timeOff       TimeOff[]
   staffServices StaffService[]
   bookings      Booking[]
 
   @@index([tenantId, active])
+  @@unique([tenantId, id])
+  // Exigido pelo Prisma: a relação 1:1 com TenantMember virou composta.
+  // O unique simples em `tenantMemberId` continua e é o mais estrito dos dois.
+  @@unique([tenantId, tenantMemberId])
   @@map("staff_profile")
 }
 
@@ -333,7 +359,7 @@ model WorkingHours {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  staff  StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  staff  StaffProfile @relation(fields: [tenantId, staffId], references: [tenantId, id], onDelete: Cascade)
 
   @@unique([staffId, weekday, startTime])
   @@index([tenantId, staffId, weekday])
@@ -351,7 +377,7 @@ model TimeOff {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  staff  StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  staff  StaffProfile @relation(fields: [tenantId, staffId], references: [tenantId, id], onDelete: Cascade)
 
   @@index([tenantId, staffId, startsAt])
   @@map("time_off")
@@ -381,6 +407,7 @@ model Service {
   membershipBenefits MembershipBenefit[]
   creditLedger       CreditLedger[]
 
+  @@unique([tenantId, id])
   @@index([tenantId, active])
   @@map("service")
 }
@@ -393,8 +420,8 @@ model StaffService {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  staff   StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  service Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  staff   StaffProfile @relation(fields: [tenantId, staffId], references: [tenantId, id], onDelete: Cascade)
+  service Service      @relation(fields: [tenantId, serviceId], references: [tenantId, id], onDelete: Cascade)
 
   @@unique([staffId, serviceId])
   @@index([tenantId])
@@ -434,8 +461,8 @@ model Booking {
 
   tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer         TenantMember?     @relation("BookingCustomer", fields: [customerId], references: [id])
-  staff            StaffProfile      @relation(fields: [staffId], references: [id])
-  service          Service           @relation(fields: [serviceId], references: [id])
+  staff            StaffProfile      @relation(fields: [tenantId, staffId], references: [tenantId, id])
+  service          Service           @relation(fields: [tenantId, serviceId], references: [tenantId, id])
   payments         Payment[]
   creditLedger     CreditLedger[]
   notificationJobs NotificationJob[]
@@ -444,6 +471,7 @@ model Booking {
   @@index([tenantId, status, startsAt])
   @@index([staffId, startsAt])
   @@index([customerId])
+  @@unique([tenantId, id])
   @@map("booking")
 }
 
@@ -462,12 +490,13 @@ model Payment {
   updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking Booking  @relation(fields: [tenantId, bookingId], references: [tenantId, id], onDelete: Cascade)
   refunds Refund[]
 
   @@index([tenantId, status])
   @@index([bookingId])
   @@index([asaasId])
+  @@unique([tenantId, id])
   @@map("payment")
 }
 
@@ -488,7 +517,7 @@ model Refund {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  payment Payment @relation(fields: [tenantId, paymentId], references: [tenantId, id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
   @@index([paymentId])
@@ -552,6 +581,7 @@ model MembershipPlan {
   memberships Membership[]
 
   @@index([tenantId, active])
+  @@unique([tenantId, id])
   @@map("membership_plan")
 }
 
@@ -565,8 +595,8 @@ model MembershipBenefit {
   updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  plan    MembershipPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  service Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  plan    MembershipPlan @relation(fields: [tenantId, planId], references: [tenantId, id], onDelete: Cascade)
+  service Service        @relation(fields: [tenantId, serviceId], references: [tenantId, id], onDelete: Cascade)
 
   @@unique([planId, serviceId])
   @@index([tenantId])
@@ -598,12 +628,13 @@ model Membership {
   updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer     TenantMember   @relation("MembershipCustomer", fields: [customerId], references: [id])
-  plan         MembershipPlan @relation(fields: [planId], references: [id])
+  customer     TenantMember   @relation("MembershipCustomer", fields: [tenantId, customerId], references: [tenantId, id])
+  plan         MembershipPlan @relation(fields: [tenantId, planId], references: [tenantId, id])
   creditLedger CreditLedger[]
 
   @@index([tenantId, status])
   @@index([customerId])
+  @@unique([tenantId, id])
   @@map("membership")
 }
 
@@ -619,8 +650,8 @@ model CreditLedger {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-  service    Service    @relation(fields: [serviceId], references: [id])
+  membership Membership @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Cascade)
+  service    Service    @relation(fields: [tenantId, serviceId], references: [tenantId, id])
   booking    Booking?   @relation(fields: [bookingId], references: [id])
 
   @@index([tenantId, membershipId])

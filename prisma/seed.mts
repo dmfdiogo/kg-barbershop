@@ -279,13 +279,18 @@ async function seedTenantA(tx: TenantTransaction): Promise<void> {
       name: 'Clube Carlos — 2 cortes/mês',
       priceCents: 7900,
       cycle: 'MONTHLY',
-      benefits: {
-        create: [
-          { tenantId: tenant.id, serviceId: services[0]!.id, quantityPerCycle: 2 },
-          { tenantId: tenant.id, serviceId: services[1]!.id, quantityPerCycle: 1 },
-        ],
-      },
     },
+  });
+
+  // Benefícios em criação PLANA, não aninhada sob o plano: com as FKs
+  // escopadas por tenant, `tenantId` é escalar de duas relações ao mesmo tempo
+  // (plano e serviço), e o Prisma recusa recebê-lo dentro de um `create`
+  // aninhado. É a mesma forma que `lib/membership/plans.ts` usa.
+  await tx.membershipBenefit.createMany({
+    data: [
+      { tenantId: tenant.id, planId: plan.id, serviceId: services[0]!.id, quantityPerCycle: 2 },
+      { tenantId: tenant.id, planId: plan.id, serviceId: services[1]!.id, quantityPerCycle: 1 },
+    ],
   });
 
   const membership = await tx.membership.create({
