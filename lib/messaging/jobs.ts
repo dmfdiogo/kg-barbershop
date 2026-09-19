@@ -5,6 +5,7 @@ import { listAllTenantIds } from '@/lib/tenant/context';
 import { forTenant, type TenantTransaction } from '@/lib/tenant/db';
 import { getAppDomain } from '@/lib/tenant/slugs';
 import { getWhatsAppProvider } from './index';
+import { isOptOutableTemplate, isTenantMemberOptedOut } from './preferences';
 import {
   TEMPLATES,
   isJobTemplateName,
@@ -175,6 +176,15 @@ export interface ResolvedDelivery {
   vars: Record<string, string>;
 }
 
+/**
+ * Resultado da resolução: ou o envio está pronto, ou há um motivo explícito de
+ * recusa que vira `lastError` no log. O motivo é texto de produto (pt-BR) porque
+ * é o que o painel mostra quando o cliente diz que não recebeu.
+ */
+type DeliveryResolution =
+  | { ok: true; delivery: ResolvedDelivery }
+  | { ok: false; reason: string };
+
 interface DeliveryContext {
   tenantName: string;
   timezone: string;
@@ -294,15 +304,30 @@ async function resolveDelivery(
   tenantId: string,
   booking: Booking,
   template: JobTemplateName,
-): Promise<ResolvedDelivery | null> {
+): Promise<DeliveryResolution> {
   const context = await loadDeliveryContext(tx, tenantId, booking);
-  if (!context) return null;
+  if (!context) {
+    return { ok: false, reason: 'Destinatário do template indisponível (tenant não encontrado).' };
+  }
+
+  // Opt-out do cliente (F6.2): barra lembrete de conveniência, nunca o
+  // transacional crítico (ver `isOptOutableTemplate`). A preferência é do
+  // tenant corrente — o mesmo telefone pode ter configuração diferente em
+  // outro salão.
+  if (isOptOutableTemplate(template) && booking.customerId) {
+    const optedOut = await isTenantMemberOptedOut(tx, tenantId, booking.customerId);
+    if (optedOut) {
+      return { ok: false, reason: `Opt-out de WhatsApp do cliente; ${template} não enviado.` };
+    }
+  }
 
   const audience = TEMPLATES[template].audience;
   const phone = audience === 'STAFF' ? context.staffPhone : context.customerPhone;
-  if (!phone || !isE164(phone)) return null;
+  if (!phone || !isE164(phone)) {
+    return { ok: false, reason: 'Destinatário do template indisponível ou fora de E.164.' };
+  }
 
-  return { to: phone, vars: buildTemplateVariables(template, booking, context) };
+  return { ok: true, delivery: { to: phone, vars: buildTemplateVariables(template, booking, context) } };
 }
 
 // ---------------------------------------------------------------------------
@@ -439,9 +464,9 @@ async function claimDueJobsForTenant(
         continue;
       }
 
-      const delivery = await resolveDelivery(tx, tenantId, booking, row.template);
-      if (!delivery) {
-        await finish(row.id, 'SKIPPED', 'Destinatário do template indisponível ou fora de E.164.');
+      const resolved = await resolveDelivery(tx, tenantId, booking, row.template);
+      if (!resolved.ok) {
+        await finish(row.id, 'SKIPPED', resolved.reason);
         continue;
       }
 
@@ -452,7 +477,7 @@ async function claimDueJobsForTenant(
         template: row.template,
         attempts: row.attempts,
         scheduledFor: row.scheduled_for,
-        delivery,
+        delivery: resolved.delivery,
       });
     }
 

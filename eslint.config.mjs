@@ -43,12 +43,17 @@ const config = [
     //                       da própria sessão, não é acesso de suporte;
     //  - lib/auth/rbac.ts   lê o próprio `user` da sessão por id — tabela global
     //                       sem tenantId, leitura pontual, nunca listagem;
+    //  - lib/privacy/**     a exclusão do titular precisa saber se a identidade
+    //                       global (User, sem tenantId) ainda é cliente de
+    //                       outro salão antes de apagá-la; a checagem atravessa
+    //                       tenants por definição e grava AuditLog (F6.2);
     //  - tests/**           montam cenário entre tenants de propósito.
     files: [
       'lib/tenant/**/*.ts',
       'lib/audit/**/*.ts',
       'lib/auth/membership.ts',
       'lib/auth/rbac.ts',
+      'lib/privacy/**/*.ts',
       'tests/**/*.ts',
       'prisma/**/*.mts',
       'scripts/**/*.mts',
