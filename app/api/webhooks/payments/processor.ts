@@ -246,6 +246,14 @@ async function applyChargeEvent(
       where: { id: payment.id },
       data: { status: plan.status, paidAt: plan.paidAt },
     });
+    // Estorno aplicado gera LANÇAMENTO. O valor do payload é cumulativo
+    // (`refundedCents` é o total estornado da cobrança), então a linha guarda só
+    // o delta ainda não registrado. Isso torna o lançamento idempotente por
+    // construção: reentrega para na unique de `webhook_event`; evento fora de
+    // ordem ou repetido com valor não maior que o já registrado não cria linha.
+    if (plan.status === 'REFUNDED' || plan.status === 'PARTIALLY_REFUNDED') {
+      await recordRefundLedger(tx, tenantId, payment.id, event, charge);
+    }
     description = `payment:${payment.id}:${plan.status}`;
   } else if (plan.kind === 'already-applied') {
     description = `payment:${payment.id}:${plan.status}:already`;
@@ -258,6 +266,43 @@ async function applyChargeEvent(
   }
 
   return { description };
+}
+
+/**
+ * Registra o lançamento do estorno. `charge.refundedCents` é o acumulado da
+ * cobrança no provedor; a soma local dos lançamentos é o acumulado do lado da
+ * aplicação. Só o delta positivo vira linha — o que mantém o extrato correto
+ * mesmo quando um evento com valor estagnado chega depois de um maior.
+ *
+ * Sem contador mutável no `Payment`: como no `credit_ledger`, o total estornado
+ * é derivado da soma das linhas, e não há como divergir por atualização perdida.
+ */
+async function recordRefundLedger(
+  tx: TenantTransaction,
+  tenantId: string,
+  paymentId: string,
+  event: PaymentWebhookEvent,
+  charge: { refundedCents: number },
+): Promise<void> {
+  const aggregate = await tx.refund.aggregate({
+    where: { paymentId },
+    _sum: { amountCents: true },
+  });
+  const alreadyRefunded = aggregate._sum.amountCents ?? 0;
+  const delta = charge.refundedCents - alreadyRefunded;
+  if (delta <= 0) {
+    return;
+  }
+
+  await tx.refund.create({
+    data: {
+      tenantId,
+      paymentId,
+      provider: event.provider,
+      amountCents: delta,
+      occurredAt: new Date(event.occurredAt),
+    },
+  });
 }
 
 async function applyBookingEffect(

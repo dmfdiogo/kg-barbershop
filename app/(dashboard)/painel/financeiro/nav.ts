@@ -1,17 +1,18 @@
 import type { DashboardNavItem } from '@/components/dashboard/nav';
 
 /**
- * Item de menu do recebimento (tarefa F4.1).
+ * Item de menu do financeiro (F4.1 → F4.3).
  *
- * Descoberto por `import.meta.glob` a partir de `components/dashboard/nav.ts`:
- * criar este arquivo já faz a seção aparecer no menu, sem editar arquivo
- * central. Só o dono vê — a conta de recebimento é decisão financeira, e a tela
- * ainda exige `OWNER` no layout e na server action.
+ * A F4.1 criou este item apontando para a conta de recebimento. A F4.3 entrega o
+ * saldo e o extrato — a promessa da spec §3.2 de que o dono não abre o painel do
+ * Asaas —, então a raiz do financeiro passa a ser o destino e o recebimento vive
+ * dentro dela. Descoberto por `import.meta.glob`, só o dono vê; a tela ainda
+ * exige OWNER no portão.
  */
 export const nav: DashboardNavItem = {
-  href: '/painel/financeiro/conta',
-  label: 'Recebimento',
-  description: 'Conta de recebimento, chave Pix e situação do KYC.',
+  href: '/painel/financeiro',
+  label: 'Financeiro',
+  description: 'Saldo, extrato e estorno dos pagamentos recebidos.',
   icon: 'chart',
   roles: ['OWNER'],
   order: 50,
