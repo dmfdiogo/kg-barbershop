@@ -1,3 +1,5 @@
+import { formatCents } from '@/lib/money';
+
 /**
  * Dinheiro em CENTAVOS, sem float em ponto algum (invariante do projeto).
  *
@@ -73,12 +75,9 @@ export function parseMoneyToCents(raw: unknown): number | null {
  * flutuante, nem na exibição.
  */
 export function formatCentsToBRL(cents: number): string {
-  const negative = cents < 0;
-  const abs = Math.abs(cents);
-  const reais = Math.trunc(abs / 100);
-  const centavos = abs % 100;
-  const grouped = String(reais).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return `${negative ? '-' : ''}R$ ${grouped},${String(centavos).padStart(2, '0')}`;
+  // Delega ao ponto único de formatação; este módulo cuida do caminho inverso
+  // (texto do usuário → centavos), que exige aritmética inteira.
+  return formatCents(cents);
 }
 
 /** Valor para pré-preencher o campo de preço no formulário, sem float. */

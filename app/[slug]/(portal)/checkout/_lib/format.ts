@@ -1,3 +1,7 @@
+// Formatação de dinheiro e duração vive em lib/money.ts, ponto único do
+// projeto. Reexportado aqui para não quebrar os imports existentes.
+export { formatCents, formatDuration } from '@/lib/money';
+
 /**
  * Formatação da tela de checkout (F4.2). Duplicação pequena e deliberada do
  * formatador do agendamento: o checkout evolui por conta própria e não deve
@@ -6,10 +10,6 @@
 
 function pad(value: number): string {
   return String(value).padStart(2, '0');
-}
-
-export function formatCents(cents: number): string {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
 }
 
 /** "MM:SS" para o contador do hold. */
