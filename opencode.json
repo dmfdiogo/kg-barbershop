@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "deepseek/deepseek-v4-flash-vision-exp",
+  "model": "deepseek/deepseek-flash",
   "small_model": "deepseek/deepseek-flash",
   "disabled_providers": [
     "h2o-litellm",

@@ -164,11 +164,16 @@ As tarefas de `fases/` são executadas por agentes rodando no OpenCode. O
 [`opencode.json`](opencode.json) na raiz vale para todo agente que trabalhar
 neste repositório:
 
-- **Modelo fixado** em `deepseek/deepseek-v4-flash-vision-exp`, com o prefixo do
-  provedor explícito. Antes era default implícito: todo o trabalho da fundação e
-  da fase 1 saiu dele sem que ninguém tivesse escolhido. Fixar transforma o
-  modelo em variável controlada — se a qualidade cair, dá para saber se o modelo
-  mudou.
+- **Modelo fixado** em `deepseek/deepseek-flash`, com o prefixo do provedor
+  explícito. Antes era default implícito, e pior: era `deepseek-v4-flash-vision-exp`,
+  um **nome legado cujo modelo foi descontinuado** — a API redirecionava para o
+  DeepSeek-V4.1-Flash com preço de Flash. Funcionava, mas por um nome que mente
+  e que some quando a DeepSeek limpar os aliases. `deepseek-flash` é o nome
+  canônico e aponta sempre para o Flash mais recente.
+- **Para tarefas difíceis existe `deepseek/deepseek-v4-pro`.** Não é o padrão
+  porque o Flash entregou a fundação e a fase 1 inteiras, incluindo o schema com
+  RLS, o diagnóstico do `include` concorrente no Prisma e o vazamento de payload
+  RSC. Suba pontualmente se um agente empacar, e compare.
 - **O provedor da empresa está desativado neste projeto.** O `opencode.jsonc`
   global define `h2o-litellm/deepseek-v4-pro` (proxy corporativo) como padrão do
   sistema; sem a configuração local, um agente deste repositório rodaria na
