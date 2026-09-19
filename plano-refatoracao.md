@@ -211,7 +211,7 @@ Por D5, tudo de F1 a F7 é construído contra mocks. Nenhuma dessas fases precis
 | **F3** | **Portal de booking + anti-concorrência.** Grade, hold de 10 min, área do cliente, walk-in | 18 | F1 | não |
 | **F4** | **Pagamentos** (mock). Subconta, KYC, checkout Pix/cartão, sinal, split, saldo, extrato, estorno | 12,5 | F3 | não |
 | **F5** | **Clube de assinatura B2C** (mock) *(escopo novo, fora da spec)*. Planos do tenant, cartão tokenizado, ledger de créditos | 12,5 | F4 | não |
-| **F6** | **Notificações** (mock). Jobs persistidos, confirmação, D-1, H-2, cancelamento, opt-out, log de entrega | 10,5 | F3 | não |
+| **F6** | **Notificações** (mock). Jobs persistidos, confirmação, D-1, H-2, cancelamento, opt-out, direitos LGPD, log de entrega. *Web Push adiado — ver `fases/fase-6-notificacoes.md` §5* | 9 | F3 | não |
 | **F7** | **Billing B2B + Super Admin** (mock) *(a spec não estimou)*. Planos, trial por 10 agendamentos, suspensão graciosa, painel da plataforma | 11 | F2 | não |
 | **F8** | **Integrações reais.** Stripe → Asaas → WhatsApp, trocando só a factory | 14 | F5, F6, F7 | **sim** |
 | **F9** | **Piloto** com 3 a 5 estabelecimentos reais | 14 | F8 | **sim** |

@@ -43,7 +43,25 @@ Opt-out por cliente, respeitado em tudo que não for transacional crítico. Regi
 
 **E os direitos do titular**, que até agora só apareciam como item de checklist do piloto e não eram tarefa de ninguém: exportação dos dados do cliente e **caminho de exclusão funcionando** (o que é apagado, o que é anonimizado por obrigação fiscal — um agendamento pago não pode sumir do extrato — e em quanto tempo). Sem isso não se abre o piloto com cliente real.
 
-### 5. Web Push (spec §2.3)
+### 5. Web Push — ADIADO (decisão de 19/09/2026)
+
+**Não foi implementado, e a não-entrega é a entrega correta.** A F6.3 levantou o que o recurso exige e o custo não cabe numa folha:
+
+1. tabela nova para as inscrições (mudança de schema);
+2. service worker e manifest — o PWA que [`plano-refatoracao.md`](../plano-refatoracao.md) §2.2 registra como inexistente;
+3. tela de opt-in do profissional, em arquivos de outras tarefas;
+4. ligação pós-commit no arquivo da F6.1;
+5. a dependência `web-push` ou criptografia VAPID escrita à mão;
+6. configuração VAPID com falha cedo em produção;
+7. integração com o opt-out da F6.2.
+
+**Por que adiar em vez de simular:** um mock de push guardaria a inscrição num store que some no deploy, e o profissional pararia de olhar a agenda achando que seria avisado. Alerta que não chega é pior que alerta que não existe.
+
+**O requisito não fica descoberto:** a spec §2.3 pede alerta ao prestador por WhatsApp **e** push; a F6.1 já envia "novo agendamento" e "cancelamento" ao profissional por WhatsApp. O push é redundância de canal, não a única via — e não é pré-requisito do piloto.
+
+**Quando retomar:** vira tarefa própria, com schema e PWA no escopo, depois do piloto.
+
+### 5.1. Escopo original (mantido para quando a tarefa for retomada)
 
 Alertas ao profissional para novo agendamento e cancelamento. Se o custo de implementação estourar a fase, **entregue o WhatsApp completo e registre o push como pendência** — não entregue os dois pela metade.
 
