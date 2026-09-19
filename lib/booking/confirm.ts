@@ -253,6 +253,13 @@ export async function emitBookingEvent<E extends BookingDomainEvent>(
 export interface ConfirmBookingInput {
   tenantId: string;
   bookingId: string;
+  /**
+   * Cliente identificado pelo OTP. Obrigatório quando o hold nasceu anônimo,
+   * que é o caso normal do portal: o soft lock vem antes da identificação. Para
+   * um agendamento que já tem cliente (walk-in criado pelo painel), pode ser
+   * omitido — nesse caso o cliente existente é preservado.
+   */
+  customerId?: string;
   /** Injetável para teste; padrão: participantes descobertos na pasta. */
   participants?: BookingParticipant[];
   /** Injetável para teste; padrão: handlers descobertos na pasta. */
@@ -301,8 +308,22 @@ export async function confirmBooking(input: ConfirmBookingInput): Promise<Confir
 
     const confirmed = await tx.booking.update({
       where: { id: booking.id },
-      data: { status: 'CONFIRMED', confirmedAt: now },
+      data: {
+        status: 'CONFIRMED',
+        confirmedAt: now,
+        ...(input.customerId ? { customerId: input.customerId } : {}),
+      },
     });
+
+    // A constraint `booking_customer_required` garante isto no banco; aqui a
+    // checagem existe para estreitar o tipo e para falhar com mensagem de
+    // domínio caso alguém confirme um hold anônimo sem informar o cliente.
+    if (!confirmed.customerId) {
+      throw new ConfirmBookingError(
+        'INVALID_STATE',
+        'Confirmação exige cliente identificado: passe customerId ao confirmar um hold anônimo.',
+      );
+    }
 
     const context: BookingConfirmationContext = {
       tenantId: confirmed.tenantId,
@@ -327,7 +348,7 @@ export async function confirmBooking(input: ConfirmBookingInput): Promise<Confir
     tenantId: outcome.booking.tenantId,
     bookingId: outcome.booking.id,
     occurredAt: now,
-    customerId: outcome.booking.customerId,
+    customerId: outcome.booking.customerId ?? '',
     staffId: outcome.booking.staffId,
     serviceId: outcome.booking.serviceId,
     startsAt: outcome.booking.startsAt,

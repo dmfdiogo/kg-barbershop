@@ -174,9 +174,11 @@ describe('isolamento entre tenants (RLS)', () => {
     });
 
     expect(result.bookings).toHaveLength(1);
-    expect(result.bookings[0]?.customer.tenantId).toBe(tenantA.tenantId);
-    expect(result.bookings[0]?.customer.id).toBe(tenantA.customerMemberId);
-    expect(result.bookings[0]?.customer.user.phone).not.toBe('');
+    // `customer` é opcional desde que HOLD anônimo passou a existir; a fixture
+    // sempre cria com cliente, então a ausência aqui seria defeito.
+    expect(result.bookings[0]?.customer?.tenantId).toBe(tenantA.tenantId);
+    expect(result.bookings[0]?.customer?.id).toBe(tenantA.customerMemberId);
+    expect(result.bookings[0]?.customer?.user.phone).not.toBe('');
     expect(result.staff.every((row) => row.tenantId === tenantA.tenantId)).toBe(true);
     expect(result.services.every((row) => row.tenantId === tenantA.tenantId)).toBe(true);
 

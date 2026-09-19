@@ -361,7 +361,11 @@ model StaffService {
 model Booking {
   id                 String        @id @default(cuid())
   tenantId           String        @map("tenant_id")
-  customerId         String        @map("customer_id")
+  /// Nulo apenas enquanto o agendamento é um HOLD anônimo: o soft lock nasce
+  /// ANTES da identificação por OTP, de propósito (pedir login antes de mostrar
+  /// horário derruba conversão). A constraint booking_customer_required no banco
+  /// exige cliente em qualquer status que não seja HOLD.
+  customerId         String?       @map("customer_id")
   staffId            String        @map("staff_id")
   serviceId          String        @map("service_id")
   startsAt           DateTime      @map("starts_at") @db.Timestamptz(3)
@@ -382,7 +386,7 @@ model Booking {
   updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer         TenantMember      @relation("BookingCustomer", fields: [customerId], references: [id])
+  customer         TenantMember?     @relation("BookingCustomer", fields: [customerId], references: [id])
   staff            StaffProfile      @relation(fields: [staffId], references: [id])
   service          Service           @relation(fields: [serviceId], references: [id])
   payments         Payment[]

@@ -54,7 +54,14 @@ export class HoldError extends Error {
 
 export interface CreateHoldInput {
   tenantId: string;
-  customerId: string;
+  /**
+   * Nulo no hold anônimo, que é o caso normal: o soft lock nasce ANTES da
+   * identificação por OTP, porque pedir login antes de mostrar horário derruba
+   * conversão (spec §2.4). Quem amarra o hold ao dispositivo é `holdSessionId`.
+   * A confirmação preenche o cliente, e a constraint `booking_customer_required`
+   * impede que qualquer status além de HOLD fique sem ele.
+   */
+  customerId?: string | null;
   staffId: string;
   serviceId: string;
   /** Início do atendimento (UTC). A grade da F3.1 fornece este instante. */
@@ -72,7 +79,7 @@ export interface CreateHoldInput {
 export interface CreatedHold {
   id: string;
   tenantId: string;
-  customerId: string;
+  customerId: string | null;
   staffId: string;
   serviceId: string;
   startsAt: Date;
@@ -90,7 +97,6 @@ export interface CreatedHold {
  */
 export async function createHold(input: CreateHoldInput): Promise<CreatedHold> {
   if (!input.tenantId) throw new HoldError('INVALID_INPUT', 'tenantId é obrigatório.');
-  if (!input.customerId) throw new HoldError('INVALID_INPUT', 'customerId é obrigatório.');
   if (!input.staffId) throw new HoldError('INVALID_INPUT', 'staffId é obrigatório.');
   if (!input.serviceId) throw new HoldError('INVALID_INPUT', 'serviceId é obrigatório.');
   if (!input.holdSessionId || input.holdSessionId.trim() === '') {
@@ -121,7 +127,7 @@ export async function createHold(input: CreateHoldInput): Promise<CreatedHold> {
     const booking = await tx.booking.create({
       data: {
         tenantId: input.tenantId,
-        customerId: input.customerId,
+        customerId: input.customerId ?? null,
         staffId: input.staffId,
         serviceId: input.serviceId,
         startsAt: input.startsAt,
