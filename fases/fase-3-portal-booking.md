@@ -49,6 +49,11 @@ Entregue, portanto, **dois pontos de extensão** em `lib/booking/confirm.ts`:
 
 Sem arquivo-lista central: cada feature deixa o seu próprio arquivo na pasta. Documente o contrato dos dois pontos — F5.2, F6.1 e F7.1 vão implementar contra ele sem te consultar.
 
+**Contratos vindos da F3.1, para quem consome a grade (F3.3 e F3.5):**
+>
+> - `selectStaffForSlot` recebe a carga por parâmetro (`Record<staffId, número>`) e **não** consulta o banco. Use a contagem de agendamentos do **dia** (HOLD vigente + CONFIRMED), não o total histórico: o objetivo é espalhar o trabalho de hoje, não igualar placar de carreira. Minutos ocupados é refinamento para depois, se a equipe reclamar de justiça.
+> - Quem filtra quais profissionais atendem o serviço é o chamador (`StaffService`); a grade recebe a lista já filtrada.
+
 **Contrato de entrada vindo da F3.0:** o catálogo já aponta para `/<slug>/agendar?servico=<id>`. Use exatamente esse caminho e esse nome de parâmetro — o link já existe em produção do portal, e mudar aqui quebraria o CTA sem ninguém perceber até alguém clicar.
 
 ### 4. Identificação do cliente
