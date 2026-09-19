@@ -74,11 +74,23 @@ joga um agendamento das 22h para o dia seguinte.
 **Toda tabela de negócio tem `tenantId`**, mesmo quando dá para chegar lá por
 join.
 
-**Isolamento em duas camadas, ambas obrigatórias.** Todo acesso passa pelo client
+**Isolamento em três camadas, todas obrigatórias.** Todo acesso passa pelo client
 escopado ([`lib/tenant/db.ts`](lib/tenant/db.ts)), que abre transação e executa
-`set_config('app.current_tenant', …)`; e a RLS está ligada com `FORCE` em todas
-as tabelas com `tenantId`. Nunca importe `PrismaClient` cru em código de produto.
-Remover uma camada "porque a outra cobre" é regressão de segurança.
+`set_config('app.current_tenant', …)`; a RLS está ligada com `FORCE` em todas as
+tabelas com `tenantId`; e as FKs entre tabelas de negócio carregam o `tenantId`
+na chave. Nunca importe `PrismaClient` cru em código de produto. Remover uma
+camada "porque a outra cobre" é regressão de segurança.
+
+A terceira camada existe porque as duas primeiras não cobrem a **procedência do
+id referenciado**: a RLS valida o `tenant_id` da própria linha, e a checagem de
+FK do Postgres roda como dono da tabela, ignorando RLS. Sem a chave composta,
+`(tenant_id = A, service_id = <serviço de B>)` era aceita — e ids de serviço
+trafegam em formulário (`/agendar?servico=…`), num portal público. Três FKs
+opcionais com `ON DELETE SET NULL` ficam de fora, documentadas no schema.
+
+Consequência prática: `tenantId` é escalar de relação. O Prisma **recusa
+recebê-lo dentro de um `create` aninhado** — crie a linha filha de forma plana,
+como em [`lib/membership/plans.ts`](lib/membership/plans.ts).
 
 **Dois URLs de banco, e a diferença importa.** `DATABASE_URL` é a role de
 aplicação (`kg_app`), sem superuser — a RLS vale para ela, **inclusive em
