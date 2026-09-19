@@ -273,3 +273,23 @@ export async function requireTenantContext(routeSlug?: string): Promise<TenantCo
   if (!lookup.ok) throw new TenantUnavailableError(lookup.reason, lookup.tenant);
   return toTenantContext(lookup);
 }
+
+/**
+ * Ids de todos os tenants ativos no sistema.
+ *
+ * Existe para os trabalhos periódicos (expiração de holds na F3.2, envio de
+ * lembretes na F6.0): um cron não tem tenant no caminho, mas precisa varrer
+ * todos. Concentrar a travessia aqui evita que cada cron novo peça a própria
+ * exceção à regra de lint do `asPlatformAdmin` — a lista de exceções cresceria
+ * a cada feature, que é exatamente o padrão que recusamos em RESERVED_SLUGS.
+ *
+ * Devolve apenas ids: quem precisa de dado de negócio abre `forTenant` e passa
+ * pela RLS, tenant a tenant.
+ *
+ * Não é auditado, pelo mesmo critério do resolvedor de rota: não há usuário por
+ * trás de um cron, e auditoria existe para rastrear pessoa olhando dado.
+ */
+export async function listAllTenantIds(): Promise<string[]> {
+  const rows = await asPlatformAdmin((tx) => tx.tenant.findMany({ select: { id: true } }));
+  return rows.map((row) => row.id);
+}
