@@ -75,5 +75,5 @@ Cloud API real, verificação do Meta Business, aprovação de templates (F8).
 | :--- | :--- | :--- | :--- | :--- |
 | **F6.0** ⟨T0⟩ | Registro central de templates, `NotificationJob`, runner com lock (sem envio duplicado), cron, retry com backoff | `lib/messaging/{jobs,templates}.ts`, `app/api/cron/send-notifications/**` | F3 | 3 |
 | **F6.1** | Gatilhos: confirmação, D-1 com botão, H-2, cancelamento, remarcação, aviso ao profissional; cancelar jobs pendentes | `lib/messaging/triggers.ts` | F6.0 | 2,5 |
-| **F6.2** | Opt-out, consentimento, **exportação e exclusão de dados do titular** e log de entrega no painel | `app/(dashboard)/mensagens/**`, `lib/messaging/preferences.ts`, `lib/privacy/**` | F6.0 | 3 |
+| **F6.2** | Opt-out, consentimento, **exportação e exclusão de dados do titular** e log de entrega no painel | `app/(dashboard)/painel/mensagens/**`, `lib/messaging/preferences.ts`, `lib/privacy/**` | F6.0 | 3 |
 | **F6.3** | Web Push para o profissional *(opcional — só se não comprometer o resto)* | `lib/push/**` | F6.0 | 2 |

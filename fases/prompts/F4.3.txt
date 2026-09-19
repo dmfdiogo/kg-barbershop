@@ -10,7 +10,7 @@ AMBIENTE
   git worktree add ../wt-f4-3 -b f4.3-extrato       (F4.0 e F4.1 mescladas)
 
 VOCÊ É DONO DE
-  app/(dashboard)/financeiro/**
+  app/(dashboard)/painel/financeiro/**
 
 ENTREGUE
   - Saldo disponível e a liberar, e extrato — DENTRO do painel. O dono do salão

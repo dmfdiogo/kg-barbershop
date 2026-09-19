@@ -9,7 +9,7 @@ AMBIENTE
   git worktree add ../wt-f5-3 -b f5.3-visoes-clube   (F5.1 e F5.2 mescladas)
 
 VOCÊ É DONO DE
-  app/[slug]/clube/**, app/(dashboard)/clube/relatorios/**
+  app/[slug]/clube/**, app/(dashboard)/painel/clube/relatorios/**
 
 ENTREGUE
   - Cliente: plano atual, saldo de créditos, próxima cobrança, cancelar.

@@ -9,7 +9,7 @@ LEIA NESTA ORDEM:
   6. lib/auth/rbac.ts                   (requireRole, withRole — prontos)
 
 VOCÊ É DONO DE
-  app/(dashboard)/layout.tsx, components/dashboard/**
+  app/(dashboard)/painel/layout.tsx, components/dashboard/**
 
 VOCÊ É O TRONCO DA FASE 2
   Quatro folhas vão construir dentro do seu shell EM PARALELO: F2.1 serviços,
@@ -18,7 +18,7 @@ VOCÊ É O TRONCO DA FASE 2
 
 ENTREGUE
   - Shell do painel mobile-first, com navegação montada por DESCOBERTA: cada
-    feature exporta o seu item em app/(dashboard)/<feature>/nav.ts e o menu é
+    feature exporta o seu item em app/(dashboard)/painel/<feature>/nav.ts e o menu é
     montado varrendo a pasta. Nada de lista central.
   - Navegação sensível ao papel: Staff não vê as telas de configuração. Use
     requireRole; o papel vem de TenantMember por requisição, nunca do token — a

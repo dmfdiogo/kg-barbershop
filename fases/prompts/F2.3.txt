@@ -10,7 +10,7 @@ AMBIENTE
   git worktree add ../wt-f2-3 -b f2.3-marca         (F2.0 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/marca/**, lib/theme/**
+  app/(dashboard)/painel/marca/**, lib/theme/**
 
 ENTREGUE
   - Upload de logo (PNG/JPG/SVG) com limite de tamanho e validação do tipo pelo

@@ -14,7 +14,7 @@ AMBIENTE
   git worktree add ../wt-f5-0 -b f5.0-planos-clube   (F4 inteira mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/clube/**, lib/membership/plans.ts
+  app/(dashboard)/painel/clube/**, lib/membership/plans.ts
 
 CONTEXTO DA MODELAGEM
   No MVP antigo a assinatura era da PLATAFORMA, global, via Stripe. Agora ela

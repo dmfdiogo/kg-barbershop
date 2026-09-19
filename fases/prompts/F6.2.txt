@@ -10,7 +10,7 @@ AMBIENTE
   git worktree add ../wt-f6-2 -b f6.2-preferencias  (F6.0 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/mensagens/**, lib/messaging/preferences.ts
+  app/(dashboard)/painel/mensagens/**, lib/messaging/preferences.ts
 
 ENTREGUE
   - Opt-out por cliente, respeitado em tudo que não for transacional crítico.

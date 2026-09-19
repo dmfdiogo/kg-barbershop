@@ -10,7 +10,7 @@ AMBIENTE
   git worktree add ../wt-f4-1 -b f4.1-subconta      (F4.0 já mesclada)
 
 VOCÊ É DONO DE
-  lib/payments/merchant.ts, app/(dashboard)/financeiro/conta/**
+  lib/payments/merchant.ts, app/(dashboard)/painel/financeiro/conta/**
 
 ENTREGUE
   - createMerchantAccount a partir do CPF/CNPJ e da chave Pix coletados na F2.5.

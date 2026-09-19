@@ -78,7 +78,7 @@ Mensalidade B2B (F7), integração real (F8).
 
 | ID | Tarefa | Dono dos arquivos | Depende | Dias |
 | :--- | :--- | :--- | :--- | :--- |
-| **F5.0** ⟨T0⟩ | Planos e benefícios do tenant: modelo, CRUD do owner, regra de preço travado para quem já assinou | `app/(dashboard)/clube/planos/**`, `app/(dashboard)/clube/page.tsx`, `lib/membership/plans.ts` | F4 | 2,5 |
+| **F5.0** ⟨T0⟩ | Planos e benefícios do tenant: modelo, CRUD do owner, regra de preço travado para quem já assinou | `app/(dashboard)/painel/clube/planos/**`, `app/(dashboard)/painel/clube/page.tsx`, `lib/membership/plans.ts` | F4 | 2,5 |
 | **F5.1** | Assinatura: tokenização de cartão, criação na subconta com split, renovação, falha de cobrança, cancelamento, webhooks | `lib/membership/subscription.ts` | F5.0 | 4 |
 | **F5.2** | `CreditLedger` append-only e consumo transacional no agendamento, com devolução no cancelamento | `lib/membership/credits.ts` + ponto de integração em `lib/booking/` | F5.0 | 3,5 |
-| **F5.3** | Visões: cliente (plano, saldo, próxima cobrança) e owner (assinantes, MRR, inadimplentes, consumo) | `app/[slug]/clube/**`, `app/(dashboard)/clube/relatorios/**` | F5.1, F5.2 | 2,5 |
+| **F5.3** | Visões: cliente (plano, saldo, próxima cobrança) e owner (assinantes, MRR, inadimplentes, consumo) | `app/[slug]/clube/**`, `app/(dashboard)/painel/clube/relatorios/**` | F5.1, F5.2 | 2,5 |

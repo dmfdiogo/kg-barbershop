@@ -10,7 +10,7 @@ AMBIENTE
   git worktree add ../wt-f2-5 -b f2.5-onboarding    (F2.1, F2.2 e F2.3 mescladas)
 
 VOCÊ É DONO DE
-  app/(dashboard)/onboarding/**
+  app/(dashboard)/painel/onboarding/**
 
 ENTREGUE
   - Passo a passo curto: dados do estabelecimento -> horário de expediente ->

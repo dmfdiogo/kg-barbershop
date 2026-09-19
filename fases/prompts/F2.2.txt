@@ -10,7 +10,7 @@ AMBIENTE
   git worktree add ../wt-f2-2 -b f2.2-equipe        (F2.0 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/equipe/**, lib/staffing/**
+  app/(dashboard)/painel/equipe/**, lib/staffing/**
 
 ENTREGUE
   - Convite de membro por telefone; ele vira TenantMember com papel STAFF e entra

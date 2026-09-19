@@ -77,7 +77,7 @@ A regra que torna tudo isto seguro: **num dado momento, cada arquivo tem exatame
 
 O que mais gera conflito não é lógica, é **arquivo central onde todo mundo acrescenta uma linha**: menu de navegação, índice de rotas, barril de exports, registro de templates, `i18n` num arquivo só.
 
-Prefira **um arquivo por feature, descoberto automaticamente** (ex.: cada feature exporta seu item de menu em `app/(dashboard)/<feature>/nav.ts`, e o menu é montado varrendo a pasta). Onde isso não valer a pena, o arquivo-lista tem dono único e as folhas pedem a entrada a ele.
+Prefira **um arquivo por feature, descoberto automaticamente** (ex.: cada feature exporta seu item de menu em `app/(dashboard)/painel/<feature>/nav.ts`, e o menu é montado varrendo a pasta). Onde isso não valer a pena, o arquivo-lista tem dono único e as folhas pedem a entrada a ele.
 
 ## 5. Regras de engajamento
 

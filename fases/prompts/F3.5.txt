@@ -10,7 +10,7 @@ AMBIENTE
   git worktree add ../wt-f3-5 -b f3.5-walkin        (F3.2 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/agenda/**
+  app/(dashboard)/painel/agenda/**
 
 ENTREGUE
   - Staff e Owner criam agendamento pelo painel com source = WALK_IN.

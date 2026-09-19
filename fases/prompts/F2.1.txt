@@ -10,7 +10,7 @@ AMBIENTE
   git worktree add ../wt-f2-1 -b f2.1-servicos      (F2.0 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/servicos/**, lib/catalog/**
+  app/(dashboard)/painel/servicos/**, lib/catalog/**
 
 ENTREGUE
   - CRUD de serviço: nome, duração, buffer entre atendimentos, preço em CENTAVOS,

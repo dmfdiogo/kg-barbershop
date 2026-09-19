@@ -10,7 +10,7 @@ AMBIENTE
   git worktree add ../wt-f2-4 -b f2.4-politicas     (F2.0 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/configuracoes/**, app/(dashboard)/inicio/**
+  app/(dashboard)/painel/configuracoes/**, app/(dashboard)/painel/inicio/**
 
 ENTREGUE
   - Políticas do tenant: janela de cancelamento (padrão 24h), política de no-show,

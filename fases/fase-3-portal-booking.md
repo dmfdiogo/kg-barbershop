@@ -98,4 +98,4 @@ F3.1 e F3.2 são domínio puro e testável — bons candidatos a rodar em parale
 | **F3.2** | Hold de 10 min: transação, limpeza de vencidos, tradução do erro `23P01`, cron de expiração, **e os dois pontos de extensão do item 3.1** | `lib/booking/hold.ts`, `lib/booking/confirm.ts`, `lib/booking/participants/`, `app/api/cron/expire-holds/**` | **F0** (não espera o portal) | 3,5 |
 | **F3.3** | Fluxo de agendamento na UI, com OTP **no fim** e contador de expiração do hold | `app/[slug]/agendar/**` | F3.1, F3.2 | 3 |
 | **F3.4** | Área do cliente: próximos, histórico, cancelar e remarcar pela política | `app/[slug]/minha-conta/**` | F3.2 | 2,5 |
-| **F3.5** | Agenda do painel: visão dia/semana do profissional com status (spec §2.3) + agendamento walk-in | `app/(dashboard)/agenda/**` | F3.2, F2.0 | 4 |
+| **F3.5** | Agenda do painel: visão dia/semana do profissional com status (spec §2.3) + agendamento walk-in | `app/(dashboard)/painel/agenda/**` | F3.2, F2.0 | 4 |

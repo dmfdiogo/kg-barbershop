@@ -664,7 +664,7 @@ AMBIENTE
   git worktree add ../wt-f2-0 -b f2.0-shell        (F1 inteira mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/layout.tsx, components/dashboard/**
+  app/(dashboard)/painel/layout.tsx, components/dashboard/**
 
 VOCÊ É O TRONCO
   Quatro folhas (F2.1 a F2.4) vão construir dentro do seu shell em paralelo.
@@ -673,7 +673,7 @@ VOCÊ É O TRONCO
 
 ENTREGUE
   - Shell do painel mobile-first (Owner e Staff), com navegação montada por
-    DESCOBERTA: cada feature exporta o seu item em app/(dashboard)/<feature>/nav.ts
+    DESCOBERTA: cada feature exporta o seu item em app/(dashboard)/painel/<feature>/nav.ts
     e o menu é montado varrendo a pasta. Nada de lista central.
   - Navegação sensível ao papel: Staff não vê as telas de configuração.
   - Estados padronizados de vazio, carregando e erro, reutilizáveis pelas folhas.
@@ -718,7 +718,7 @@ AMBIENTE
   git worktree add ../wt-f2-1 -b f2.1-servicos      (F2.0 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/servicos/**, lib/catalog/**
+  app/(dashboard)/painel/servicos/**, lib/catalog/**
 
 ENTREGUE
   - CRUD de serviço: nome, duração, buffer entre atendimentos, preço em CENTAVOS,
@@ -768,7 +768,7 @@ AMBIENTE
   git worktree add ../wt-f2-2 -b f2.2-equipe        (F2.0 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/equipe/**, lib/staffing/**
+  app/(dashboard)/painel/equipe/**, lib/staffing/**
 
 ENTREGUE
   - Convite de membro por telefone; ele vira TenantMember com papel STAFF e entra
@@ -820,7 +820,7 @@ AMBIENTE
   git worktree add ../wt-f2-3 -b f2.3-marca         (F2.0 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/marca/**, lib/theme/**
+  app/(dashboard)/painel/marca/**, lib/theme/**
 
 ENTREGUE
   - Upload de logo (PNG/JPG/SVG) com limite de tamanho e validação do tipo pelo
@@ -875,7 +875,7 @@ AMBIENTE
   git worktree add ../wt-f2-4 -b f2.4-politicas     (F2.0 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/configuracoes/**, app/(dashboard)/inicio/**
+  app/(dashboard)/painel/configuracoes/**, app/(dashboard)/painel/inicio/**
 
 ENTREGUE
   - Políticas do tenant: janela de cancelamento (padrão 24h), política de no-show,
@@ -924,7 +924,7 @@ AMBIENTE
   git worktree add ../wt-f2-5 -b f2.5-onboarding    (F2.1, F2.2 e F2.3 mescladas)
 
 VOCÊ É DONO DE
-  app/(dashboard)/onboarding/**
+  app/(dashboard)/painel/onboarding/**
 
 ENTREGUE
   - Passo a passo curto: dados do estabelecimento -> horário de expediente ->
@@ -1237,7 +1237,7 @@ AMBIENTE
   git worktree add ../wt-f3-5 -b f3.5-walkin        (F3.2 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/agenda/**
+  app/(dashboard)/painel/agenda/**
 
 ENTREGUE
   - Staff e Owner criam agendamento pelo painel com source = WALK_IN.
@@ -1351,7 +1351,7 @@ AMBIENTE
   git worktree add ../wt-f4-1 -b f4.1-subconta      (F4.0 já mesclada)
 
 VOCÊ É DONO DE
-  lib/payments/merchant.ts, app/(dashboard)/financeiro/conta/**
+  lib/payments/merchant.ts, app/(dashboard)/painel/financeiro/conta/**
 
 ENTREGUE
   - createMerchantAccount a partir do CPF/CNPJ e da chave Pix coletados na F2.5.
@@ -1462,7 +1462,7 @@ AMBIENTE
   git worktree add ../wt-f4-3 -b f4.3-extrato       (F4.0 e F4.1 mescladas)
 
 VOCÊ É DONO DE
-  app/(dashboard)/financeiro/**
+  app/(dashboard)/painel/financeiro/**
 
 ENTREGUE
   - Saldo disponível e a liberar, e extrato — DENTRO do painel. O dono do salão
@@ -1617,7 +1617,7 @@ AMBIENTE
   git worktree add ../wt-f6-2 -b f6.2-preferencias  (F6.0 já mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/mensagens/**, lib/messaging/preferences.ts
+  app/(dashboard)/painel/mensagens/**, lib/messaging/preferences.ts
 
 ENTREGUE
   - Opt-out por cliente, respeitado em tudo que não for transacional crítico.
@@ -1923,7 +1923,7 @@ AMBIENTE
   git worktree add ../wt-f5-0 -b f5.0-planos-clube   (F4 inteira mesclada)
 
 VOCÊ É DONO DE
-  app/(dashboard)/clube/**, lib/membership/plans.ts
+  app/(dashboard)/painel/clube/**, lib/membership/plans.ts
 
 CONTEXTO DA MODELAGEM
   No MVP antigo a assinatura era da PLATAFORMA, global, via Stripe. Agora ela
@@ -2098,7 +2098,7 @@ AMBIENTE
   git worktree add ../wt-f5-3 -b f5.3-visoes-clube   (F5.1 e F5.2 mescladas)
 
 VOCÊ É DONO DE
-  app/[slug]/clube/**, app/(dashboard)/clube/relatorios/**
+  app/[slug]/clube/**, app/(dashboard)/painel/clube/relatorios/**
 
 ENTREGUE
   - Cliente: plano atual, saldo de créditos, próxima cobrança, cancelar.
