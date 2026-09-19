@@ -46,6 +46,16 @@ export const JOB_LOCK_TIMEOUT_MS = 5 * 60_000;
 const MINUTE_MS = 60_000;
 
 /**
+ * Templates que anunciam o próprio cancelamento (F6.1). Um agendamento
+ * `CANCELLED` não pode receber lembrete, mas PRECISA receber o aviso de que foi
+ * cancelado — sem esta exceção o aviso seria cancelado pelo próprio runner.
+ */
+const CANCELLATION_TEMPLATES = new Set<JobTemplateName>([
+  'booking_cancelled_customer',
+  'booking_cancelled_staff',
+]);
+
+/**
  * Backoff exponencial entre tentativas. O atraso cresce com o número de
  * tentativas já feitas e estaciona no teto — sem isso um provider fora do ar
  * geraria uma tempestade de retentativas.
@@ -125,6 +135,24 @@ export async function enqueueNotificationJob(
 }
 
 /**
+ * Igual a `cancelPendingNotificationJobs`, mas reusa a transação de quem
+ * chama. É o caminho dos gatilhos da F6.1: cancelar o agendamento e cancelar os
+ * lembretes precisam vencer juntos (o mesmo raciocínio de
+ * `enqueueNotificationJobInTransaction`).
+ */
+export async function cancelPendingNotificationJobsInTransaction(
+  tx: TenantTransaction,
+  tenantId: string,
+  bookingId: string,
+): Promise<number> {
+  const result = await tx.notificationJob.updateMany({
+    where: { tenantId, bookingId, status: 'PENDING' },
+    data: { status: 'CANCELED', lockedAt: null },
+  });
+  return result.count;
+}
+
+/**
  * Cancela os jobs pendentes de um agendamento (ex.: cancelamento). Devolve
  * quantos foram cancelados. Não toca em jobs já enviados — o histórico de
  * entrega é o que explica ao piloto "o cliente diz que não recebeu".
@@ -133,13 +161,9 @@ export async function cancelPendingNotificationJobs(
   tenantId: string,
   bookingId: string,
 ): Promise<number> {
-  const result = await forTenant(tenantId, (tx) =>
-    tx.notificationJob.updateMany({
-      where: { tenantId, bookingId, status: 'PENDING' },
-      data: { status: 'CANCELED', lockedAt: null },
-    }),
+  return forTenant(tenantId, (tx) =>
+    cancelPendingNotificationJobsInTransaction(tx, tenantId, bookingId),
   );
-  return result.count;
 }
 
 // ---------------------------------------------------------------------------
@@ -387,8 +411,15 @@ async function claimDueJobsForTenant(
         continue;
       }
 
-      if (booking.status === 'CANCELLED' || booking.status === 'NO_SHOW') {
-        await finish(row.id, 'CANCELED', `Agendamento ${booking.status}; lembrete cancelado.`);
+      if (
+        booking.status === 'CANCELLED' &&
+        !CANCELLATION_TEMPLATES.has(row.template)
+      ) {
+        await finish(row.id, 'CANCELED', 'Agendamento cancelado; lembrete cancelado.');
+        continue;
+      }
+      if (booking.status === 'NO_SHOW') {
+        await finish(row.id, 'CANCELED', 'Agendamento com falta; lembrete cancelado.');
         continue;
       }
       if (booking.status === 'COMPLETED') {
@@ -429,24 +460,42 @@ async function claimDueJobsForTenant(
   });
 }
 
+/**
+ * `P2025` = o registro sumiu entre o claim e a marcação. Acontece quando o
+ * tenant é apagado enquanto o cron roda (o delete cascateia os jobs). Não há o
+ * que atualizar: registrar e seguir é o comportamento certo — a mensagem pode
+ * ter saído, mas o dono do agendamento deixou de existir.
+ */
+function isRecordNotFound(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 'P2025';
+}
+
 async function markJobSent(
   tenantId: string,
   jobId: string,
   providerMessageId: string,
   now: Date,
 ): Promise<void> {
-  await forTenant(tenantId, (tx) =>
-    tx.notificationJob.update({
-      where: { id: jobId },
-      data: {
-        status: 'SENT',
-        sentAt: now,
-        providerMessageId,
-        lockedAt: null,
-        lastError: null,
-      },
-    }),
-  );
+  try {
+    await forTenant(tenantId, (tx) =>
+      tx.notificationJob.update({
+        where: { id: jobId },
+        data: {
+          status: 'SENT',
+          sentAt: now,
+          providerMessageId,
+          lockedAt: null,
+          lastError: null,
+        },
+      }),
+    );
+  } catch (error) {
+    if (isRecordNotFound(error)) {
+      console.warn(`[messaging:jobs] job ${jobId} sumiu antes de marcar o envio; ignorando.`);
+      return;
+    }
+    throw error;
+  }
 }
 
 async function markJobRetryOrFail(
@@ -459,19 +508,27 @@ async function markJobRetryOrFail(
   const final = job.attempts >= MAX_JOB_ATTEMPTS;
   const truncated = message.slice(0, 500);
 
-  await forTenant(tenantId, (tx) =>
-    tx.notificationJob.update({
-      where: { id: job.id },
-      data: final
-        ? { status: 'FAILED', lockedAt: null, lastError: truncated }
-        : {
-            status: 'PENDING',
-            lockedAt: null,
-            lastError: truncated,
-            scheduledFor: new Date(now.getTime() + notificationBackoffMs(job.attempts)),
-          },
-    }),
-  );
+  try {
+    await forTenant(tenantId, (tx) =>
+      tx.notificationJob.update({
+        where: { id: job.id },
+        data: final
+          ? { status: 'FAILED', lockedAt: null, lastError: truncated }
+          : {
+              status: 'PENDING',
+              lockedAt: null,
+              lastError: truncated,
+              scheduledFor: new Date(now.getTime() + notificationBackoffMs(job.attempts)),
+            },
+      }),
+    );
+  } catch (error) {
+    if (isRecordNotFound(error)) {
+      console.warn(`[messaging:jobs] job ${job.id} sumiu antes do retry; ignorando.`);
+      return 'failed';
+    }
+    throw error;
+  }
 
   return final ? 'failed' : 'retrying';
 }
