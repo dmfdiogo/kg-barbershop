@@ -14,7 +14,10 @@ test('tema do tenant vai no HTML servido, verificável sem JavaScript', async ({
 
   const html = await response.text();
   expect(html).toContain('Barbearia do Carlos');
-  expect(html).toContain('--color-primary:#1c1917');
+  // Espelha prisma/seed.mts (tenant carlosbarber, preset Classic Barber). A
+  // primária é a cor de AÇÃO — âmbar —, não o tom escuro: primária quase preta
+  // sobre fundo quase preto reprova na própria validação de contraste do painel.
+  expect(html).toContain('--color-primary:#d97706');
   expect(html).toContain('--color-secondary:#b45309');
   expect(html).toContain('--color-background:#0c0a09');
   expect(html).toContain('color-scheme:dark');
