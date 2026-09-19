@@ -1,0 +1,11 @@
+import { existsSync } from 'node:fs';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
+if (existsSync('.env')) process.loadEnvFile('.env');
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL }) });
+const slug = 'manual-onb-' + Math.floor(Math.random()*100000);
+const t = await prisma.tenant.create({ data: { slug, name: 'Manual Onb', document: '00000000000', timezone: 'America/Sao_Paulo', status: 'ACTIVE' } });
+const u = await prisma.user.create({ data: { phone: '+554899999' + Math.floor(Math.random()*10000), name: 'Dono Manual' } });
+await prisma.tenantMember.create({ data: { tenantId: t.id, userId: u.id, role: 'OWNER' } });
+console.log(slug);
+await prisma.$disconnect();
