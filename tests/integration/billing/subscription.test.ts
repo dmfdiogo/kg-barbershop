@@ -251,6 +251,65 @@ describe('billing: ciclo de cobrança', () => {
     expect((await readSub(tenant.tenantId))?.status).toBe('ACTIVE');
   });
 
+  it('abandonar o checkout não tranca o dono: dá para abrir outra sessão', async () => {
+    // REGRESSÃO. `startSubscriptionCheckout` grava o `PlatformSub` com o
+    // cliente ANTES de redirecionar, para o webhook ter âncora. O porteiro de
+    // assinatura dupla passou a ver essa linha de INTENÇÃO como assinatura
+    // existente, e quem fechasse a aba no meio do pagamento ficava travado
+    // para sempre — sem assinatura e sem conseguir abrir outra.
+    const tenant = await makeTenant('sub-abandon');
+
+    const first = await startSubscriptionCheckout({
+      tenantId: tenant.tenantId,
+      plan: 'SOLO',
+      successUrl: SUCCESS_URL,
+      cancelUrl: CANCEL_URL,
+      provider,
+    });
+    expect(first.ok).toBe(true);
+
+    // Fechou a aba: nenhum webhook chegou.
+    expect((await readSub(tenant.tenantId))?.stripeSubscriptionId ?? null).toBeNull();
+
+    const second = await startSubscriptionCheckout({
+      tenantId: tenant.tenantId,
+      plan: 'EQUIPE',
+      successUrl: SUCCESS_URL,
+      cancelUrl: CANCEL_URL,
+      provider,
+    });
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+
+    const { subscription } = await provider.completeCheckoutSession(second.sessionId);
+    expect(subscription.plan).toBe('EQUIPE');
+    expect((await readSub(tenant.tenantId))?.status).toBe('ACTIVE');
+  });
+
+  it('reassinar depois de cancelar ativa de novo, em vez de cobrar sem ativar', async () => {
+    // REGRESSÃO, e a pior delas: o `stripeSubscriptionId` antigo sobrevivia ao
+    // cancelamento, e a validação de criação recusava o `SUBSCRIPTION_CREATED`
+    // da assinatura nova por divergir dele. O provedor cobrava e o local
+    // continuava CANCELED — cobrança sem serviço.
+    const tenant = await makeTenant('sub-resubscribe');
+
+    const first = await subscribeTenant(tenant.tenantId, 'SOLO');
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    await cancelSubscription({ tenantId: tenant.tenantId, provider });
+    expect((await readSub(tenant.tenantId))?.status).toBe('CANCELED');
+
+    const again = await subscribeTenant(tenant.tenantId, 'PRO');
+    expect(again.ok).toBe(true);
+    if (!again.ok) return;
+
+    const local = await readSub(tenant.tenantId);
+    expect(local?.status).toBe('ACTIVE');
+    expect(local?.plan).toBe('PRO');
+    expect(local?.stripeSubscriptionId).toBe(again.providerSubscription.id);
+  });
+
   it('sem assinatura, o portal é recusado em vez de abrir URL vazia', async () => {
     const tenant = await makeTenant('sub-no-portal');
     const portal = await openBillingPortal({

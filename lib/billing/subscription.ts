@@ -459,7 +459,12 @@ export async function startSubscriptionCheckout(
   }
 
   const existing = await getLocalSubscription(input.tenantId);
-  if (existing && existing.status !== 'CANCELED') {
+  // O porteiro olha o `stripeSubscriptionId`, NÃO a existência da linha. A
+  // linha passa a existir no primeiro clique em "assinar", como âncora para o
+  // webhook — ela é INTENÇÃO, não assinatura. Bloquear por ela trancaria quem
+  // fechasse a aba no meio do pagamento: sem assinatura e sem poder abrir
+  // outra sessão, para sempre.
+  if (existing?.stripeSubscriptionId && existing.status !== 'CANCELED') {
     return {
       ok: false,
       code: 'SUBSCRIBER_ALREADY_EXISTS',
@@ -486,7 +491,11 @@ export async function startSubscriptionCheckout(
         plan: input.plan,
         status: 'TRIALING',
       },
-      update: { stripeCustomerId: customer.id },
+      // LIMPA a assinatura anterior ao reaproveitar a linha. Sem isto, o
+      // `stripeSubscriptionId` cancelado sobrevive, e a validação de criação
+      // recusa o `SUBSCRIPTION_CREATED` da assinatura nova por divergir dele:
+      // o provedor cobra e o local continua CANCELED. Cobrança sem serviço.
+      update: { stripeCustomerId: customer.id, stripeSubscriptionId: null },
     }),
   );
 

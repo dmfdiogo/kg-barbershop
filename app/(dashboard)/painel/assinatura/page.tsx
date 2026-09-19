@@ -339,7 +339,7 @@ function PlansSection({ overview }: { overview: BillingOverview }) {
       {overview.phase === 'CANCELED' ? (
         <p className="text-xs text-[var(--color-secondary)]">
           A assinatura está cancelada: novos agendamentos ficam bloqueados; os que já
-          existem continuam disponíveis.
+          existem continuam disponíveis. Escolha um plano abaixo para reativar.
         </p>
       ) : null}
     </section>
@@ -356,7 +356,11 @@ function PlanCard({
   isCurrent: boolean;
 }) {
   const plan = BILLING_PLANS[code];
-  const canSubscribe = overview.phase === 'TRIAL';
+  // CANCELED também assina: a linha cancelada é reaproveitada e o
+  // `stripeSubscriptionId` antigo é limpo ao abrir a sessão nova. Enquanto o
+  // domínio não fazia isso, o provedor cobrava e o local continuava cancelado
+  // — por isso esta tela nasceu sem o botão aqui.
+  const canSubscribe = overview.phase === 'TRIAL' || overview.phase === 'CANCELED';
 
   return (
     <article
