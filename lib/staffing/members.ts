@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { assertCanAddAgenda } from '@/lib/billing/limits';
 import type { TenantTransaction } from '@/lib/tenant/db';
 import { findBookingsOverlapping, findUncoveredBookings, type OccupyingBooking } from './schedule';
 import { minutesToTimeColumn, toWorkingHoursView } from './time';
@@ -431,6 +432,40 @@ export async function inviteStaff(
     select: { id: true },
   });
 
+  // Resolve o vínculo ANTES de criar usuário/papel: a checagem de limite (F7.0)
+  // roda aqui, sem deixar escrita pendente se ela falhar. Chamar `inviteStaff`
+  // direto, fora da tela, esbarra na mesma checagem — o limite é do servidor.
+  const existingMember = existingUser
+    ? await tx.tenantMember.findUnique({
+        where: { tenantId_userId: { tenantId, userId: existingUser.id } },
+        select: { id: true, role: true, staffProfile: { select: { id: true } } },
+      })
+    : null;
+
+  if (existingMember?.role === 'OWNER') {
+    return {
+      ok: false,
+      code: 'ALREADY_OWNER',
+      message: 'Essa pessoa já é dona do estabelecimento.',
+    };
+  }
+
+  // Idempotência: quem já tem agenda não consome um slot novo.
+  if (!existingMember?.staffProfile) {
+    const limit = await assertCanAddAgenda(tx, tenantId);
+    if (!limit.ok) {
+      return {
+        ok: false,
+        code: 'PLAN_LIMIT',
+        message: limit.message,
+        planLimit: {
+          usage: limit.usage,
+          ...(limit.upgrade ? { upgrade: limit.upgrade } : {}),
+        },
+      };
+    }
+  }
+
   const userId =
     existingUser?.id ??
     (
@@ -440,20 +475,8 @@ export async function inviteStaff(
       })
     ).id;
 
-  const existingMember = await tx.tenantMember.findUnique({
-    where: { tenantId_userId: { tenantId, userId } },
-    select: { id: true, role: true },
-  });
-
   let memberId: string;
   if (existingMember) {
-    if (existingMember.role === 'OWNER') {
-      return {
-        ok: false,
-        code: 'ALREADY_OWNER',
-        message: 'Essa pessoa já é dona do estabelecimento.',
-      };
-    }
     if (existingMember.role !== 'STAFF') {
       await tx.tenantMember.update({
         where: { id: existingMember.id },
@@ -469,10 +492,7 @@ export async function inviteStaff(
     memberId = created.id;
   }
 
-  let profile = await tx.staffProfile.findFirst({
-    where: { tenantId, tenantMemberId: memberId },
-    select: { id: true },
-  });
+  let profile = existingMember?.staffProfile ?? null;
   if (!profile) {
     profile = await tx.staffProfile.create({
       data: { tenantId, tenantMemberId: memberId },
