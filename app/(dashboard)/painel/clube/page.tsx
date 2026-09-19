@@ -22,12 +22,23 @@ export default async function ClubePage() {
               : `${activeCount} plano(s) ativo(s) à venda no portal.`}
           </p>
         </div>
-        <Link
-          href={'/painel/clube/planos' as Route}
-          className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-background)] transition-opacity hover:opacity-90"
-        >
-          Gerenciar planos
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {/* A F5.3 entregou os relatórios sem link de entrada, por não ser dona
+              deste arquivo. Sem esta linha, a tela só existe para quem digita a
+              URL. */}
+          <Link
+            href={'/painel/clube/relatorios' as Route}
+            className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-semibold transition-colors hover:bg-[var(--color-muted)]"
+          >
+            Relatórios
+          </Link>
+          <Link
+            href={'/painel/clube/planos' as Route}
+            className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-background)] transition-opacity hover:opacity-90"
+          >
+            Gerenciar planos
+          </Link>
+        </div>
       </header>
 
       {plans.length === 0 ? (

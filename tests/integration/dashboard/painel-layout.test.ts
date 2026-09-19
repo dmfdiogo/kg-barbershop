@@ -46,6 +46,9 @@ vi.mock('next/navigation', () => ({
     throw new Error(`NEXT_REDIRECT:${url}`);
   },
   usePathname: () => '/painel',
+  // A casca do painel passou a montar o botão de sair, que é client e usa o
+  // roteador. Renderizar o layout em teste exige o hook no mock.
+  useRouter: () => ({ replace: () => {}, refresh: () => {}, push: () => {} }),
 }));
 
 import PainelLayout from '@/app/(dashboard)/painel/layout';

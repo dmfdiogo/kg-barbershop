@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { Role } from '@/lib/auth/types';
 import type { DashboardNavItem } from './nav';
 import { DashboardNav } from './DashboardNav';
+import { LogoutButton } from '@/components/auth/LogoutButton';
 
 /**
  * Casca do painel do estabelecimento (tronco da fase 2, tarefa F2.0).
@@ -45,6 +46,7 @@ export function DashboardShell({ tenant, role, navItems, children }: DashboardSh
             <span className="block truncate text-sm font-semibold">{tenant.name}</span>
             <span className="block text-xs text-[var(--color-secondary)]">{ROLE_LABEL[role]}</span>
           </span>
+          <LogoutButton />
         </div>
       </header>
 

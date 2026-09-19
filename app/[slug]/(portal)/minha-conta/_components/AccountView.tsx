@@ -1,10 +1,12 @@
 'use client';
 
+import type { Route } from 'next';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatCents, formatDuration } from '../../agendar/_lib/format';
 import { cancelBookingAction, loadRescheduleSlotsAction, rescheduleBookingAction } from '../actions';
 import type { AccountBooking, AccountData, AccountSlot } from '../_lib/types';
+import { LogoutButton } from '@/components/auth/LogoutButton';
 
 /**
  * Área do cliente (F3.4): próximos agendamentos, histórico, cancelar e remarcar.
@@ -105,11 +107,14 @@ export function AccountView({ basePath, data }: { basePath: string; data: Accoun
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold">Meus agendamentos</h1>
-        <p className="text-sm text-[var(--color-secondary)]">
-          Acompanhe e gerencie os seus horários.
-        </p>
+      <header className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold">Meus agendamentos</h1>
+          <p className="text-sm text-[var(--color-secondary)]">
+            Acompanhe e gerencie os seus horários.
+          </p>
+        </div>
+        <LogoutButton redirectTo={basePath as Route} />
       </header>
 
       {notice ? (
