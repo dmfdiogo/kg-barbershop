@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import type { CheckoutQuote, CheckoutResult } from '@/lib/payments/charge';
-import { startCheckoutAction } from '../actions';
+import { confirmWithCreditAction, startCheckoutAction } from '../actions';
 import { countdownLabel, dateTimeLabel, formatCents } from '../_lib/format';
 
 /**
@@ -28,6 +28,7 @@ export function CheckoutFlow({ quote }: { quote: CheckoutQuote }) {
   const [view, setView] = useState<View>('choose');
   const [charge, setCharge] = useState<PaymentCharge | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [usedCredit, setUsedCredit] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [remainingMs, setRemainingMs] = useState(0);
@@ -62,6 +63,28 @@ export function CheckoutFlow({ quote }: { quote: CheckoutQuote }) {
     });
   }
 
+  /**
+   * Caminho do assinante: confirma consumindo um crédito, sem pagamento nenhum.
+   * O débito acontece dentro da transação da confirmação, então um saldo que
+   * acabou entre a tela e o clique vira erro aqui — e não atendimento de graça.
+   */
+  function runCredit() {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setError(null);
+    startTransition(async () => {
+      const result = await confirmWithCreditAction({ holdId: quote.holdId });
+      submittingRef.current = false;
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setUsedCredit(true);
+      setConfirmed(true);
+      setView('done');
+    });
+  }
+
   function applyResult(result: CheckoutResult) {
     if (result.kind === 'on_site') {
       setConfirmed(true);
@@ -73,8 +96,13 @@ export function CheckoutFlow({ quote }: { quote: CheckoutQuote }) {
   }
 
   if (view === 'done') {
-    return <DoneView quote={quote} charge={charge} onSite={confirmed} />;
+    return <DoneView quote={quote} charge={charge} onSite={confirmed} usedCredit={usedCredit} />;
   }
+
+  // Coberto pelo clube: a tela NÃO oferece forma de pagamento. Oferecer seria
+  // convidar o assinante a pagar de novo por algo que ele já paga na
+  // mensalidade — e o servidor recusaria de qualquer forma.
+  const coveredByClub = quote.credit.covered && !quote.credit.requiresDeposit;
 
   const overdue = expiresAt !== null && remainingMs <= 0;
   const urgent = expiresAt !== null && remainingMs <= 2 * 60 * 1000;
@@ -112,7 +140,16 @@ export function CheckoutFlow({ quote }: { quote: CheckoutQuote }) {
         </p>
       ) : null}
 
-      {view === 'choose' && (
+      {view === 'choose' && coveredByClub && (
+        <UseCredit
+          balance={quote.credit.balance}
+          pending={pending}
+          overdue={overdue}
+          onConfirm={runCredit}
+        />
+      )}
+
+      {view === 'choose' && !coveredByClub && (
         <ChoosePayment
           quote={quote}
           pending={pending}
@@ -351,14 +388,53 @@ function Summary({ quote }: { quote: CheckoutQuote }) {
   );
 }
 
+/**
+ * Confirmação pelo clube: sem forma de pagamento, porque não há pagamento.
+ * O saldo aparece para o assinante saber quanto sobra do ciclo.
+ */
+function UseCredit({
+  balance,
+  pending,
+  overdue,
+  onConfirm,
+}: {
+  balance: number;
+  pending: boolean;
+  overdue: boolean;
+  onConfirm: () => void;
+}) {
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border border-[var(--color-border)] p-4">
+      <h2 className="text-base font-semibold">Coberto pelo seu clube</h2>
+      <p className="text-sm text-[var(--color-secondary)]">
+        Este serviço faz parte do seu plano. Você tem{' '}
+        <span className="font-semibold text-[var(--color-foreground)]">
+          {balance} {balance === 1 ? 'crédito' : 'créditos'}
+        </span>{' '}
+        para ele neste ciclo; nada será cobrado agora.
+      </p>
+      <button
+        type="button"
+        disabled={pending || overdue}
+        onClick={onConfirm}
+        className="rounded-lg bg-[var(--color-primary)] px-4 py-3 text-sm font-semibold text-[var(--color-on-primary)] disabled:opacity-50"
+      >
+        {pending ? 'Confirmando…' : 'Confirmar com meu crédito'}
+      </button>
+    </section>
+  );
+}
+
 function DoneView({
   quote,
   charge,
   onSite,
+  usedCredit,
 }: {
   quote: CheckoutQuote;
   charge: PaymentCharge | null;
   onSite: boolean;
+  usedCredit: boolean;
 }) {
   return (
     <section className="flex flex-col gap-4">
@@ -370,9 +446,11 @@ function DoneView({
           {onSite ? 'Agendamento confirmado' : 'Pagamento em processamento'}
         </p>
         <p>
-          {onSite
-            ? 'Enviamos os detalhes para o seu WhatsApp. O pagamento é feito no local.'
-            : 'Assim que o pagamento for aprovado, o agendamento é confirmado e você recebe os detalhes.'}
+          {usedCredit
+            ? 'Usamos um crédito do seu clube; não houve cobrança. Enviamos os detalhes para o seu WhatsApp.'
+            : onSite
+              ? 'Enviamos os detalhes para o seu WhatsApp. O pagamento é feito no local.'
+              : 'Assim que o pagamento for aprovado, o agendamento é confirmado e você recebe os detalhes.'}
         </p>
       </div>
       <dl className="flex flex-col gap-2 rounded-xl border border-[var(--color-border)] p-4 text-sm">

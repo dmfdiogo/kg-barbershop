@@ -5,10 +5,12 @@ import { getMembership } from '@/lib/auth/membership';
 import { getSession } from '@/lib/auth/session';
 import {
   CheckoutError,
+  confirmWithCredit,
   startCheckout,
   type CardInput,
   type CheckoutErrorCode,
   type CheckoutResult,
+  type CreditCheckoutResult,
 } from '@/lib/payments/charge';
 import { firstIpFromHeader } from '@/lib/payments/remote-ip';
 import { requireTenantContext, TenantUnavailableError } from '@/lib/tenant/context';
@@ -89,6 +91,41 @@ export async function startCheckoutAction(
       remoteIp,
       holdSessionId,
     });
+    return { ok: true, value };
+  } catch (error) {
+    return toFailure(error);
+  }
+}
+
+export interface ConfirmWithCreditActionInput {
+  holdId: string;
+}
+
+/**
+ * Confirma usando um crédito do clube. Existe como ação separada porque não é
+ * um pagamento: não há forma de pagamento a escolher, nem IP de pagador a
+ * extrair, e nada sai para o provedor. O `startCheckoutAction` recusa este
+ * caso de propósito — cobrar quem tem crédito é o defeito que esta ação evita.
+ */
+export async function confirmWithCreditAction(
+  input: ConfirmWithCreditActionInput,
+): Promise<CheckoutActionResult<CreditCheckoutResult>> {
+  const holdId = asString(input?.holdId);
+  if (!holdId) return fail('INVALID_INPUT', 'Dados do agendamento inválidos.');
+
+  try {
+    const [ctx, session, holdSessionId] = await Promise.all([
+      requireTenantContext(),
+      getSession(),
+      readBookingSessionId(),
+    ]);
+    if (!session) {
+      return fail('UNAUTHENTICATED', 'Confirme seu WhatsApp para concluir o agendamento.');
+    }
+    const member = await getMembership(ctx.tenant.id, session.userId);
+    if (!member) return fail('UNAUTHENTICATED', 'Entre para concluir o agendamento.');
+
+    const value = await confirmWithCredit({ ctx, holdId, memberId: member.id, holdSessionId });
     return { ok: true, value };
   } catch (error) {
     return toFailure(error);

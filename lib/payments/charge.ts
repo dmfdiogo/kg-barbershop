@@ -1,5 +1,16 @@
 import type { BookingStatus, PaymentMode } from '@prisma/client';
-import { confirmBooking, ConfirmBookingError } from '@/lib/booking/confirm';
+import {
+  confirmBooking,
+  ConfirmBookingError,
+  discoverParticipants,
+  type BookingParticipant,
+} from '@/lib/booking/confirm';
+import {
+  consumeCreditForBooking,
+  decideCreditBooking,
+  InsufficientCreditError,
+  type CreditBookingDecision,
+} from '@/lib/membership/credits';
 import type { TenantContext } from '@/lib/tenant/context';
 import { getPaymentProvider } from './index';
 import { PaymentProviderError, type Charge, type PaymentMethod, type Split } from './types';
@@ -322,6 +333,12 @@ export interface CheckoutQuote {
   platformFeeCents: number;
   depositCents: number | null;
   depositPercent: number | null;
+  /**
+   * Cobertura pelo clube. `covered` verdadeiro e `requiresDeposit` falso
+   * significa que a tela NÃO deve oferecer forma de pagamento: o caminho é
+   * confirmar com crédito.
+   */
+  credit: { covered: boolean; balance: number; requiresDeposit: boolean };
 }
 
 export interface LoadCheckoutQuoteInput {
@@ -351,6 +368,7 @@ export async function loadCheckoutQuote(input: LoadCheckoutQuoteInput): Promise<
 
   const effective = resolveEffectiveMode(record);
   const chargeAmountCents = resolveChargeAmountCents(record.service);
+  const decision = await loadCreditDecision(input.ctx, input.memberId, record.service.id);
 
   return {
     holdId: record.bookingId,
@@ -370,7 +388,79 @@ export async function loadCheckoutQuote(input: LoadCheckoutQuoteInput): Promise<
       effective.mode === 'ON_SITE' ? 0 : computePlatformFeeCents(chargeAmountCents),
     depositCents: record.service.depositCents,
     depositPercent: record.service.depositPercent,
+    credit: {
+      covered: decision.useCredit,
+      balance: decision.balance,
+      requiresDeposit: decision.requiresDeposit,
+    },
   };
+}
+
+export interface ConfirmWithCreditInput {
+  ctx: TenantContext;
+  holdId: string;
+  memberId: string;
+  holdSessionId?: string | null;
+  now?: Date;
+}
+
+/**
+ * Confirma o agendamento consumindo um crédito do clube, sem cobrança nenhuma.
+ *
+ * É o caminho do assinante: nada vai para o provedor de pagamento, e o débito
+ * do crédito acontece DENTRO da transação da confirmação, pelo participante
+ * estrito. Se o saldo tiver acabado entre a tela e o clique, a confirmação
+ * inteira é desfeita e o cliente recebe erro — em vez de sair confirmado sem
+ * ter pago nem debitado.
+ */
+export async function confirmWithCredit(
+  input: ConfirmWithCreditInput,
+): Promise<CreditCheckoutResult> {
+  const now = input.now ?? new Date();
+  const { ctx, holdId, memberId } = input;
+
+  if (!holdId) throw new CheckoutError('INVALID_INPUT', 'Informe o agendamento.');
+  if (!memberId) throw new CheckoutError('UNAUTHENTICATED', 'Entre para confirmar.');
+
+  const record = await loadCheckoutRecord(ctx, holdId);
+  if (!record) {
+    throw new CheckoutError('BOOKING_NOT_FOUND', 'Este horário não está mais reservado.');
+  }
+  assertCheckoutable(record, {
+    memberId,
+    holdSessionId: input.holdSessionId ?? null,
+    enforceWindow: true,
+    now,
+  });
+
+  const decision = await loadCreditDecision(ctx, memberId, record.service.id);
+  if (!decision.useCredit || !decision.membershipId) {
+    throw new CheckoutError('CONFLICT', 'Você não tem crédito do clube para este serviço.');
+  }
+  if (decision.requiresDeposit) {
+    throw new CheckoutError(
+      'CONFLICT',
+      'Este estabelecimento cobra sinal mesmo para assinantes; siga pelo pagamento.',
+    );
+  }
+
+  try {
+    const confirmed = await confirmWithoutCharge(ctx, holdId, memberId, now, [
+      strictCreditParticipant(),
+    ]);
+    return {
+      kind: 'credit',
+      bookingId: holdId,
+      membershipId: decision.membershipId,
+      balanceAfter: Math.max(decision.balance - 1, 0),
+      alreadyConfirmed: confirmed.alreadyConfirmed,
+    };
+  } catch (error) {
+    if (error instanceof InsufficientCreditError) {
+      throw new CheckoutError('CONFLICT', 'Seu saldo de créditos acabou; escolha outra forma.');
+    }
+    throw error;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -417,7 +507,65 @@ export interface ChargeCheckoutResult {
   cardLast4?: string;
 }
 
+/** Confirmado com crédito do clube: não houve cobrança nenhuma. */
+export interface CreditCheckoutResult {
+  kind: 'credit';
+  bookingId: string;
+  membershipId: string;
+  /** Saldo do serviço DEPOIS do consumo. */
+  balanceAfter: number;
+  alreadyConfirmed: boolean;
+}
+
 export type CheckoutResult = OnSiteCheckoutResult | ChargeCheckoutResult;
+
+/**
+ * Crédito do clube cobre este serviço para este cliente?
+ *
+ * Leitura só de decisão: a garantia de verdade é o participante ESTRITO dentro
+ * da transação de confirmação. Entre esta leitura e a confirmação o saldo pode
+ * acabar (outro agendamento do mesmo assinante), e é o participante que derruba
+ * a confirmação nesse caso — não este `if`.
+ */
+async function loadCreditDecision(
+  ctx: TenantContext,
+  memberId: string,
+  serviceId: string,
+): Promise<CreditBookingDecision> {
+  return ctx.forTenant(async (tx) => {
+    const tenant = await tx.tenant.findUniqueOrThrow({
+      where: { id: ctx.tenant.id },
+      select: { membershipRequiresDeposit: true },
+    });
+    return decideCreditBooking(tx, {
+      tenantId: ctx.tenant.id,
+      customerId: memberId,
+      serviceId,
+      membershipRequiresDeposit: tenant.membershipRequiresDeposit,
+    });
+  });
+}
+
+/**
+ * Consumo ESTRITO como participante de transação. Diferente do participante
+ * descoberto (`lib/booking/participants/credits.ts`), que é best-effort de
+ * propósito, este LANÇA quando o crédito não está mais lá — e derruba a
+ * confirmação junto.
+ *
+ * É a diferença entre os dois caminhos: no fluxo normal, um assinante sem saldo
+ * simplesmente paga; aqui o cliente escolheu "usar meu crédito" e nada foi
+ * cobrado, então confirmar sem debitar seria atendimento de graça.
+ */
+function strictCreditParticipant(): BookingParticipant {
+  return async (tx, context) => {
+    await consumeCreditForBooking(tx, {
+      tenantId: context.tenantId,
+      bookingId: context.bookingId,
+      customerId: context.customerId,
+      serviceId: context.serviceId,
+    });
+  };
+}
 
 function providerName(): string {
   return process.env.PAYMENT_PROVIDER?.trim() || 'mock';
@@ -434,11 +582,12 @@ function isAccountUnusable(error: unknown): boolean {
  * Confirma o agendamento sem cobrança (modalidade no local ou caminho
  * degradado). Idempotente: clique duplo devolve sucesso com o mesmo registro.
  */
-async function confirmOnSite(
+async function confirmWithoutCharge(
   ctx: TenantContext,
   holdId: string,
   memberId: string,
   now: Date,
+  extraParticipants: BookingParticipant[] = [],
 ): Promise<{ alreadyConfirmed: boolean }> {
   const booking = await ctx.forTenant((tx) =>
     tx.booking.findFirst({
@@ -460,7 +609,13 @@ async function confirmOnSite(
   }
 
   try {
-    await confirmBooking({ tenantId: ctx.tenant.id, bookingId: holdId, customerId: memberId, now });
+    await confirmBooking({
+      tenantId: ctx.tenant.id,
+      bookingId: holdId,
+      customerId: memberId,
+      now,
+      participants: [...discoverParticipants(), ...extraParticipants],
+    });
   } catch (error) {
     if (error instanceof ConfirmBookingError) {
       if (error.code === 'BOOKING_NOT_FOUND') {
@@ -511,9 +666,21 @@ export async function startCheckout(input: StartCheckoutInput): Promise<Checkout
     now,
   });
 
+  // PORTÃO CONTRA COBRAR QUEM TEM CRÉDITO. A tela já oferece o caminho do
+  // clube, mas tela pode estar velha, e o custo do erro é o assinante pagar de
+  // novo por um serviço que o clube dele cobre — com o crédito intacto, porque
+  // ninguém debitou. Recusar aqui é a última barreira.
+  const credit = await loadCreditDecision(ctx, memberId, record.service.id);
+  if (credit.useCredit && !credit.requiresDeposit) {
+    throw new CheckoutError(
+      'CONFLICT',
+      'Este serviço está coberto pelo seu clube; confirme com o seu crédito.',
+    );
+  }
+
   const effective = resolveEffectiveMode(record);
   if (effective.mode === 'ON_SITE') {
-    const confirmed = await confirmOnSite(ctx, holdId, memberId, now);
+    const confirmed = await confirmWithoutCharge(ctx, holdId, memberId, now);
     return {
       kind: 'on_site',
       bookingId: holdId,
@@ -572,7 +739,7 @@ export async function startCheckout(input: StartCheckoutInput): Promise<Checkout
   } catch (error) {
     if (isAccountUnusable(error)) {
       // Subconta não utilizável no provedor: degrada para ON_SITE sem travar.
-      const confirmed = await confirmOnSite(ctx, holdId, memberId, now);
+      const confirmed = await confirmWithoutCharge(ctx, holdId, memberId, now);
       return {
         kind: 'on_site',
         bookingId: holdId,
