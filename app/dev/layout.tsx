@@ -27,6 +27,9 @@ export default function DevConsoleLayout({ children }: { children: React.ReactNo
           <Link className="underline" href="/dev/payments">
             Pagamentos
           </Link>
+          <Link className="underline" href="/dev/billing">
+            Assinaturas
+          </Link>
         </nav>
       </header>
       {children}
