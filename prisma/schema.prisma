@@ -581,6 +581,19 @@ model Membership {
   asaasSubscriptionId String?          @map("asaas_subscription_id")
   status              MembershipStatus @default(ACTIVE)
   currentPeriodEnd    DateTime?        @map("current_period_end") @db.Timestamptz(3)
+
+  /// Preço efetivamente contratado, em centavos, congelado na assinatura.
+  /// NÃO leia `plan.priceCents` para cobrar: o dono pode reajustar o plano, e
+  /// quem já assinou continua no preço que aceitou até uma decisão explícita
+  /// de migração. Ler o preço do plano na renovação seria reajuste silencioso.
+  contractedPriceCents Int @map("contracted_price_cents")
+
+  /// Meio de pagamento recorrente. `cardToken` é a referência do provider
+  /// (nunca o PAN); marca e últimos quatro existem só para a tela do cliente
+  /// dizer qual cartão será cobrado.
+  cardToken    String? @map("card_token")
+  cardBrand    String? @map("card_brand")
+  cardLastFour String? @map("card_last_four")
   createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 

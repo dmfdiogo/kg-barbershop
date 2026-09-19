@@ -294,6 +294,13 @@ async function seedTenantA(tx: TenantTransaction): Promise<void> {
       customerId: customers[0]!.id,
       planId: plan.id,
       status: 'ACTIVE',
+      // Assinou antes do último reajuste: o plano custa R$ 79,00 hoje, mas a
+      // cobrança dela continua R$ 69,00. É o caso que prova, no dado de
+      // desenvolvimento, que preço contratado e preço corrente são coisas
+      // diferentes — quem ler `plan.priceCents` para cobrar quebra o seed.
+      contractedPriceCents: 6900,
+      cardBrand: 'VISA',
+      cardLastFour: '4242',
       currentPeriodEnd: instant(localDate(20), '00:00'),
     },
   });
