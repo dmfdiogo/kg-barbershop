@@ -119,6 +119,10 @@ describe('membership: provisionamento e troca de contexto', () => {
 
     tenantA = await createTenantFixture(admin, 'mem-a');
     tenantB = await createTenantFixture(admin, 'mem-b');
+    // Os tenants do helper compartilhado também precisam entrar na limpeza: o
+    // afterAll só varria os criados pelo helper local desta suíte, e cada
+    // execução deixava dois tenants para trás.
+    createdTenantIds.push(tenantA.tenantId, tenantB.tenantId);
     tenantSuspended = await createTenant('mem-susp', 'SUSPENDED');
     tenantRole = await createTenant('mem-role');
 

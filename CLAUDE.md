@@ -197,6 +197,12 @@ automatizável sem risco de travar.
 - **Testes compartilham o banco do `DATABASE_URL`** com o desenvolvimento. Rodar
   a suíte mexe no mesmo Postgres do seed. Para trabalho paralelo, use um banco
   por worktree.
+- **Teste de integração que cria tenant precisa apagá-lo.** `deleteTenant` do
+  helper remove o tenant e os `user` que ficariam órfãos, mas só é chamado para
+  os ids que a suíte registrar. Uma suíte que cria por `createTenantFixture` e
+  esquece de registrar deixa lixo a cada execução — já aconteceu, e o banco de
+  desenvolvimento acumulou 32 tenants antes de alguém olhar. Para conferir:
+  contar `tenant` deve devolver 2 (os do seed) depois da suíte completa.
 - **Consulta devolvendo zero linhas sem motivo?** Provavelmente falta o escopo de
   tenant. Com a role de aplicação, a RLS filtra tudo quando `app.current_tenant`
   não está definido — passe pelo client escopado em vez de contornar.
