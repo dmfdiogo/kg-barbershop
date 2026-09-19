@@ -14,13 +14,23 @@ export interface CalendarAppointment {
   service: { name: string; durationMin: number };
 }
 
+/**
+ * `week` desenha a grade de sete colunas da F0.4; `day` lista os atendimentos
+ * do dia de referência em ordem de horário (mobile-first). A visão de dia foi
+ * acrescentada pela F3.5 estendendo este componente, sem reintroduzir
+ * `react-big-calendar`.
+ */
+export type CalendarViewMode = 'week' | 'day';
+
 interface CalendarViewProps {
   appointments: CalendarAppointment[];
   onSelectEvent: (appointment: CalendarAppointment) => void;
   /** Fuso do tenant (`Tenant.timezone`). */
   timezone: string;
-  /** Semana exibida; padrão é a semana de hoje. */
+  /** Dia/semana exibida; padrão é hoje. */
   referenceDate?: Date;
+  /** Modo de exibição; padrão `week` (contrato original da F0.4). */
+  view?: CalendarViewMode;
 }
 
 function statusClasses(status: string): string {
@@ -44,6 +54,7 @@ export default function CalendarView({
   onSelectEvent,
   timezone,
   referenceDate,
+  view = 'week',
 }: CalendarViewProps) {
   const weekDays = useMemo(() => {
     const reference = referenceDate ?? new Date();
@@ -79,6 +90,49 @@ export default function CalendarView({
   }, [appointments, timezone]);
 
   const today = new Date();
+  const reference = referenceDate ?? today;
+
+  // Visão de dia: lista vertical do dia local do tenant, em ordem de horário.
+  if (view === 'day') {
+    const dayKey = formatInTimeZone(reference, timezone, 'yyyy-MM-dd');
+    const dayAppointments = appointmentsByDay.get(dayKey) ?? [];
+
+    return (
+      <div className="rounded-xl border border-border bg-background p-4">
+        <p className="mb-3 text-sm font-bold capitalize text-foreground">
+          {formatInTimeZone(reference, timezone, 'EEEE, dd/MM', { locale: ptBR })}
+        </p>
+
+        {dayAppointments.length === 0 ? (
+          <p className="py-6 text-center text-xs text-secondary/60">
+            Nenhum atendimento neste dia.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {dayAppointments.map((appointment) => (
+              <li key={appointment.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelectEvent(appointment)}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm ${statusClasses(appointment.status)}`}
+                >
+                  <span className="w-12 shrink-0 font-bold">
+                    {formatInTimeZone(new Date(appointment.startsAt), timezone, 'HH:mm')}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{appointment.customer.name}</span>
+                    <span className="block truncate text-xs opacity-80">
+                      {appointment.service.name}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-background p-4">
