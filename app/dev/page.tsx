@@ -27,6 +27,12 @@ export default function DevConsoleIndexPage() {
           </Link>{' '}
           — cobranças, assinaturas e KYC do mock de pagamentos.
         </li>
+        <li>
+          <Link className="underline" href="/dev/billing">
+            /dev/billing
+          </Link>{' '}
+          — sessões de checkout e assinaturas B2B do mock de billing.
+        </li>
       </ul>
     </main>
   );
