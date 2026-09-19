@@ -1,8 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { requestOtpAction, verifyOtpAction } from '@/lib/auth/actions';
 import { normalizePhoneToE164 } from '@/app/(auth)/_lib/phone';
+import { checkoutHref } from '@/components/portal/paths';
 import { confirmBookingAction, createHoldAction, loadAvailabilityAction } from '../actions';
 import {
   countdownLabel,
@@ -38,6 +40,7 @@ export function BookingFlow({
   options: BookingOptions;
 }) {
   const { service, staff, dates, timezone } = options;
+  const router = useRouter();
 
   const [step, setStep] = useState<Step>('staff');
   const [staffChoice, setStaffChoice] = useState<string | null>(null);
@@ -180,6 +183,14 @@ export function BookingFlow({
         setOtpError(verified.message);
         return;
       }
+      // Serviço com pagamento online (integral ou sinal): o hold segue HOLD e o
+      // checkout assume a cobrança. A confirmação só vem com o pagamento
+      // aprovado (webhook da F4.0).
+      if (service.paymentMode !== 'ON_SITE') {
+        submittingRef.current = false;
+        router.push(checkoutHref(basePath, hold.holdId) as Parameters<typeof router.push>[0]);
+        return;
+      }
       startConfirm(async () => {
         const result = await confirmBookingAction({ holdId: hold.holdId });
         submittingRef.current = false;
@@ -199,6 +210,10 @@ export function BookingFlow({
 
   function handleDirectConfirm() {
     if (!hold || submittingRef.current) return;
+    if (service.paymentMode !== 'ON_SITE') {
+      router.push(checkoutHref(basePath, hold.holdId) as Parameters<typeof router.push>[0]);
+      return;
+    }
     submittingRef.current = true;
     startConfirm(async () => {
       const result = await confirmBookingAction({ holdId: hold.holdId });

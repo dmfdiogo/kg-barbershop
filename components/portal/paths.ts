@@ -16,3 +16,8 @@ export function portalBasePath(lookup: Extract<TenantLookup, { ok: true }>): str
 export function serviceBookingHref(basePath: string, serviceId: string): string {
   return `${basePath}/agendar?servico=${encodeURIComponent(serviceId)}`;
 }
+
+/** Destino do checkout do hold (F4.2): pagamento da reserva já identificada. */
+export function checkoutHref(basePath: string, holdId: string): string {
+  return `${basePath}/checkout?reserva=${encodeURIComponent(holdId)}`;
+}
