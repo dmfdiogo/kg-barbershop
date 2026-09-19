@@ -56,6 +56,10 @@ Sem arquivo-lista central: cada feature deixa o seu próprio arquivo na pasta. D
 
 **Contrato de entrada vindo da F3.0:** o catálogo já aponta para `/<slug>/agendar?servico=<id>`. Use exatamente esse caminho e esse nome de parâmetro — o link já existe em produção do portal, e mudar aqui quebraria o CTA sem ninguém perceber até alguém clicar.
 
+**Clique duplo na confirmação (decisão para a F3.3).** `confirmBooking` recusa quem já está `CONFIRMED`, lançando `INVALID_STATE`. Na tela isso apareceria como erro para alguém cujo agendamento **deu certo** — conexão ruim, o cliente toca duas vezes, e a segunda resposta diz que falhou. Torne idempotente na F3.3: se o agendamento já está confirmado **e é do mesmo cliente**, devolva sucesso com o agendamento existente em vez de erro. Confirmação alheia continua sendo erro.
+
+**Trabalho periódico atravessa tenants por um ponto só.** O cron de expiração usa `listAllTenantIds()` (lib/tenant) para enumerar e depois escreve por `forTenant`, tenant a tenant, com RLS. A F6.0 tem a mesma necessidade e deve usar a mesma função — não peça exceção de lint para o `asPlatformAdmin`, senão a lista de exceções cresce a cada cron.
+
 ### 4. Identificação do cliente
 
 OTP da F1 **no fim do fluxo**, não no começo: pedir login antes de mostrar horário derruba conversão. O hold já existe quando o OTP é pedido.
