@@ -56,10 +56,17 @@ export function ScheduleEditor({
   staffId,
   initial,
   timezone,
+  onSaved,
 }: {
   staffId: string;
   initial: WorkingHoursView[];
   timezone: string;
+  /**
+   * Chamado depois de salvar com sucesso, antes de `router.refresh()`. O
+   * onboarding usa para marcar o passo e avançar; o padrão da equipe apenas
+   * atualiza a tela.
+   */
+  onSaved?: () => void | Promise<void>;
 }) {
   const router = useRouter();
   const [state, setState] = useState<ScheduleState>(() => buildState(initial));
@@ -106,6 +113,7 @@ export function ScheduleEditor({
       });
       if (result.ok) {
         setConflicts(null);
+        if (onSaved) await onSaved();
         router.refresh();
         return;
       }

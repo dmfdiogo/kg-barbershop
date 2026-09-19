@@ -75,9 +75,15 @@ interface ServiceFormProps {
   serviceId?: string;
   initial?: ServiceView;
   staff: StaffOption[];
+  /**
+   * Chamado após salvar com sucesso, antes do redirect padrão. O onboarding usa
+   * para marcar o passo e seguir o caminho guiado; sem ele, o formulário volta
+   * para o catálogo de serviços como sempre.
+   */
+  onSaved?: (service?: ServiceView) => void | Promise<void>;
 }
 
-export function ServiceForm({ mode, serviceId, initial, staff }: ServiceFormProps) {
+export function ServiceForm({ mode, serviceId, initial, staff, onSaved }: ServiceFormProps) {
   const router = useRouter();
   const [name, setName] = useState(initial?.name ?? '');
   const [durationMin, setDurationMin] = useState(String(initial?.durationMin ?? 30));
@@ -134,6 +140,11 @@ export function ServiceForm({ mode, serviceId, initial, staff }: ServiceFormProp
           : await updateServiceAction(serviceId as string, input);
 
       if (result.ok) {
+        if (onSaved) {
+          await onSaved(result.service);
+          router.refresh();
+          return;
+        }
         router.push('/painel/servicos' as Route);
         router.refresh();
         return;

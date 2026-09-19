@@ -165,6 +165,51 @@ enum MessagingChannel {
 }
 
 // ---------------------------------------------------------------------------
+// Onboarding do dono (F2.5)
+// ---------------------------------------------------------------------------
+
+// Passos do caminho guiado, na ordem em que a tela os apresenta. Como o Prisma
+// enumera valores em maiúsculas, a UI mapeia cada um para a rota/label em
+// `app/(dashboard)/painel/onboarding/steps.ts`.
+enum OnboardingStep {
+  ESTABLISHMENT
+  HOURS
+  SERVICE
+  PORTAL
+
+  @@map("onboarding_step")
+}
+
+// Estado da coleta financeira da F2. A subconta Asaas é criada na F4.1, que lê
+// `pix_key` daqui; até então tudo fica em AWAITING_ACTIVATION — o caminho
+// degradado (operar em ON_SITE) já é válido e nada trava.
+enum PayoutStatus {
+  AWAITING_ACTIVATION
+  ACTIVE
+  REJECTED
+
+  @@map("payout_status")
+}
+
+// Uma linha por tenant. Guardar o progresso explícito é o que faz "abandonar no
+// meio e voltar" retomar no passo certo: derivar do que já existe (jornada,
+// serviço) faria o dono que voltou para corrigir o nome pular de etapa.
+model OnboardingProgress {
+  id             String          @id @default(cuid())
+  tenantId       String          @unique @map("tenant_id")
+  completedSteps OnboardingStep[] @map("completed_steps")
+  pixKey         String?         @map("pix_key")
+  payoutStatus   PayoutStatus    @default(AWAITING_ACTIVATION) @map("payout_status")
+  completedAt    DateTime?       @map("completed_at") @db.Timestamptz(3)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_progress")
+}
+
+// ---------------------------------------------------------------------------
 // Tenant e identidade
 // ---------------------------------------------------------------------------
 
@@ -207,6 +252,7 @@ model Tenant {
   messagingPrefs     MessagingPref[]
   notificationJobs   NotificationJob[]
   auditLogs          AuditLog[]
+  onboardingProgress OnboardingProgress?
 
   @@map("tenant")
 }

@@ -79,6 +79,13 @@ const PATHS: Record<DashboardIconName, ReactNode> = {
       <path d="M7.5 19.75v-6M12 19.75V7.5M16.5 19.75v-9" />
     </>
   ),
+  checklist: (
+    <>
+      <path d="M5.25 4.75h13.5v14.5H5.25z" />
+      <path d="M8.25 9.25l1.2 1.2 2.3-2.3M8.25 15.25l1.2 1.2 2.3-2.3" />
+      <path d="M14 9.5h2.75M14 15.5h2.75" />
+    </>
+  ),
 };
 
 export function NavIcon({ name, ...props }: IconProps & { name?: DashboardIconName }) {

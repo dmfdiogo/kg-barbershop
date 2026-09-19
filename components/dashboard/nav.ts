@@ -35,7 +35,8 @@ export type DashboardIconName =
   | 'users'
   | 'palette'
   | 'settings'
-  | 'chart';
+  | 'chart'
+  | 'checklist';
 
 export interface DashboardNavItem {
   /** Caminho absoluto dentro do painel, ex.: `/painel/servicos`. */
