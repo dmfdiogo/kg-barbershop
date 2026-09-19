@@ -170,6 +170,71 @@ describe('webhook de pagamentos — máquina de estados persistente', () => {
     return admin.asPlatformAdmin((tx) => tx.webhookEvent.count({ where: { eventId } }));
   }
 
+  it('a confirmação por pagamento roda os participantes e agenda as notificações', async () => {
+    // REGRESSÃO DE COSTURA. O webhook confirmava com um `update` seco, então
+    // TODO agendamento pré-pago passava fora do núcleo da F3.2: a trial por
+    // valor não contava (tenant em trial para sempre) e nem confirmação nem
+    // lembretes eram agendados. Cada fase verificava só o próprio caminho.
+    const { bookingId, asaasId } = await seed(a);
+
+    const before = await admin.asPlatformAdmin((tx) =>
+      tx.tenant.findUniqueOrThrow({
+        where: { id: a.tenantId },
+        select: { trialBookingsUsed: true },
+      }),
+    );
+
+    await deliver(buildEvent('CHARGE_PAID', asaasId));
+
+    const after = await admin.asPlatformAdmin((tx) =>
+      tx.tenant.findUniqueOrThrow({
+        where: { id: a.tenantId },
+        select: { trialBookingsUsed: true },
+      }),
+    );
+    expect(after.trialBookingsUsed).toBe(before.trialBookingsUsed + 1);
+
+    const jobs = await forTenant(a.tenantId, (tx) =>
+      tx.notificationJob.count({ where: { bookingId } }),
+    );
+    expect(jobs).toBeGreaterThan(0);
+  });
+
+  it('reentrega do pagamento não conta trial de novo nem duplica notificação', async () => {
+    const { bookingId, asaasId } = await seed(a);
+    const event = buildEvent('CHARGE_PAID', asaasId);
+
+    await deliver(event);
+    const afterFirst = await admin.asPlatformAdmin((tx) =>
+      tx.tenant.findUniqueOrThrow({
+        where: { id: a.tenantId },
+        select: { trialBookingsUsed: true },
+      }),
+    );
+    const jobsFirst = await forTenant(a.tenantId, (tx) =>
+      tx.notificationJob.count({ where: { bookingId } }),
+    );
+
+    // Mesmo eventId: reentrega do provedor.
+    await deliver(event);
+    // eventId novo sobre um agendamento já CONFIRMED: o provedor reenviando
+    // como evento diferente, que a unique de `webhook_event` não pega.
+    await deliver(buildEvent('CHARGE_PAID', asaasId));
+
+    const afterSecond = await admin.asPlatformAdmin((tx) =>
+      tx.tenant.findUniqueOrThrow({
+        where: { id: a.tenantId },
+        select: { trialBookingsUsed: true },
+      }),
+    );
+    const jobsSecond = await forTenant(a.tenantId, (tx) =>
+      tx.notificationJob.count({ where: { bookingId } }),
+    );
+
+    expect(afterSecond.trialBookingsUsed).toBe(afterFirst.trialBookingsUsed);
+    expect(jobsSecond).toBe(jobsFirst);
+  });
+
   it('pagamento aprovado confirma o agendamento', async () => {
     const { bookingId, paymentId, asaasId } = await seed(a);
     const event = buildEvent('CHARGE_PAID', asaasId);

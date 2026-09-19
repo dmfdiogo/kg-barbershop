@@ -10,6 +10,12 @@ import {
   type PaymentBookingEffect,
 } from '@/lib/payments/state';
 import type { PaymentWebhookEvent, PaymentWebhookResult } from '@/lib/payments/webhook';
+import {
+  confirmBookingInTransaction,
+  discoverParticipants,
+  emitBookingEvent,
+  type BookingConfirmedEvent,
+} from '@/lib/booking/confirm';
 
 /**
  * Núcleo persistente do webhook de pagamentos (tarefa F4.0).
@@ -77,7 +83,16 @@ export async function processPaymentWebhook(
   }
 
   try {
-    return await forTenant(tenantId, (tx) => processInTransaction(tx, tenantId, event, rawBody, now));
+    const outcome = await forTenant(tenantId, (tx) =>
+      processInTransaction(tx, tenantId, event, rawBody, now),
+    );
+    // PÓS-COMMIT, e fora da callback de propósito: o client escopado reexecuta
+    // a transação em caso de `P2034`, e um handler chamado lá dentro mandaria
+    // duas mensagens para o cliente. O contrato é o mesmo de `confirmBooking`.
+    if (outcome.confirmed) {
+      await emitBookingEvent(outcome.confirmed);
+    }
+    return outcome.result;
   } catch (error) {
     if (isUniqueConstraintError(error)) {
       return { status: 200, body: { received: true, duplicate: true } };
@@ -121,7 +136,7 @@ async function processInTransaction(
   event: PaymentWebhookEvent,
   rawBody: string,
   now: Date,
-): Promise<PaymentWebhookResult> {
+): Promise<{ result: PaymentWebhookResult; confirmed?: BookingConfirmedEvent }> {
   const eventRow = await tx.webhookEvent.create({
     data: {
       provider: event.provider,
@@ -141,11 +156,20 @@ async function processInTransaction(
     data: { processedAt: now },
   });
 
-  return { status: 200, body: { received: true, applied: applied.description } };
+  return {
+    result: { status: 200, body: { received: true, applied: applied.description } },
+    confirmed: applied.confirmed,
+  };
 }
 
 interface AppliedEffect {
   description: string;
+  /**
+   * Evento a emitir DEPOIS do commit, quando este webhook foi o que confirmou o
+   * agendamento. `undefined` em qualquer outro caso — inclusive na reentrega,
+   * porque aí a confirmação não aconteceu aqui.
+   */
+  confirmed?: BookingConfirmedEvent;
 }
 
 async function applyMerchantKyc(
@@ -261,11 +285,12 @@ async function applyChargeEvent(
     description = `payment:${payment.id}:${plan.current}:ignored:${plan.reason}`;
   }
 
+  let confirmed: BookingConfirmedEvent | undefined;
   if (plan.kind !== 'ignored') {
-    await applyBookingEffect(tx, locked.bookingId, plan.bookingEffect, now);
+    confirmed = await applyBookingEffect(tx, locked.bookingId, plan.bookingEffect, now);
   }
 
-  return { description };
+  return { description, confirmed };
 }
 
 /**
@@ -305,19 +330,37 @@ async function recordRefundLedger(
   });
 }
 
+/**
+ * Aplica ao agendamento o efeito do evento de pagamento.
+ *
+ * CONFIRMAR AQUI PRECISA PASSAR PELO NÚCLEO DA F3.2, não por um `update` seco.
+ * Este é o caminho de TODO agendamento pré-pago: o portal deixa o hold, manda
+ * para o checkout e quem confirma é este webhook, assincronamente. Enquanto
+ * confirmava por conta própria, os participantes de transação e os eventos
+ * pós-commit não rodavam para esses agendamentos — a trial por valor nunca
+ * contava o agendamento pago (o tenant ficava em trial para sempre), e nem
+ * confirmação nem lembrete D-1/H-2 eram agendados, que é justamente a função
+ * do produto. O bug não aparecia em teste de fase porque cada fase verificava o
+ * seu próprio caminho: a F3 confirma no local, a F4 cobra, e ninguém olhou a
+ * costura. Achado pelo agente da F5.2 ao procurar onde pendurar o crédito.
+ *
+ * Devolve o evento de confirmação para o chamador emitir APÓS o commit — nada
+ * externo pode sair daqui dentro, porque o client escopado reexecuta a callback
+ * em caso de `P2034`.
+ */
 async function applyBookingEffect(
   tx: TenantTransaction,
   bookingId: string,
   effect: PaymentBookingEffect,
   now: Date,
-): Promise<void> {
+): Promise<BookingConfirmedEvent | undefined> {
   if (effect === 'none') {
-    return;
+    return undefined;
   }
 
   const booking = await tx.booking.findFirst({
     where: { id: bookingId },
-    select: { id: true, status: true, customerId: true },
+    select: { id: true, tenantId: true, status: true, customerId: true },
   });
   if (!booking) {
     // Pagamento existe e agendamento não: inconsistência de dado, não fluxo
@@ -331,7 +374,10 @@ async function applyBookingEffect(
   if (effect === 'confirm') {
     const resolution = resolveBookingConfirmation(booking.status);
     if (resolution.kind !== 'confirmed') {
-      return;
+      // Já confirmado (reentrega) ou em estado que não confirma: nada a fazer e,
+      // principalmente, nenhum evento — senão a reentrega do webhook dispararia
+      // uma segunda mensagem de confirmação para o cliente.
+      return undefined;
     }
     if (!booking.customerId) {
       // `booking_customer_required` proíbe CONFIRMED sem cliente. Chegar aqui é
@@ -341,11 +387,25 @@ async function applyBookingEffect(
         'Confirmação por pagamento exige agendamento com cliente identificado.',
       );
     }
-    await tx.booking.update({
-      where: { id: booking.id },
-      data: { status: 'CONFIRMED', confirmedAt: now },
+    const outcome = await confirmBookingInTransaction(tx, {
+      tenantId: booking.tenantId,
+      bookingId: booking.id,
+      now,
+      participants: discoverParticipants(),
     });
-    return;
+    return {
+      type: 'BookingConfirmed',
+      tenantId: outcome.booking.tenantId,
+      bookingId: outcome.booking.id,
+      occurredAt: now,
+      customerId: outcome.booking.customerId ?? '',
+      staffId: outcome.booking.staffId,
+      serviceId: outcome.booking.serviceId,
+      startsAt: outcome.booking.startsAt,
+      endsAt: outcome.booking.endsAt,
+      priceCents: outcome.booking.priceCents,
+      previousStatus: outcome.previousStatus as 'HOLD' | 'PENDING',
+    };
   }
 
   // effect === 'release' — recusa/Pix expirado devolve o slot.
