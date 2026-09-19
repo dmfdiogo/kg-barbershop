@@ -290,58 +290,15 @@ export async function confirmBooking(input: ConfirmBookingInput): Promise<Confir
   const now = input.now ?? new Date();
   const participants = input.participants ?? discoverParticipants();
 
-  const outcome = await forTenant(input.tenantId, async (tx) => {
-    const booking = await tx.booking.findFirst({
-      where: { id: input.bookingId, tenantId: input.tenantId },
-    });
-    if (!booking) {
-      throw new ConfirmBookingError('BOOKING_NOT_FOUND', 'Agendamento não encontrado.');
-    }
-    if (booking.status !== 'HOLD' && booking.status !== 'PENDING') {
-      throw new ConfirmBookingError(
-        'INVALID_STATE',
-        `Agendamento não pode ser confirmado a partir do status ${booking.status}.`,
-      );
-    }
-
-    const previousStatus = booking.status;
-
-    const confirmed = await tx.booking.update({
-      where: { id: booking.id },
-      data: {
-        status: 'CONFIRMED',
-        confirmedAt: now,
-        ...(input.customerId ? { customerId: input.customerId } : {}),
-      },
-    });
-
-    // A constraint `booking_customer_required` garante isto no banco; aqui a
-    // checagem existe para estreitar o tipo e para falhar com mensagem de
-    // domínio caso alguém confirme um hold anônimo sem informar o cliente.
-    if (!confirmed.customerId) {
-      throw new ConfirmBookingError(
-        'INVALID_STATE',
-        'Confirmação exige cliente identificado: passe customerId ao confirmar um hold anônimo.',
-      );
-    }
-
-    const context: BookingConfirmationContext = {
-      tenantId: confirmed.tenantId,
-      bookingId: confirmed.id,
-      customerId: confirmed.customerId,
-      staffId: confirmed.staffId,
-      serviceId: confirmed.serviceId,
-      startsAt: confirmed.startsAt,
-      endsAt: confirmed.endsAt,
-      priceCents: confirmed.priceCents,
-      confirmedAt: now,
-      previousStatus,
-    };
-
-    await runParticipants(tx, context, participants);
-
-    return { booking: confirmed, previousStatus };
-  });
+  const outcome = await forTenant(input.tenantId, (tx) =>
+    confirmBookingInTransaction(tx, {
+      tenantId: input.tenantId,
+      bookingId: input.bookingId,
+      customerId: input.customerId,
+      now,
+      participants,
+    }),
+  );
 
   const event: BookingConfirmedEvent = {
     type: 'BookingConfirmed',
@@ -364,4 +321,78 @@ export async function confirmBooking(input: ConfirmBookingInput): Promise<Confir
     previousStatus: outcome.previousStatus,
     confirmedAt: now,
   };
+}
+
+export interface ConfirmBookingInTransactionInput {
+  tenantId: string;
+  bookingId: string;
+  customerId?: string;
+  now: Date;
+  /** Participantes já resolvidos pelo chamador (descobertos ou injetados). */
+  participants: BookingParticipant[];
+}
+
+/**
+ * Núcleo da confirmação, SEM abrir transação e SEM emitir evento: o chamador
+ * entrega a transação já aberta e é dono do pós-commit.
+ *
+ * Existe pelo mesmo motivo do `createHoldInTransaction`: a remarcação da F3.4
+ * precisa liberar o antigo e confirmar o novo NA MESMA transação, reusando a
+ * confirmação (inclusive os participantes atômicos), sem reimplementá-la. Quem
+ * abre a transação e emite `BookingConfirmed` é `confirmBooking`.
+ */
+export async function confirmBookingInTransaction(
+  tx: TenantTransaction,
+  input: ConfirmBookingInTransactionInput,
+): Promise<{ booking: Booking; previousStatus: BookingStatus }> {
+  const booking = await tx.booking.findFirst({
+    where: { id: input.bookingId, tenantId: input.tenantId },
+  });
+  if (!booking) {
+    throw new ConfirmBookingError('BOOKING_NOT_FOUND', 'Agendamento não encontrado.');
+  }
+  if (booking.status !== 'HOLD' && booking.status !== 'PENDING') {
+    throw new ConfirmBookingError(
+      'INVALID_STATE',
+      `Agendamento não pode ser confirmado a partir do status ${booking.status}.`,
+    );
+  }
+
+  const previousStatus = booking.status;
+
+  const confirmed = await tx.booking.update({
+    where: { id: booking.id },
+    data: {
+      status: 'CONFIRMED',
+      confirmedAt: input.now,
+      ...(input.customerId ? { customerId: input.customerId } : {}),
+    },
+  });
+
+  // A constraint `booking_customer_required` garante isto no banco; aqui a
+  // checagem existe para estreitar o tipo e para falhar com mensagem de
+  // domínio caso alguém confirme um hold anônimo sem informar o cliente.
+  if (!confirmed.customerId) {
+    throw new ConfirmBookingError(
+      'INVALID_STATE',
+      'Confirmação exige cliente identificado: passe customerId ao confirmar um hold anônimo.',
+    );
+  }
+
+  const context: BookingConfirmationContext = {
+    tenantId: confirmed.tenantId,
+    bookingId: confirmed.id,
+    customerId: confirmed.customerId,
+    staffId: confirmed.staffId,
+    serviceId: confirmed.serviceId,
+    startsAt: confirmed.startsAt,
+    endsAt: confirmed.endsAt,
+    priceCents: confirmed.priceCents,
+    confirmedAt: input.now,
+    previousStatus,
+  };
+
+  await runParticipants(tx, context, input.participants);
+
+  return { booking: confirmed, previousStatus };
 }

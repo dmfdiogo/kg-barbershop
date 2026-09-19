@@ -96,6 +96,79 @@ export interface CreatedHold {
  * `blockedUntil` inclui o buffer — o mesmo intervalo que a constraint protege.
  */
 export async function createHold(input: CreateHoldInput): Promise<CreatedHold> {
+  validateCreateHold(input);
+  return forTenant(input.tenantId, (tx) => createHoldInTransaction(tx, input));
+}
+
+/**
+ * Núcleo do hold, SEM abrir transação: o chamador entrega a transação já aberta.
+ *
+ * É o que permite a remarcação da F3.4 ser ATÔMICA — liberar o horário antigo e
+ * criar o novo acontecem na MESMA transação, sem um caminho paralelo que
+ * reimplemente a criação do hold. `createHold` é a casca pública que abre a
+ * transação; quem já tem uma (reschedule) chama esta função.
+ *
+ * Reexecutável como toda callback do client escopado (contexto-comum.md §4): a
+ * limpeza dos vencidos é `deleteMany` idempotente e o insert colide na
+ * constraint, abortando a transação inteira — o retry relê o estado já
+ * commitado pelo competidor.
+ */
+export async function createHoldInTransaction(
+  tx: TenantTransaction,
+  input: CreateHoldInput,
+): Promise<CreatedHold> {
+  validateCreateHold(input);
+  const now = input.now ?? new Date();
+
+  const service = await tx.service.findFirst({
+    where: { id: input.serviceId, tenantId: input.tenantId, active: true },
+    select: { durationMin: true, bufferMin: true, priceCents: true },
+  });
+  if (!service) {
+    throw new HoldError('SERVICE_NOT_FOUND', 'Serviço não encontrado ou inativo.');
+  }
+
+  const endsAt = new Date(input.startsAt.getTime() + service.durationMin * MINUTE_MS);
+  const blockedUntil = new Date(endsAt.getTime() + service.bufferMin * MINUTE_MS);
+  const holdExpiresAt = new Date(now.getTime() + HOLD_DURATION_MINUTES * MINUTE_MS);
+
+  // ANTES de inserir, na MESMA transação: libera holds vencidos do profissional.
+  await deleteExpiredHoldsForStaff(tx, input.tenantId, input.staffId, now);
+
+  const booking = await tx.booking.create({
+    data: {
+      tenantId: input.tenantId,
+      customerId: input.customerId ?? null,
+      staffId: input.staffId,
+      serviceId: input.serviceId,
+      startsAt: input.startsAt,
+      endsAt,
+      blockedUntil,
+      status: 'HOLD',
+      holdExpiresAt,
+      holdSessionId: input.holdSessionId,
+      priceCents: service.priceCents,
+      source: input.source ?? 'PORTAL',
+    },
+  });
+
+  return {
+    id: booking.id,
+    tenantId: booking.tenantId,
+    customerId: booking.customerId,
+    staffId: booking.staffId,
+    serviceId: booking.serviceId,
+    startsAt: booking.startsAt,
+    endsAt: booking.endsAt,
+    blockedUntil: booking.blockedUntil,
+    priceCents: booking.priceCents,
+    status: 'HOLD',
+    holdExpiresAt,
+    holdSessionId: input.holdSessionId,
+  };
+}
+
+function validateCreateHold(input: CreateHoldInput): void {
   if (!input.tenantId) throw new HoldError('INVALID_INPUT', 'tenantId é obrigatório.');
   if (!input.staffId) throw new HoldError('INVALID_INPUT', 'staffId é obrigatório.');
   if (!input.serviceId) throw new HoldError('INVALID_INPUT', 'serviceId é obrigatório.');
@@ -105,57 +178,6 @@ export async function createHold(input: CreateHoldInput): Promise<CreatedHold> {
   if (!(input.startsAt instanceof Date) || Number.isNaN(input.startsAt.getTime())) {
     throw new HoldError('INVALID_INPUT', 'startsAt deve ser uma data válida.');
   }
-
-  const now = input.now ?? new Date();
-
-  return forTenant(input.tenantId, async (tx) => {
-    const service = await tx.service.findFirst({
-      where: { id: input.serviceId, tenantId: input.tenantId, active: true },
-      select: { durationMin: true, bufferMin: true, priceCents: true },
-    });
-    if (!service) {
-      throw new HoldError('SERVICE_NOT_FOUND', 'Serviço não encontrado ou inativo.');
-    }
-
-    const endsAt = new Date(input.startsAt.getTime() + service.durationMin * MINUTE_MS);
-    const blockedUntil = new Date(endsAt.getTime() + service.bufferMin * MINUTE_MS);
-    const holdExpiresAt = new Date(now.getTime() + HOLD_DURATION_MINUTES * MINUTE_MS);
-
-    // ANTES de inserir, na MESMA transação: libera holds vencidos do profissional.
-    await deleteExpiredHoldsForStaff(tx, input.tenantId, input.staffId, now);
-
-    const booking = await tx.booking.create({
-      data: {
-        tenantId: input.tenantId,
-        customerId: input.customerId ?? null,
-        staffId: input.staffId,
-        serviceId: input.serviceId,
-        startsAt: input.startsAt,
-        endsAt,
-        blockedUntil,
-        status: 'HOLD',
-        holdExpiresAt,
-        holdSessionId: input.holdSessionId,
-        priceCents: service.priceCents,
-        source: input.source ?? 'PORTAL',
-      },
-    });
-
-    return {
-      id: booking.id,
-      tenantId: booking.tenantId,
-      customerId: booking.customerId,
-      staffId: booking.staffId,
-      serviceId: booking.serviceId,
-      startsAt: booking.startsAt,
-      endsAt: booking.endsAt,
-      blockedUntil: booking.blockedUntil,
-      priceCents: booking.priceCents,
-      status: 'HOLD',
-      holdExpiresAt,
-      holdSessionId: input.holdSessionId,
-    };
-  });
 }
 
 /**
