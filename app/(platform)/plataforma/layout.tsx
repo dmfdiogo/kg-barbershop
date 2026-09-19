@@ -37,7 +37,7 @@ export default async function PlatformLayout({ children }: { children: ReactNode
     await requireSuperAdmin();
   } catch (error) {
     if (error instanceof AuthError) {
-      if (error.code === 'UNAUTHENTICATED') redirect('/');
+      if (error.code === 'UNAUTHENTICATED') redirect('/entrar?next=/plataforma');
       notFound();
     }
     throw error;
