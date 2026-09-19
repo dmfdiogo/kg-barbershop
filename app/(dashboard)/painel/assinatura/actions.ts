@@ -78,7 +78,7 @@ function unexpected(error: unknown): SubscriptionActionFailure {
 async function originOrFailure(): Promise<
   { ok: true; origin: string } | { ok: false; result: SubscriptionActionFailure }
 > {
-  const origin = await requestOrigin();
+  const origin = requestOrigin();
   if (!origin) {
     return {
       ok: false,
