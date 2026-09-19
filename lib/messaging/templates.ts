@@ -17,9 +17,19 @@
  */
 export type TemplateCategory = 'AUTHENTICATION' | 'UTILITY';
 
+/**
+ * Para quem o template é enviado. O runner da F6.0 usa isto para resolver o
+ * destinatário a partir do agendamento: `CUSTOMER` → `Booking.customerId`,
+ * `STAFF` → `Booking.staffId`. Sem esta marcação o nome do template seria a
+ * única pista do destinatário, e um template novo poderia sair para a pessoa
+ * errada em silêncio.
+ */
+export type TemplateAudience = 'CUSTOMER' | 'STAFF';
+
 export interface TemplateDefinition {
   readonly name: string;
   readonly category: TemplateCategory;
+  readonly audience: TemplateAudience;
   readonly variables: readonly string[];
 }
 
@@ -27,11 +37,13 @@ export const TEMPLATES = {
   otp_login: {
     name: 'otp_login',
     category: 'AUTHENTICATION',
+    audience: 'CUSTOMER',
     variables: ['code'],
   },
   booking_confirmation: {
     name: 'booking_confirmation',
     category: 'UTILITY',
+    audience: 'CUSTOMER',
     variables: [
       'customer_name',
       'service_name',
@@ -44,6 +56,7 @@ export const TEMPLATES = {
   booking_reminder_d1: {
     name: 'booking_reminder_d1',
     category: 'UTILITY',
+    audience: 'CUSTOMER',
     variables: [
       'customer_name',
       'service_name',
@@ -55,31 +68,37 @@ export const TEMPLATES = {
   booking_reminder_h2: {
     name: 'booking_reminder_h2',
     category: 'UTILITY',
+    audience: 'CUSTOMER',
     variables: ['customer_name', 'starts_at'],
   },
   booking_cancelled_customer: {
     name: 'booking_cancelled_customer',
     category: 'UTILITY',
+    audience: 'CUSTOMER',
     variables: ['customer_name', 'service_name', 'starts_at'],
   },
   booking_cancelled_staff: {
     name: 'booking_cancelled_staff',
     category: 'UTILITY',
+    audience: 'STAFF',
     variables: ['staff_name', 'customer_name', 'starts_at'],
   },
   booking_rescheduled_customer: {
     name: 'booking_rescheduled_customer',
     category: 'UTILITY',
+    audience: 'CUSTOMER',
     variables: ['customer_name', 'service_name', 'old_starts_at', 'new_starts_at'],
   },
   booking_rescheduled_staff: {
     name: 'booking_rescheduled_staff',
     category: 'UTILITY',
+    audience: 'STAFF',
     variables: ['staff_name', 'customer_name', 'old_starts_at', 'new_starts_at'],
   },
   booking_created_staff: {
     name: 'booking_created_staff',
     category: 'UTILITY',
+    audience: 'STAFF',
     variables: ['staff_name', 'customer_name', 'service_name', 'starts_at'],
   },
 } as const satisfies Record<string, TemplateDefinition>;
@@ -94,6 +113,20 @@ export const OTP_TEMPLATE = 'otp_login' satisfies TemplateName;
 
 export function isTemplateName(value: string): value is TemplateName {
   return Object.hasOwn(TEMPLATES, value);
+}
+
+/**
+ * Templates que podem virar `NotificationJob`. O OTP fica de fora: ele é
+ * enviado na hora pelo login (F1), não é agendado nem persistido como job.
+ */
+export type JobTemplateName = Exclude<TemplateName, typeof OTP_TEMPLATE>;
+
+export function isJobTemplateName(value: string): value is JobTemplateName {
+  return isTemplateName(value) && value !== OTP_TEMPLATE;
+}
+
+export function templateAudience(name: TemplateName): TemplateAudience {
+  return TEMPLATES[name].audience;
 }
 
 export interface TemplateVariablesCheck {
