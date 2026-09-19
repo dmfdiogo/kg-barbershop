@@ -1,6 +1,7 @@
 import type { BookingSource } from '@prisma/client';
 import { forTenant } from '@/lib/tenant/db';
 import { listAllTenantIds } from '@/lib/tenant/context';
+import { assertTrialAllowsNewBooking } from '@/lib/billing/trial';
 import type { TenantTransaction } from '@/lib/tenant/db';
 
 /**
@@ -94,10 +95,20 @@ export interface CreatedHold {
 /**
  * Cria o soft lock. Duração e preço vêm do `Service` (nunca do chamador), e o
  * `blockedUntil` inclui o buffer — o mesmo intervalo que a constraint protege.
+ *
+ * PORTÃO DE TRIAL (F7.1): `createHold` é a porta de entrada de todo agendamento
+ * NOVO (portal e walk-in). O portão roda na MESMA transação, antes do insert:
+ * esgotados os 10 agendamentos gratuitos, a criação é recusada com
+ * `TrialLimitError`. Ele NÃO está em `createHoldInTransaction` de propósito — a
+ * remarcação usa o núcleo direto e remarcar não é criar agendamento novo, então
+ * mover um horário existente continua permitido mesmo com a trial esgotada.
  */
 export async function createHold(input: CreateHoldInput): Promise<CreatedHold> {
   validateCreateHold(input);
-  return forTenant(input.tenantId, (tx) => createHoldInTransaction(tx, input));
+  return forTenant(input.tenantId, async (tx) => {
+    await assertTrialAllowsNewBooking(tx, input.tenantId);
+    return createHoldInTransaction(tx, input);
+  });
 }
 
 /**

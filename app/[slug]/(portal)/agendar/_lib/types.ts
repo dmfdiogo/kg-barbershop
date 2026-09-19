@@ -80,7 +80,8 @@ export type BookingErrorCode =
   | 'SLOT_UNAVAILABLE'
   | 'BOOKING_NOT_FOUND'
   | 'UNAUTHENTICATED'
-  | 'CONFLICT';
+  | 'CONFLICT'
+  | 'TRIAL_LIMIT';
 
 export type ActionResult<T> =
   | { ok: true; value: T }

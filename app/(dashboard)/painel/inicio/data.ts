@@ -1,6 +1,7 @@
 import { addDays, addMonths, parseISO } from 'date-fns';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import type { BookingStatus } from '@prisma/client';
+import { getTrialStatus, type TrialStatus } from '@/lib/billing/trial';
 import type { TenantTransaction } from '@/lib/tenant/db';
 
 /**
@@ -57,6 +58,8 @@ export interface DashboardOverview {
   revenue: DashboardRevenue;
   occupancy: StaffOccupancy[];
   agenda: AgendaEntry[];
+  /** Estado da trial por valor (F7.1) para o aviso do painel. */
+  trial: TrialStatus;
 }
 
 function pad(value: number): string {
@@ -202,6 +205,8 @@ export async function loadDashboard(
     priceCents: booking.priceCents,
   }));
 
+  const trial = await getTrialStatus(tx, tenantId);
+
   return {
     date: localDateOf(now, timezone),
     revenue: {
@@ -210,5 +215,6 @@ export async function loadDashboard(
     },
     occupancy,
     agenda,
+    trial,
   };
 }
