@@ -176,8 +176,8 @@ describe('painel do estabelecimento', () => {
 
     expect(html).toContain('conteúdo do painel');
     expect(html).toContain('Equipe');
-    expect(html).toContain('Exemplo');
-    expect(html).not.toContain('Exemplo de configuração');
+    expect(html).toContain('Agenda');
+    expect(html).not.toContain('Configurações');
   });
 
   it('o dono vê o item de configuração', async () => {
@@ -186,14 +186,14 @@ describe('painel do estabelecimento', () => {
     const html = await renderPanel();
 
     expect(html).toContain('Dono');
-    expect(html).toContain('Exemplo de configuração');
+    expect(html).toContain('Configurações');
   });
 
   it('o papel vem do TenantMember por tenant, não do token', async () => {
     // A mesma pessoa: OWNER no salão A (entra), CUSTOMER no salão B (barrada).
     authState.sessionCookie = createSessionToken({ userId: cross.id, activeTenantId: tenantA.id });
     const comoDono = await renderPanel();
-    expect(comoDono).toContain('Exemplo de configuração');
+    expect(comoDono).toContain('Configurações');
 
     authState.sessionCookie = createSessionToken({ userId: cross.id, activeTenantId: tenantB.id });
     await expect(PainelLayout({ children: 'painel' })).rejects.toThrow('NEXT_NOT_FOUND');
