@@ -164,10 +164,17 @@ As tarefas de `fases/` são executadas por agentes rodando no OpenCode. O
 [`opencode.json`](opencode.json) na raiz vale para todo agente que trabalhar
 neste repositório:
 
-- **Modelo fixado** em `deepseek/deepseek-v4-flash-vision-exp`. Antes era default
-  implícito: todo o trabalho da fundação e da fase 1 saiu dele sem que ninguém
-  tivesse escolhido. Fixar transforma o modelo em variável controlada — se a
-  qualidade cair, dá para saber se o modelo mudou.
+- **Modelo fixado** em `deepseek/deepseek-v4-flash-vision-exp`, com o prefixo do
+  provedor explícito. Antes era default implícito: todo o trabalho da fundação e
+  da fase 1 saiu dele sem que ninguém tivesse escolhido. Fixar transforma o
+  modelo em variável controlada — se a qualidade cair, dá para saber se o modelo
+  mudou.
+- **O provedor da empresa está desativado neste projeto.** O `opencode.jsonc`
+  global define `h2o-litellm/deepseek-v4-pro` (proxy corporativo) como padrão do
+  sistema; sem a configuração local, um agente deste repositório rodaria na
+  infraestrutura e no faturamento da empresa. `disabled_providers` corta isso:
+  tentar usar `h2o-litellm` aqui falha. Este projeto usa **apenas** a chave
+  pessoal do DeepSeek.
 - **`git push`, `filter-repo`, `filter-branch`, `config --global`, `npm publish`,
   `gh repo delete/edit` e `gh secret` são negados.** Publicar e reescrever
   histórico são decisões humanas.
