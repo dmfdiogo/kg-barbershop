@@ -2,6 +2,11 @@ import {
   parsePaymentWebhookEvent,
   verifyPaymentWebhookToken,
 } from '@/lib/payments/webhook';
+import {
+  MembershipWebhookError,
+  parseMembershipWebhookEvent,
+  processMembershipWebhook,
+} from '@/lib/membership/subscription';
 import { processPaymentWebhook, WebhookProcessingError } from './processor';
 
 /**
@@ -31,6 +36,27 @@ export async function POST(request: Request): Promise<Response> {
 
   const event = parsePaymentWebhookEvent(rawBody);
   if (!event) {
+    // O MESMO ENDPOINT recebe cobrança e ciclo de vida de assinatura do clube:
+    // o provedor tem uma URL de webhook por subconta, não uma por assunto. A
+    // F5.1 entregou o processador de assinatura sem despacho, e sem esta
+    // ramificação renovação, falha de cobrança e cancelamento chegavam e eram
+    // respondidos com 400 — o clube nunca renovaria.
+    const membershipEvent = parseMembershipWebhookEvent(rawBody);
+    if (membershipEvent) {
+      try {
+        const result = await processMembershipWebhook(membershipEvent, rawBody);
+        return Response.json(result.body, { status: result.status });
+      } catch (error) {
+        if (error instanceof MembershipWebhookError) {
+          return Response.json({ received: false, error: error.message }, { status: error.status });
+        }
+        console.error('[webhook:payments] falha ao processar assinatura', {
+          eventId: membershipEvent.eventId,
+          type: membershipEvent.type,
+        });
+        return Response.json({ received: false, error: 'erro interno' }, { status: 500 });
+      }
+    }
     return Response.json({ received: false, error: 'payload inválido' }, { status: 400 });
   }
 

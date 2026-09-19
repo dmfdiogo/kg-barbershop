@@ -15,6 +15,7 @@ import { firstIpFromHeader, isPublicIp, resolvePayerIp } from '@/lib/payments/re
 import { forTenant, type TenantTransaction } from '@/lib/tenant/db';
 import { listAllTenantIds } from '@/lib/tenant/context';
 import { type MembershipCycle } from './plans';
+import { renewCycleCredits } from './credits';
 
 /**
  * Assinatura do clube do estabelecimento (tarefa F5.1, fase 5 itens 2 e 5).
@@ -1179,6 +1180,25 @@ async function applyMembershipEvent(
         ...(plan.currentPeriodEnd ? { currentPeriodEnd: plan.currentPeriodEnd } : {}),
       },
     });
+
+    // CICLO NOVO CREDITA, NA MESMA TRANSAÇÃO.
+    //
+    // A F5.1 entregou a transição de estado e a F5.2 o ledger, cada uma sem
+    // tocar no arquivo da outra — o que deixou a renovação sem crédito: o
+    // assinante pagava o mês e não recebia nada. A ligação é aqui, e dentro da
+    // transação de propósito: cobrança renovada e crédito concedido vencem
+    // juntos ou nada acontece. `renewCycleCredits` expira o saldo não usado
+    // antes de conceder, que é a política documentada em `credits.ts`.
+    //
+    // Reexecutável sob o retry do client escopado (P2034): o rollback leva os
+    // lançamentos junto, e a segunda passada os reaplica uma vez só.
+    if (event.type === 'SUBSCRIPTION_CYCLE_RENEWED') {
+      const cycle = await renewCycleCredits(tx, tenantId, state.id, state.planId);
+      return {
+        description: `membership:${state.id}:${plan.status}:credits=${cycle.granted.length}:expired=${cycle.expired}`,
+      };
+    }
+
     return { description: `membership:${state.id}:${plan.status}` };
   }
 
