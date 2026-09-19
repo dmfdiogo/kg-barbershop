@@ -1,4 +1,5 @@
 import type { MemberRole } from '@prisma/client';
+import type { AgendaUpgrade, AgendaUsage } from '@/lib/billing/limits';
 
 /**
  * Contratos de equipe e jornadas (tarefa F2.2).
@@ -123,7 +124,17 @@ export type StaffingErrorCode =
   | 'FORBIDDEN'
   | 'CONFLICTS'
   | 'ALREADY_OWNER'
+  | 'PLAN_LIMIT'
   | 'ERROR';
+
+/**
+ * Limite de agendas atingido (F7.0). Carrega o uso atual e, quando existir, a
+ * oferta de upgrade com o impacto em preço/limite — a tela não recalcula nada.
+ */
+export interface StaffPlanLimit {
+  usage: AgendaUsage;
+  upgrade?: AgendaUpgrade;
+}
 
 export interface StaffingFailure {
   ok: false;
@@ -132,6 +143,8 @@ export interface StaffingFailure {
   fieldErrors?: StaffFieldErrors;
   /** Presente em `CONFLICTS`: a lista que obriga a decisão explícita. */
   conflicts?: StaffConflictView[];
+  /** Presente em `PLAN_LIMIT`: uso do plano e oferta de upgrade. */
+  planLimit?: StaffPlanLimit;
 }
 
 export type InviteMemberResult = { ok: true; member: StaffMemberView } | StaffingFailure;
