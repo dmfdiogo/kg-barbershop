@@ -98,8 +98,16 @@ export interface BillingWebhookSubscriptionData {
   cancelAtPeriodEnd: boolean;
 }
 
+/**
+ * Quem autenticou e traduziu o evento. O mock assina o corpo com o mesmo HMAC
+ * que o Stripe, mas o `provider` é o que separa os dois na unique
+ * `(provider, eventId)` de `WebhookEvent` — e o que impede um `evt_...` real de
+ * colidir com um evento do mock por acaso.
+ */
+export type BillingWebhookProvider = 'mock' | 'stripe';
+
 export interface BillingWebhookEvent {
-  provider: 'mock';
+  provider: BillingWebhookProvider;
   eventId: string;
   type: BillingWebhookEventType;
   occurredAt: string;
