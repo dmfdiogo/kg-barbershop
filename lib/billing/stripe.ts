@@ -104,7 +104,14 @@ function amountOf(subscription: Stripe.Subscription): number {
   return amount;
 }
 
-function toBillingSubscription(subscription: Stripe.Subscription): BillingSubscription {
+/**
+ * Exportada para o tradutor de webhook (`./stripe-webhook`) reusar a MESMA
+ * derivação de plano, valor, status e fim de período. Duplicar isto faria o
+ * webhook e a consulta síncrona discordarem sobre o que a assinatura é.
+ *
+ * Cuidado com a armadilha: `current_period_end` mora no ITEM, não na assinatura.
+ */
+export function toBillingSubscription(subscription: Stripe.Subscription): BillingSubscription {
   const customerId =
     typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id;
 
