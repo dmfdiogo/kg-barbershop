@@ -1,4 +1,4 @@
-Você é o agente da tarefa F0.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F0.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. plano-refatoracao.md §1 (decisão D5) e §1.1 (restrições reais do Asaas)

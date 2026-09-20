@@ -67,7 +67,7 @@ Multi-tenancy real e isolamento · papel `SUPER_ADMIN` e painel da plataforma ·
 ## 3. Arquitetura alvo
 
 ```
-kg-barbershop/
+bom-horario/
 ├── app/
 │   ├── (platform)/            # Super Admin: tenants, assinaturas B2B, métricas
 │   ├── (dashboard)/           # Owner e Staff (RBAC por membership)
@@ -275,7 +275,7 @@ Telefone é PII e é a chave de identidade do sistema. Exigem decisão explícit
 
 ## 9. Pendências de produto
 
-1. **Nome e domínio.** A spec usa `agendex.com.br`; o repositório se chama `kg-barbershop`. Definir o nome antes da F0 (afeta repo, domínio, templates de WhatsApp e conta Stripe).
+1. ~~**Nome e domínio.**~~ **Decidido em 2026-09-20: Bom Horário, `bomhorario.com.br`.** Caíram `agendex.com.br` (registrado por terceiro) e `horaboa.com.br` (livre, mas com o `.com` e a ordem natural `boahora` em mãos alheias — vazaria digitação). O `.com` também está livre e deve ser registrado junto. Falta registrar os domínios e checar a marca no INPI; o diretório do repositório e o remoto no GitHub seguem como `kg-barbershop` até você renomeá-los.
 2. **Taxa da plataforma.** Qual o percentual do split sobre serviços e sobre o clube? Quem absorve a taxa do Asaas — o salão ou o cliente final?
 3. **Política de estorno.** Cancelou dentro da janela: o sinal volta integral, parcial ou vira crédito? Quem executa o estorno?
 4. **NFS-e da mensalidade.** Automatizar desde o início ou emitir manualmente durante o piloto?

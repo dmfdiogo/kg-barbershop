@@ -1,4 +1,4 @@
-Você é o agente da tarefa F2.5 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F2.5 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §9.2 (menos de 10 minutos) e §3.2 (onboarding financeiro)

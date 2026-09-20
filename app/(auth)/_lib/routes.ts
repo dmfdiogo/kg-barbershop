@@ -4,7 +4,7 @@
  * A mesma tela existe em duas formas: na raiz (`/entrar`) quando o tenant é
  * resolvido pelo host (subdomínio ou domínio próprio) e sob o slug
  * (`/carlosbarber/entrar`) quando o tenant vem do caminho — a forma que o
- * portal de `app.agendex.com.br/[slug]` oferece. `basePath` é `''` ou
+ * portal de `app.bomhorario.com.br/[slug]` oferece. `basePath` é `''` ou
  * `'/carlosbarber'`; nada de montar string na mão nas páginas.
  */
 export function identifyPath(basePath: string): string {

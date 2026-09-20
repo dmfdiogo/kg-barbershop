@@ -37,7 +37,7 @@ graph TD
 - **Onboarding Financeiro Simplificado:** Fricção zero — o dono apenas informa seu `CPF ou CNPJ` e a `Chave Pix` bancária onde deseja receber o dinheiro dos atendimentos. Nenhuma conta externa em inglês precisa ser criada manualmente por ele.
 - **Catálogo de Serviços:** Criação de serviços, definição de duração, intervalo entre atendimentos (*buffer*), preço e modalidade de cobrança (100% online, sinal/depósito ou pagamento no local).
 - **Gestão de Equipe:** Cadastro de membros da equipe (Staff), definição de jornadas e atribuição de serviços.
-- **Endereço do Portal:** Configuração do *slug* (`agendex.com.br/empresa`) ou configuração guiada de *domínio próprio* (`www.empresa.com.br`).
+- **Endereço do Portal:** Configuração do *slug* (`bomhorario.com.br/empresa`) ou configuração guiada de *domínio próprio* (`www.empresa.com.br`).
 - **Dashboard Operacional:** Faturamento diário/mensal, taxa de ocupação dos prestadores e lista de agendamentos.
 
 ### 2.3. Staff (Colaborador / Prestador de Serviço)
@@ -109,8 +109,8 @@ Cada estabelecimento pode ter a cara da sua marca no portal de agendamento:
 
 ### 5.2. Endereçamento e Roteamento Dedicado
 1. **Slug Padrão (Incluso em todos os planos):**
-   - Rota: `https://app.agendex.com.br/[slug-do-tenant]`
-   - Exemplo: `https://app.agendex.com.br/carlosbarber`
+   - Rota: `https://app.bomhorario.com.br/[slug-do-tenant]`
+   - Exemplo: `https://app.bomhorario.com.br/carlosbarber`
 2. **Domínio Próprio / Custom Domain (Plano Pro):**
    - Formato: `https://www.carlosbarber.com.br` ou `https://agendamento.carlosbarber.com.br`
    - O cliente insere um registro DNS `CNAME` apontando para o proxy/edge do SaaS.
@@ -124,7 +124,7 @@ Cada estabelecimento pode ter a cara da sua marca no portal de agendamento:
 
 | Plano | Preço Sugerido | Público-Alvo | Principais Recursos |
 | :--- | :--- | :--- | :--- |
-| **Solo** | **R$ 39,90 / mês** | Profissional autônomo individual | • 1 Usuário / 1 Agenda<br>• Link exclusivo (`agendex.com.br/seunome`)<br>• Agendamentos ilimitados<br>• Lembretes automáticos via WhatsApp<br>• Recebimento via Pix antecipado com subconta Asaas |
+| **Solo** | **R$ 39,90 / mês** | Profissional autônomo individual | • 1 Usuário / 1 Agenda<br>• Link exclusivo (`bomhorario.com.br/seunome`)<br>• Agendamentos ilimitados<br>• Lembretes automáticos via WhatsApp<br>• Recebimento via Pix antecipado com subconta Asaas |
 | **Equipe** | **R$ 79,90 / mês** | Pequenos salões e petshops (2 a 4 profissionais) | • Até 4 Agendas de colaboradores<br>• Painel do Dono + Acesso para cada prestador<br>• Controle de horários e folgas individuais<br>• Relatório de faturamento diário<br>• Customização de logo e cores |
 | **Pro** | **R$ 139,90 / mês** | Negócios consolidados (5+ profissionais) | • Colaboradores e agendas ilimitadas<br>• **Domínio Próprio** (`www.seusalao.com.br`)<br>• Módulo de comissões da equipe (Fase 2)<br>• Prioridade em suporte e atendimento |
 

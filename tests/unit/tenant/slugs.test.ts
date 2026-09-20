@@ -11,7 +11,7 @@ import {
   validateSlug,
 } from '@/lib/tenant/slugs';
 
-const APP_DOMAIN = 'app.agendex.com.br';
+const APP_DOMAIN = 'app.bomhorario.com.br';
 
 describe('validateSlug', () => {
   it('normaliza caixa e espaços', () => {

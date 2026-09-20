@@ -140,8 +140,8 @@ export type HostClassification =
 /**
  * Classifica o host da requisição em relação ao domínio base do SaaS:
  *
- *   - `app`: o próprio domínio base (ex.: `app.agendex.com.br`) → forma /[slug];
- *   - `subdomain`: `carlosbarber.app.agendex.com.br` → forma subdomínio;
+ *   - `app`: o próprio domínio base (ex.: `app.bomhorario.com.br`) → forma /[slug];
+ *   - `subdomain`: `carlosbarber.app.bomhorario.com.br` → forma subdomínio;
  *   - `custom`: qualquer outro host → candidato a domínio próprio;
  *   - `missing`: sem host confiável.
  *

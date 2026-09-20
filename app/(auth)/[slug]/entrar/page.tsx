@@ -9,7 +9,7 @@ import { codePath, firstSearchParam, type SearchParamsRecord } from '../../_lib/
 
 /**
  * Identificação na forma por caminho (`/[slug]/entrar`), usada no portal de
- * `app.agendex.com.br/carlosbarber`. O proxy injeta o slug do primeiro segmento
+ * `app.bomhorario.com.br/carlosbarber`. O proxy injeta o slug do primeiro segmento
  * e a server action resolve o mesmo tenant — nenhuma página inventa tenantId.
  */
 export async function generateMetadata({

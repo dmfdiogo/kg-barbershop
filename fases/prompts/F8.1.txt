@@ -1,4 +1,4 @@
-Você é o agente da tarefa F8.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F8.1 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. fases/fase-8-integracoes-reais.md   (seu escopo: §2; sua linha: F8.1)

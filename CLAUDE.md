@@ -1,6 +1,6 @@
-# kg-barbershop
+# bom-horario
 
-SaaS multi-tenant de agendamento e pagamento para prestadores de serviço locais
+**Bom Horário** (`bomhorario.com.br`) — SaaS multi-tenant de agendamento e pagamento para prestadores de serviço locais
 (barbearias, salões, petshops, clínicas estéticas, lava-rápidos). Cada
 estabelecimento é um **tenant** com portal próprio, identidade visual própria e
 recebimento financeiro próprio.

@@ -1,4 +1,4 @@
-Você é o agente da tarefa F5.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F5.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. fases/fase-5-clube-assinatura.md    (seu escopo: item 6; sua linha: F5.3)

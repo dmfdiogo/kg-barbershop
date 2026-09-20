@@ -1,4 +1,4 @@
-Você é o agente da tarefa F0.1 do projeto kg-barbershop, um SaaS multi-tenant de
+Você é o agente da tarefa F0.1 do projeto bom-horario, um SaaS multi-tenant de
 agendamento e pagamento para prestadores de serviço locais.
 
 LEIA NESTA ORDEM, antes de escrever código:

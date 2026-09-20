@@ -19,7 +19,7 @@ import {
  * mais status e recusa de reservado.
  */
 
-const APP_DOMAIN = 'app.agendex.test';
+const APP_DOMAIN = 'app.bomhorario.test';
 
 function suffix(): string {
   return randomInt(0, 999_999).toString().padStart(6, '0');

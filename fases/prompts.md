@@ -43,7 +43,7 @@ O prompt traz o comando de worktree; troque pelo clone se for o caso — o que i
 ## F0.1 ⟨T0⟩ — Esqueleto e tooling · roda sozinha
 
 ```
-Você é o agente da tarefa F0.1 do projeto kg-barbershop, um SaaS multi-tenant de
+Você é o agente da tarefa F0.1 do projeto bom-horario, um SaaS multi-tenant de
 agendamento e pagamento para prestadores de serviço locais.
 
 LEIA NESTA ORDEM, antes de escrever código:
@@ -101,7 +101,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F0.2 — Schema, RLS e anti double-booking
 
 ```
-Você é o agente da tarefa F0.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F0.2 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md
@@ -173,7 +173,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F0.3 — Ports, mocks e console /dev
 
 ```
-Você é o agente da tarefa F0.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F0.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. plano-refatoracao.md §1 (decisão D5) e §1.1 (restrições reais do Asaas)
@@ -242,7 +242,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F0.4 — Portar domínio e componentes, remover o legado
 
 ```
-Você é o agente da tarefa F0.4 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F0.4 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. plano-refatoracao.md §2 (o que aproveitar e o que descartar) e §5.4 (fuso)
@@ -308,7 +308,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F0.5 — Seed e CLAUDE.md
 
 ```
-Você é o agente da tarefa F0.5 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F0.5 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. plano-refatoracao.md §4
@@ -375,7 +375,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F1.0 ⟨T0⟩ — Contratos de tenant e sessão · roda sozinha
 
 ```
-Você é o agente da tarefa F1.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F1.0 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2 (papéis)
@@ -434,7 +434,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F1.1 — OTP: núcleo e defesas
 
 ```
-Você é o agente da tarefa F1.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F1.1 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.4 (autenticação sem fricção)
@@ -494,7 +494,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F1.2 — Telas de identificação
 
 ```
-Você é o agente da tarefa F1.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F1.2 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.4
@@ -544,7 +544,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F1.3 — Provisionamento de membro e troca de contexto
 
 ```
-Você é o agente da tarefa F1.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F1.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. plano-refatoracao.md §4 ("Decisão de identidade")
@@ -598,7 +598,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F1.4 — Portão do Super Admin e auditoria
 
 ```
-Você é o agente da tarefa F1.4 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F1.4 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.1
@@ -652,7 +652,7 @@ F2.0 e F3.0 são troncos e podem rodar ao mesmo tempo (não se tocam). Depois, a
 ## F2.0 ⟨T0⟩ — Shell do painel · roda sozinha na F2
 
 ```
-Você é o agente da tarefa F2.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F2.0 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.2 e §2.3
@@ -706,7 +706,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F2.1 — Serviços
 
 ```
-Você é o agente da tarefa F2.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F2.1 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.2 (catálogo de serviços)
@@ -756,7 +756,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F2.2 — Equipe, jornadas e bloqueios
 
 ```
-Você é o agente da tarefa F2.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F2.2 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.2 e §2.3
@@ -808,7 +808,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F2.3 — White-label
 
 ```
-Você é o agente da tarefa F2.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F2.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §5.1 (os 4 presets, com as paletas)
@@ -863,7 +863,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F2.4 — Políticas e dashboard operacional
 
 ```
-Você é o agente da tarefa F2.4 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F2.4 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.2 (dashboard) e §9 (políticas)
@@ -912,7 +912,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F2.5 — Onboarding guiado · depois de F2.1, F2.2 e F2.3
 
 ```
-Você é o agente da tarefa F2.5 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F2.5 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §9.2 (menos de 10 minutos) e §3.2 (onboarding financeiro)
@@ -961,7 +961,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F3.0 ⟨T0⟩ — Portal público · roda sozinha na F3
 
 ```
-Você é o agente da tarefa F3.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F3.0 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.4 e §5
@@ -1014,7 +1014,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F3.1 — Grade de disponibilidade
 
 ```
-Você é o agente da tarefa F3.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F3.1 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. plano-refatoracao.md §5.4 (fuso) e §2.4 (bugs que não podem ser herdados)
@@ -1065,7 +1065,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F3.2 — Hold de 10 minutos
 
 ```
-Você é o agente da tarefa F3.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F3.2 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §9.1 (garantia anti-concorrência)
@@ -1125,7 +1125,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F3.3 — Fluxo de agendamento (UI) · depois de F3.1 e F3.2
 
 ```
-Você é o agente da tarefa F3.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F3.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.4
@@ -1176,7 +1176,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F3.4 — Área do cliente
 
 ```
-Você é o agente da tarefa F3.4 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F3.4 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.4 (área do cliente)
@@ -1225,7 +1225,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F3.5 — Walk-in pelo painel
 
 ```
-Você é o agente da tarefa F3.5 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F3.5 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.3
@@ -1276,7 +1276,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F4.0 ⟨T0⟩ — Máquina de estados e webhooks · roda sozinha na F4
 
 ```
-Você é o agente da tarefa F4.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F4.0 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §3.2
@@ -1339,7 +1339,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F4.1 — Conta de recebimento e KYC
 
 ```
-Você é o agente da tarefa F4.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F4.1 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §3.2 (onboarding sem fricção)
@@ -1393,7 +1393,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F4.2 — Checkout e split
 
 ```
-Você é o agente da tarefa F4.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F4.2 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §3.2 (as três modalidades e a blindagem fiscal)
@@ -1450,7 +1450,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F4.3 — Saldo, extrato e estorno
 
 ```
-Você é o agente da tarefa F4.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F4.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §3.2 (o dono não acessa painel externo)
@@ -1497,7 +1497,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F6.0 ⟨T0⟩ — Templates, jobs e runner · roda sozinha na F6
 
 ```
-Você é o agente da tarefa F6.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F6.0 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §4
@@ -1550,7 +1550,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F6.1 — Gatilhos e cancelamento
 
 ```
-Você é o agente da tarefa F6.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F6.1 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §4 (D-1, H-2 e conteúdo das mensagens)
@@ -1605,7 +1605,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F6.2 — Opt-out, consentimento e log de entrega
 
 ```
-Você é o agente da tarefa F6.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F6.2 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §9.3 e plano-refatoracao.md §8.4 (LGPD)
@@ -1653,7 +1653,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F6.3 — Web Push (opcional)
 
 ```
-Você é o agente da tarefa F6.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F6.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.3
@@ -1700,7 +1700,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F7.0 ⟨T0⟩ — Planos e limites · roda sozinha na F7
 
 ```
-Você é o agente da tarefa F7.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F7.0 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §6.1 (tabela de planos)
@@ -1752,7 +1752,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F7.1 — Trial por 10 agendamentos
 
 ```
-Você é o agente da tarefa F7.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F7.1 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §6.2 (trial baseado em valor)
@@ -1803,7 +1803,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F7.2 — Ciclo de cobrança B2B
 
 ```
-Você é o agente da tarefa F7.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F7.2 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §3.1 (Stripe Billing direto, sem Connect)
@@ -1855,7 +1855,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F7.3 — Painel do Super Admin
 
 ```
-Você é o agente da tarefa F7.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F7.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. spec-executiva.md §2.1
@@ -1907,7 +1907,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F5.0 ⟨T0⟩ — Planos e benefícios do tenant · roda sozinha na F5
 
 ```
-Você é o agente da tarefa F5.0 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F5.0 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. fases/fase-5-clube-assinatura.md    (leia o aviso do topo; sua linha: F5.0)
@@ -1963,7 +1963,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F5.1 — Assinatura recorrente
 
 ```
-Você é o agente da tarefa F5.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F5.1 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. fases/fase-5-clube-assinatura.md    (seu escopo: itens 2 e 5; sua linha: F5.1)
@@ -2022,7 +2022,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F5.2 — Ledger de créditos e consumo · COORDENE ANTES DE COMEÇAR
 
 ```
-Você é o agente da tarefa F5.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F5.2 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. fases/fase-5-clube-assinatura.md    (seu escopo: itens 3 e 4; sua linha: F5.2)
@@ -2087,7 +2087,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F5.3 — Visões do clube
 
 ```
-Você é o agente da tarefa F5.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F5.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. fases/fase-5-clube-assinatura.md    (seu escopo: item 6; sua linha: F5.3)
@@ -2137,7 +2137,7 @@ Cada tarefa só começa quando a credencial correspondente existir (ver `fase-8-
 ## F8.1 — Adaptador Stripe
 
 ```
-Você é o agente da tarefa F8.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F8.1 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. fases/fase-8-integracoes-reais.md   (seu escopo: §2; sua linha: F8.1)
@@ -2194,7 +2194,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F8.2 — Adaptador Asaas
 
 ```
-Você é o agente da tarefa F8.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F8.2 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. fases/fase-8-integracoes-reais.md   (seu escopo: §3; sua linha: F8.2)
@@ -2253,7 +2253,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F8.3 — Adaptador WhatsApp Cloud API
 
 ```
-Você é o agente da tarefa F8.3 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F8.3 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. fases/fase-8-integracoes-reais.md   (seu escopo: §4; sua linha: F8.3)
@@ -2310,7 +2310,7 @@ RELATÓRIO FINAL (obrigatório, nesta estrutura)
 ## F8.4 — Observabilidade e corte
 
 ```
-Você é o agente da tarefa F8.4 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F8.4 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. fases/fase-8-integracoes-reais.md   (seu escopo: §5; sua linha: F8.4)

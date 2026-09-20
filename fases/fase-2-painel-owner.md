@@ -11,7 +11,7 @@ O dono configura o estabelecimento inteiro sozinho, em menos de 10 minutos (dire
 
 > **Todo o painel vive sob `/painel`** (`app/(dashboard)/painel/<feature>/`), e não na raiz. Dois motivos que não valem trocar por uma lista de reservados maior:
 >
-> 1. **Cada palavra reservada é um slug que nenhum cliente pode ter.** A spec vende `agendex.com.br/[slug]` como o endereço do estabelecimento; reservar `agenda`, `financeiro`, `clube`, `marca`, `equipe` — substantivos comuns em português — tira do cliente o namespace que é o produto. Um petshop chamado "Agenda Pet" não poderia usar `agenda`.
+> 1. **Cada palavra reservada é um slug que nenhum cliente pode ter.** A spec vende `bomhorario.com.br/[slug]` como o endereço do estabelecimento; reservar `agenda`, `financeiro`, `clube`, `marca`, `equipe` — substantivos comuns em português — tira do cliente o namespace que é o produto. Um petshop chamado "Agenda Pet" não poderia usar `agenda`.
 > 2. **A lista cresceria a cada feature, num arquivo de dono único.** `lib/tenant/slugs.ts` é da F1.0, e as folhas F2.1–F2.5 rodam em paralelo: cinco agentes editando o mesmo arquivo é exatamente o conflito que o mapa de propriedade existe para evitar.
 >
 > De quebra, isso resolve a armadilha que a F1.4 descobriu: `notFound()` lançado no layout de um **grupo** escapa para o 404 da raiz. `app/(dashboard)/layout.tsx` é layout de grupo; `app/(dashboard)/painel/layout.tsx` é de segmento, e é lá que o portão funciona.

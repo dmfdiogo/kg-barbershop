@@ -19,7 +19,7 @@ Estas três tarefas não dependem de código e têm prazo imprevisível. Começa
 | 2 | Conta Asaas da plataforma aprovada + acesso à API de subcontas e split (pode exigir liberação comercial) | dias | 8.3 |
 | 3 | Verificação do Meta Business + número dedicado + **aprovação dos templates** (OTP é categoria *authentication*, com regras próprias) | dias a semanas | 8.4 |
 
-Definir também, antes da 8.3: **nome e domínio do produto** (a spec usa `agendex.com.br`, o repositório se chama `kg-barbershop`) e o **percentual da taxa da plataforma**.
+Definir também, antes da 8.3, o **percentual da taxa da plataforma**. O nome do produto já está decidido: **Bom Horário**, `bomhorario.com.br` (ver `plano-refatoracao.md` §9).
 
 ## 2. Stripe (billing B2B)
 

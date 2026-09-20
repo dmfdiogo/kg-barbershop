@@ -1,4 +1,4 @@
-Você é o agente da tarefa F3.1 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F3.1 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. plano-refatoracao.md §5.4 (fuso) e §2.4 (bugs que não podem ser herdados)

@@ -93,7 +93,7 @@ Prefira **um arquivo por feature, descoberto automaticamente** (ex.: cada featur
 ## 6. Prompt para abrir um agente
 
 ```
-Você vai executar a tarefa <ID> do projeto kg-barbershop.
+Você vai executar a tarefa <ID> do projeto bom-horario.
 
 Leia, nesta ordem:
   1. spec-executiva.md

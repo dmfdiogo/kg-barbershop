@@ -1,4 +1,4 @@
-Você é o agente da tarefa F3.2 do projeto kg-barbershop (SaaS multi-tenant de agendamento).
+Você é o agente da tarefa F3.2 do projeto bom-horario (SaaS multi-tenant de agendamento).
 
 LEIA NESTA ORDEM:
   1. CLAUDE.md                          (o invariante de retry é o seu)

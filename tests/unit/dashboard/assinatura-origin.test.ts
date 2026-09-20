@@ -13,10 +13,10 @@ describe('origem das URLs de retorno do checkout', () => {
   });
 
   it('vem de APP_DOMAIN, com https fora do ambiente local', () => {
-    vi.stubEnv('APP_DOMAIN', 'agendex.com.br');
-    expect(requestOrigin()).toBe('https://agendex.com.br');
+    vi.stubEnv('APP_DOMAIN', 'bomhorario.com.br');
+    expect(requestOrigin()).toBe('https://bomhorario.com.br');
     expect(absoluteUrl(requestOrigin()!, '/painel/assinatura?checkout=concluido')).toBe(
-      'https://agendex.com.br/painel/assinatura?checkout=concluido',
+      'https://bomhorario.com.br/painel/assinatura?checkout=concluido',
     );
   });
 
