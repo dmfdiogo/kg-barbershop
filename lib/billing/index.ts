@@ -1,4 +1,5 @@
 import { getMockBillingProvider } from './mock';
+import { getStripeBillingProvider } from './stripe';
 import type { BillingProvider } from './types';
 
 export * from './types';
@@ -15,11 +16,7 @@ export function getBillingProvider(): BillingProvider {
     case 'mock':
       return getMockBillingProvider();
     case 'stripe':
-      // O adaptador real é a tarefa F8.1. Enquanto ele não existe, falhar cedo
-      // é melhor do que devolver um provider que não cobra ninguém.
-      throw new Error(
-        'BILLING_PROVIDER=stripe: adaptador real ainda não implementado (tarefa F8.1).',
-      );
+      return getStripeBillingProvider();
     default:
       throw new Error(
         `BILLING_PROVIDER inválido: ${JSON.stringify(provider)}. Use "mock" ou "stripe".`,
@@ -28,6 +25,11 @@ export function getBillingProvider(): BillingProvider {
 }
 
 export { MockBillingProvider, getMockBillingProvider, resetMockBillingProvider } from './mock';
+export {
+  StripeBillingProvider,
+  getStripeBillingProvider,
+  resetStripeBillingProvider,
+} from './stripe';
 export type { MockBillingProviderOptions, MockBillingSimulationResult } from './mock';
 export {
   getMockBillingStore,

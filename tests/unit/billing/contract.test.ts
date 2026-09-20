@@ -1,7 +1,9 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import Stripe from 'stripe';
 import { MockBillingProvider } from '@/lib/billing/mock';
 import { createMockBillingStore } from '@/lib/billing/mock-store';
+import { StripeBillingProvider } from '@/lib/billing/stripe';
 import {
   BillingProviderError,
   type BillingProvider,
@@ -27,6 +29,12 @@ import {
  */
 interface ProviderFixtureInstance {
   provider: BillingProvider;
+  /**
+   * O mock simula fatura paga e recusada; no test mode do Stripe isso exige
+   * test clocks, que é escopo de outra rodada. O teste correspondente é
+   * pulado em vez de fingir que passou.
+   */
+  supportsInvoiceSimulation: boolean;
   /** Simula o dono pagando na página hospedada. Devolve a assinatura criada. */
   completeCheckout(sessionId: string): Promise<BillingSubscription>;
   markInvoicePaid(subscriptionId: string): Promise<void>;
@@ -39,6 +47,81 @@ interface ProviderFixture {
 }
 
 const FIXED_NOW = new Date('2026-01-01T12:00:00.000Z');
+
+// O provider real fala com a rede; 5s (padrão do vitest) não dá.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
+
+/**
+ * Trial calculado a partir do relógio REAL, não de uma data fixa. O mock roda
+ * com relógio injetado e aceitaria qualquer data futura em relação a ele; o
+ * Stripe usa o relógio de verdade e recusa trial no passado. Data fixa no
+ * arquivo funcionava em janeiro e quebrava em setembro.
+ */
+const TRIAL_ENDS_AT = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+/**
+ * A implementação real entra na MESMA suíte, e é isso que prova que trocar de
+ * provider por variável de ambiente não muda o comportamento do produto.
+ *
+ * Roda só quando `STRIPE_SECRET_KEY` está no AMBIENTE — não basta estar no
+ * `.env`, que este teste não carrega. Assim `npm test` e o CI seguem sem rede
+ * e sem segredo, e a verificação contra o test mode é um comando explícito:
+ *
+ *   STRIPE_SECRET_KEY=sk_test_... npx vitest run tests/unit/billing/contract.test.ts
+ *
+ * `completeCheckout` não "clica" na página hospedada — isso não tem API. Ele
+ * reproduz o ESTADO FINAL que o checkout produz: meio de pagamento de teste no
+ * cliente e assinatura criada com o mesmo preço e o mesmo trial que a sessão
+ * pediu. O trial vem do metadata da sessão, porque o Stripe não devolve o
+ * `subscription_data` que foi enviado.
+ */
+const stripeKey = process.env.STRIPE_SECRET_KEY?.trim();
+
+const stripeFixture: ProviderFixture[] = stripeKey?.startsWith('sk_test_')
+  ? [
+      {
+        name: 'StripeBillingProvider (test mode)',
+        async setup() {
+          const stripe = new Stripe(stripeKey);
+          const provider = new StripeBillingProvider({ client: stripe });
+          return {
+            provider,
+            supportsInvoiceSimulation: false,
+            completeCheckout: async (sessionId) => {
+              const session = await stripe.checkout.sessions.retrieve(sessionId, {
+                expand: ['line_items'],
+              });
+              const customerId = session.customer as string;
+              const priceId = session.line_items?.data?.[0]?.price?.id;
+              if (!priceId) throw new Error('sessão sem preço');
+
+              const pm = await stripe.paymentMethods.attach('pm_card_visa', {
+                customer: customerId,
+              });
+              await stripe.customers.update(customerId, {
+                invoice_settings: { default_payment_method: pm.id },
+              });
+
+              const trialEnd = session.metadata?.trial_end;
+              const created = await stripe.subscriptions.create({
+                customer: customerId,
+                items: [{ price: priceId }],
+                ...(trialEnd ? { trial_end: Number(trialEnd) } : {}),
+                metadata: session.metadata ?? {},
+              });
+              return provider.getSubscription(created.id);
+            },
+            markInvoicePaid: async () => {
+              throw new Error('não aplicável ao test mode nesta rodada');
+            },
+            markInvoicePaymentFailed: async () => {
+              throw new Error('não aplicável ao test mode nesta rodada');
+            },
+          };
+        },
+      },
+    ]
+  : [];
 
 const fixtures: ProviderFixture[] = [
   {
@@ -55,6 +138,7 @@ const fixtures: ProviderFixture[] = [
       });
       return {
         provider,
+        supportsInvoiceSimulation: true,
         completeCheckout: async (sessionId) => {
           const { subscription } = await provider.completeCheckoutSession(sessionId);
           return subscription;
@@ -68,6 +152,7 @@ const fixtures: ProviderFixture[] = [
       };
     },
   },
+  ...stripeFixture,
 ];
 
 async function captureError(promise: Promise<unknown>): Promise<BillingProviderError> {
@@ -85,6 +170,7 @@ async function captureError(promise: Promise<unknown>): Promise<BillingProviderE
 describe.each(fixtures)('BillingProvider: $name', (fixture) => {
   let provider!: BillingProvider;
   let completeCheckout!: (sessionId: string) => Promise<BillingSubscription>;
+  let supportsInvoices = true;
   let markInvoicePaid!: (subscriptionId: string) => Promise<void>;
   let markInvoicePaymentFailed!: (subscriptionId: string) => Promise<void>;
 
@@ -112,8 +198,9 @@ describe.each(fixtures)('BillingProvider: $name', (fixture) => {
   }
 
   beforeEach(async () => {
-    ({ provider, completeCheckout, markInvoicePaid, markInvoicePaymentFailed } =
-      await fixture.setup());
+    const instance = await fixture.setup();
+    ({ provider, completeCheckout, markInvoicePaid, markInvoicePaymentFailed } = instance);
+    supportsInvoices = instance.supportsInvoiceSimulation;
   });
 
   it('cria e lê o cliente de cobrança', async () => {
@@ -158,11 +245,13 @@ describe.each(fixtures)('BillingProvider: $name', (fixture) => {
 
   it('a sessão nasce em trial quando recebe trialEndsAt', async () => {
     const customer = await createCustomer();
-    const subscription = await subscribeVia(customer.id, 'EQUIPE', '2026-02-01T00:00:00.000Z');
+    const subscription = await subscribeVia(customer.id, 'EQUIPE', TRIAL_ENDS_AT);
 
     expect(subscription.status).toBe('TRIALING');
     expect(subscription.amountCents).toBe(7990);
-    expect(subscription.currentPeriodEnd).toBe('2026-02-01T00:00:00.000Z');
+    // O provedor arredonda para o segundo; comparar o instante, não a string.
+    expect(Math.abs(Date.parse(subscription.currentPeriodEnd) - Date.parse(TRIAL_ENDS_AT))).
+      toBeLessThan(1000);
   });
 
   it('recusa plano desconhecido, cliente desconhecido e URL de retorno relativa', async () => {
@@ -271,7 +360,8 @@ describe.each(fixtures)('BillingProvider: $name', (fixture) => {
     expect(missing.code).toBe('SUBSCRIPTION_NOT_FOUND');
   });
 
-  it('inadimplência marca PAST_DUE e o pagamento reativa e renova o período', async () => {
+  it('inadimplência marca PAST_DUE e o pagamento reativa e renova o período', async (ctx) => {
+    if (!supportsInvoices) ctx.skip();
     const customer = await createCustomer();
     const subscription = await subscribeVia(customer.id, 'PRO');
     expect(subscription.currentPeriodEnd).toBe('2026-02-01T12:00:00.000Z');
