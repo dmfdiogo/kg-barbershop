@@ -161,10 +161,12 @@ te apresento as opções com prós e contras; hoje não é decisão urgente.
 
 ## Ordem que eu recomendo
 
-1. **Asaas sandbox** (5 min) — é a fase maior que falta.
-2. **WhatsApp número de teste** (10 min).
-3. **Registrar os domínios** (15 min) — só porque somem.
-4. O resto quando o CNPJ existir.
+1. **WhatsApp número de teste** (10 min) — não depende de CNPJ, destrava a
+   F8.3 inteira.
+2. **Registrar os domínios** (15 min) — só porque somem.
+3. **Asaas sandbox com CNPJ** — quando o CNPJ existir. É a fase maior que
+   falta, e está bloqueada até lá: conta de CPF leva 403 ao criar subconta.
+4. O resto (produção) depois.
 
-Com 1 e 2 feitos, o projeto inteiro fica ao meu alcance sem você precisar sair
-do terminal de novo.
+Com o passo 1 feito, a F8.3 fica ao meu alcance. A F8.2 espera o CNPJ — e
+esse é hoje o único item que trava projeto, não só produção.
