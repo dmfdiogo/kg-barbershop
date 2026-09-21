@@ -1,3 +1,4 @@
+import { getAsaasPaymentProvider } from './asaas';
 import { getMockPaymentProvider } from './mock';
 import type { PaymentProvider } from './types';
 
@@ -15,11 +16,7 @@ export function getPaymentProvider(): PaymentProvider {
     case 'mock':
       return getMockPaymentProvider();
     case 'asaas':
-      // O adaptador real é a tarefa F8.2. Enquanto ele não existe, falhar cedo
-      // é melhor do que devolver um provider que não cobra ninguém.
-      throw new Error(
-        'PAYMENT_PROVIDER=asaas: adaptador real ainda não implementado (tarefa F8.2).',
-      );
+      return getAsaasPaymentProvider();
     default:
       throw new Error(
         `PAYMENT_PROVIDER inválido: ${JSON.stringify(provider)}. Use "mock" ou "asaas".`,
