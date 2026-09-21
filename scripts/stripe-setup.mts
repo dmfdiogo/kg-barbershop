@@ -146,6 +146,67 @@ async function ensurePrice(
   return created.id;
 }
 
+/**
+ * Configuração do portal do cliente.
+ *
+ * AS DUAS COISAS DESLIGADAS SÃO O PONTO. O portal do Stripe sabe trocar plano
+ * e cancelar, e nós NÃO queremos que ele faça nem um nem outro: o downgrade
+ * tem regra nossa (`lib/billing/limits.ts` exige decidir qual profissional
+ * desativar ao cair para um plano menor), e o portal não conhece essa regra.
+ * Um portal com troca de plano ligada deixaria o dono contornar o limite pelas
+ * costas do produto, e o sistema descobriria depois, pelo webhook, já com o
+ * salão em estado inválido.
+ *
+ * O que o portal faz por nós é o que não tem regra de negócio: trocar cartão e
+ * ver faturas — justamente o que exigiria manipular dado de cartão se fôssemos
+ * construir por conta própria.
+ *
+ * Idempotente pela metadata: procura a configuração deste projeto antes de
+ * criar, e atualiza no lugar.
+ */
+async function ensurePortalConfiguration(stripe: Stripe): Promise<string> {
+  const features: Stripe.BillingPortal.ConfigurationCreateParams.Features = {
+    customer_update: { enabled: true, allowed_updates: ['email', 'address'] },
+    invoice_history: { enabled: true },
+    payment_method_update: { enabled: true },
+    subscription_cancel: { enabled: false },
+    subscription_update: { enabled: false },
+  };
+  const businessProfile = { headline: 'Assinatura do sistema de agendamento' };
+
+  const existing = await stripe.billingPortal.configurations.list({ limit: 100 });
+  const ours = existing.data.find((c) => c.metadata?.managed_by === MANAGED_BY);
+
+  if (ours) {
+    if (DRY_RUN) {
+      console.log(`  portal: atualizaria ${ours.id}`);
+      return ours.id;
+    }
+    const updated = await stripe.billingPortal.configurations.update(ours.id, {
+      features,
+      business_profile: businessProfile,
+    });
+    console.log(`  portal: atualizado ${updated.id}`);
+    return updated.id;
+  }
+
+  if (DRY_RUN) {
+    console.log('  portal: criaria configuração (sem troca de plano, sem cancelamento)');
+    return 'bpc_dry';
+  }
+
+  const created = await stripe.billingPortal.configurations.create({
+    features,
+    business_profile: businessProfile,
+    // Default da conta: é a configuração usada quando a sessão de portal é
+    // aberta sem apontar uma explicitamente, que é o nosso caso.
+    default_return_url: null,
+    metadata: { managed_by: MANAGED_BY },
+  });
+  console.log(`  portal: criado ${created.id}`);
+  return created.id;
+}
+
 async function main(): Promise<void> {
   const stripe = new Stripe(requireTestKey());
 
@@ -160,6 +221,9 @@ async function main(): Promise<void> {
     const product = await ensureProduct(stripe, code);
     await ensurePrice(stripe, code, product);
   }
+
+  console.log('\nPortal do cliente');
+  await ensurePortalConfiguration(stripe);
 
   console.log('\nCatálogo sincronizado.');
 }

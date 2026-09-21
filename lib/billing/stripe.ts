@@ -168,8 +168,12 @@ export interface StripeBillingProviderOptions {
   client?: Stripe;
 }
 
+/** Mesma marca que `scripts/stripe-setup.mts` grava; mudar aqui exige mudar lá. */
+const PORTAL_MANAGED_BY = 'bom-horario/stripe-setup';
+
 export class StripeBillingProvider implements BillingProvider {
   private readonly stripe: Stripe;
+  private portalConfigCache: string | null = null;
 
   constructor(options: StripeBillingProviderOptions = {}) {
     if (options.client) {
@@ -323,6 +327,31 @@ export class StripeBillingProvider implements BillingProvider {
     };
   }
 
+  /**
+   * Id da NOSSA configuração de portal, achada pela metadata do script de
+   * setup e memoizada por processo.
+   *
+   * Apontar a configuração explicitamente não é preciosismo: a conta tem uma
+   * configuração DEFAULT que o Stripe cria sozinho, e nela cancelamento vem
+   * LIGADO. Abrir a sessão sem dizer qual usar cairia nessa, e o dono poderia
+   * cancelar — ou, se um dia o default mudar no painel, trocar de plano — sem
+   * passar pela regra de downgrade do produto. Depender do default seria
+   * depender de um estado que qualquer pessoa muda no dashboard.
+   */
+  private async portalConfigurationId(): Promise<string> {
+    if (this.portalConfigCache) return this.portalConfigCache;
+    const list = await this.stripe.billingPortal.configurations.list({ limit: 100 });
+    const ours = list.data.find((c) => c.metadata?.managed_by === PORTAL_MANAGED_BY);
+    if (!ours) {
+      throw new BillingProviderError(
+        'VALIDATION',
+        'Configuração de portal do projeto não existe nesta conta. Rode scripts/stripe-setup.mts.',
+      );
+    }
+    this.portalConfigCache = ours.id;
+    return ours.id;
+  }
+
   async createPortalSession(input: NewPortalSession): Promise<HostedSession> {
     const customer = await this.getCustomer(input.customerId);
     try {
@@ -334,6 +363,7 @@ export class StripeBillingProvider implements BillingProvider {
     const session = await this.stripe.billingPortal.sessions.create({
       customer: customer.id,
       return_url: input.returnUrl,
+      configuration: await this.portalConfigurationId(),
     });
     return {
       id: session.id,
