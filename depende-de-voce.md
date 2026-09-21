@@ -26,13 +26,30 @@ independente de conta de produção. Ele aceita subconta e split, que é
 exatamente o que o produto precisa: cada salão recebe na subconta dele e a
 plataforma fica só com a taxa.
 
-1. Crie a conta em **https://sandbox.asaas.com** (é um cadastro novo, não é a
-   sua conta de produção).
+**A conta precisa ser CNPJ, inclusive no sandbox.** Testei: conta de CPF
+recebe `403 — Contas de pessoa física (CPF) não podem criar subcontas`. Não é
+regra de produção apenas, é aplicada no sandbox também, e vem de resolução do
+Banco Central para operações de BaaS.
+
+Isso é estrutural, não burocracia: a arquitetura do produto depende de o salão
+receber na **subconta dele**, que é o que impede o faturamento dos salões de
+virar receita sua perante a Receita Federal. Sem PJ não há subconta, e sem
+subconta não há split.
+
+1. Crie a conta em **https://sandbox.asaas.com** usando um **CNPJ** (MEI
+   serve). É um cadastro novo, separado da conta de produção.
 2. No painel do sandbox: **Configurações → Integrações → API** e gere uma
    chave.
-3. Cole em `ASAAS_API_KEY` no `.env`.
+3. Cole em `ASAAS_API_KEY` no `.env`, **escapando os cifrões**: a chave começa
+   com `$` e tem outro no meio, e sem `\$` o Next a carrega vazia. Se preferir,
+   me mande a chave que eu gravo.
 
 Não precisa mexer em `ASAAS_BASE_URL` — já aponta para o sandbox.
+
+**Se você ainda não tem CNPJ**, este é o momento em que o negócio precisa de
+um. Ele é pré-requisito do modelo, não só do Asaas: a conta de produção do
+Stripe também vai pedir, e é o CNPJ que aparece na nota e na fatura do dono do
+salão.
 
 **Depois disso eu faço sozinho:** adaptador do `PaymentProvider` contra a API
 real, criação de subconta por tenant, cobrança com split, webhook com
