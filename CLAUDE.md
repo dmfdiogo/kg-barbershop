@@ -8,6 +8,7 @@ recebimento financeiro próprio.
 - **O produto:** [`spec-executiva.md`](spec-executiva.md) — fonte de verdade de escopo.
 - **A refatoração:** [`plano-refatoracao.md`](plano-refatoracao.md) — estratégia e modelo de dados.
 - **O trabalho:** [`fases/`](fases/) — 9 fases, 42 tarefas, uma por agente. Comece por [`fases/README.md`](fases/README.md).
+- **O que falta do lado humano:** [`depende-de-voce.md`](depende-de-voce.md) — credenciais e cadastros que nenhum agente consegue obter sozinho.
 
 O repositório está sendo reescrito a partir de um MVP antigo single-tenant. Se
 algo no código contradiz a spec, a spec vence.
