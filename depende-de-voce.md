@@ -84,6 +84,33 @@ quando ele vencer eu te digo como gerar o permanente, que é outro caminho
 templates de confirmação e lembrete, webhook de status de entrega, e o
 tratamento de quem respondeu "PARAR".
 
+#### 1.2.1 Opcional: o MCP do WhatsApp Business
+
+O Meta publicou um servidor MCP que dá ao assistente acesso administrativo à
+sua integração: criar e submeter templates, registrar número, configurar a URL
+de webhook e gerar token de usuário do sistema.
+
+Se você instalar, **saem da sua lista** a submissão dos templates, a
+configuração do webhook e a geração do token permanente — os três passos mais
+chatos da F8.3, e os únicos que sobrariam manuais depois do cadastro.
+
+```bash
+claude mcp add --transport http whatsapp_business_tools https://mcp.facebook.com/whatsapp_business_tools
+```
+
+Depois disso é preciso autenticar por OAuth com `/mcp` **num terminal
+interativo do `claude`** — esse comando não existe nesta sessão do app.
+
+Duas ressalvas. Na tela de consentimento, **conceda acesso apenas ao app e ao
+negócio do Marca Direto**: um dos escopos pedidos é `business_management`, que
+alcança os negócios que você administra, e não há motivo para expor Be Art ou
+CozyShrooms. E o servidor está em beta, com interface sujeita a mudança —
+então ele é conveniência de desenvolvimento, nunca dependência do produto.
+
+**O produto não passa a depender disso.** `lib/messaging/whatsapp.ts` chama a
+Cloud API direto, com o token do `.env`. O MCP é andaime meu, não peça de
+runtime; se ele sumir amanhã, o produto continua igual.
+
 ---
 
 ## 2. Opcional agora — mas com risco de sumir
