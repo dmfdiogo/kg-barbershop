@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { OUTBOX_FILE } from '../../playwright.config';
+import { pickSlot } from './_slots';
 
 /**
  * Cancelamento pela área do cliente (F3.4).
@@ -163,13 +164,7 @@ async function bookThroughPortal(page: Page, fixture: Fixture): Promise<string> 
   // Amanhã, não hoje: a grade de hoje esvazia perto do fim do expediente, e o
   // teste não pode depender da hora em que roda. Os botões de dia são os únicos
   // com `aria-pressed`.
-  const days = page.locator('button[aria-pressed]');
-  await expect(days.first()).toBeVisible();
-  await days.nth(1).click();
-
-  const slot = page.locator('ul.grid button').last();
-  await expect(slot).toBeVisible();
-  await slot.click();
+  await pickSlot(page, 'last');
 
   await expect(
     page.getByRole('heading', { name: 'Confirme com o seu WhatsApp' }),

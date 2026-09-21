@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { OUTBOX_FILE } from '../../playwright.config';
+import { pickSlot } from './_slots';
 
 /**
  * Fluxo de agendamento no navegador (F3.3).
@@ -163,9 +164,7 @@ async function reachOtpScreen(
   await expect(page).toHaveURL(new RegExp(`/${fixture.slug}/agendar\\?servico=`));
 
   await page.getByRole('button', { name: /Qualquer profissional/ }).click();
-  const slot = page.locator('ul.grid button').first();
-  await expect(slot).toBeVisible();
-  await slot.click();
+  await pickSlot(page);
 
   await expect(
     page.getByRole('heading', { name: 'Confirme com o seu WhatsApp' }),
@@ -243,9 +242,7 @@ test('hold expira no meio do fluxo e o cliente retoma sem perder o que digitou',
     // Recuperação limpa: volta à grade (o horário vencido volta a aparecer) e
     // conclui. Como o OTP já foi verificado, a confirmação é direta.
     await page.getByRole('button', { name: 'Escolher outro horário' }).click();
-    const slot = page.locator('ul.grid button').first();
-    await expect(slot).toBeVisible();
-    await slot.click();
+    await pickSlot(page);
 
     await page.getByRole('button', { name: 'Confirmar agendamento' }).click();
     await expect(page.getByText('Agendamento confirmado')).toBeVisible();
