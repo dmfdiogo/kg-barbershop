@@ -273,6 +273,24 @@ Telefone é PII e é a chave de identidade do sistema. Exigem decisão explícit
 
 ---
 
+
+### Achado contra o Asaas real (2026-09-21)
+
+**O split é calculado sobre o valor LÍQUIDO, não sobre o bruto.** Verificado no
+sandbox: cobrança de R$ 50,00, taxa do Asaas de R$ 0,99, líquido de R$ 49,01, e
+split de 10% resultando em **R$ 4,90** — não R$ 5,00.
+
+`computePlatformFeeCents` calcula sobre o bruto e grava esse valor no `Payment`
+local. Mantido assim, o extrato do produto diverge do repasse real em cada
+cobrança, e a diferença muda conforme a taxa do Asaas varia por meio de
+pagamento (boleto, Pix e cartão têm taxas diferentes). É erro que só aparece na
+conciliação, meses depois.
+
+A F8.2 precisa decidir entre duas correções: calcular a taxa sobre o líquido
+que o provedor informa, ou gravar o valor do split que volta no payload em vez
+do valor que a gente calculou. A segunda é mais robusta — o provedor é a fonte
+de verdade do que ele efetivamente repassou.
+
 ## 9. Pendências de produto
 
 1. ~~**Nome e domínio.**~~ **Decidido em 2026-09-20: Bom Horário, `bomhorario.com.br`.** Caíram `agendex.com.br` (registrado por terceiro) e `horaboa.com.br` (livre, mas com o `.com` e a ordem natural `boahora` em mãos alheias — vazaria digitação). O `.com` também está livre e deve ser registrado junto. Falta registrar os domínios e checar a marca no INPI; o diretório do repositório e o remoto no GitHub seguem como `kg-barbershop` até você renomeá-los.
