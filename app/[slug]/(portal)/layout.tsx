@@ -5,6 +5,7 @@ import { PortalShell } from '@/components/portal/PortalShell';
 import { portalBasePath } from '@/components/portal/paths';
 import { getTenantContext } from '@/lib/tenant/context';
 import { resolveTheme } from '@/lib/theme/resolve';
+import { getAppDomain } from '@/lib/tenant/slugs';
 
 /**
  * Casca do portal `/[slug]` (F3.0).
@@ -28,7 +29,63 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const lookup = await getTenantContext(slug);
-  return lookup.ok ? { title: lookup.tenant.name } : {};
+  if (!lookup.ok) return {};
+
+  const tenant = lookup.tenant;
+  const description = `Agende seu horário na ${tenant.name} pelo celular, sem telefonema.`;
+
+  /**
+   * O CARTÃO DE LINK É O PRODUTO CHEGANDO AO CLIENTE FINAL.
+   *
+   * O dono do salão manda `dominio/${slug}` pelo WhatsApp e cola na bio do
+   * Instagram — é o canal de distribuição real, não a busca. Sem estas tags o
+   * link vai como URL crua, e URL crua no WhatsApp parece golpe: ninguém clica.
+   * Com elas, aparece o nome do salão, a frase e a logo.
+   *
+   * `openGraph.url` precisa ser absoluta; relativa faz o WhatsApp descartar o
+   * cartão inteiro em silêncio.
+   */
+  const origin = portalOrigin();
+  const url = origin ? `${origin}/${tenant.slug}` : undefined;
+
+  return {
+    title: tenant.name,
+    description,
+    openGraph: {
+      type: 'website',
+      locale: 'pt_BR',
+      siteName: tenant.name,
+      title: tenant.name,
+      description,
+      ...(url ? { url } : {}),
+      ...(tenant.logoUrl ? { images: [{ url: tenant.logoUrl, alt: tenant.name }] } : {}),
+    },
+    twitter: {
+      card: tenant.logoUrl ? 'summary_large_image' : 'summary',
+      title: tenant.name,
+      description,
+      ...(tenant.logoUrl ? { images: [tenant.logoUrl] } : {}),
+    },
+  };
+}
+
+/**
+ * Origem absoluta do portal, vinda da configuração e nunca do header — a
+ * mesma decisão do retorno do checkout (`painel/assinatura/_lib/origin.ts`).
+ * Aqui o risco é menor, mas um `og:url` apontando para o domínio de quem
+ * forjou o Host mandaria o cartão de link para outro lugar.
+ */
+function portalOrigin(): string | null {
+  try {
+    const domain = getAppDomain();
+    if (!domain) return null;
+    const protocol = domain.startsWith('localhost') || domain.startsWith('127.0.0.1')
+      ? 'http'
+      : 'https';
+    return `${protocol}://${domain}`;
+  } catch {
+    return null;
+  }
 }
 
 export default async function PortalLayout({
