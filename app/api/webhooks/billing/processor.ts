@@ -230,6 +230,7 @@ async function applySubscriptionEvent(
         plan: payload.plan,
         status: incoming,
         currentPeriodEnd: new Date(payload.currentPeriodEnd),
+        cancelAtPeriodEnd: payload.cancelAtPeriodEnd,
       },
     });
     return { description: `subscription:${payload.id}:created:${incoming}` };
@@ -254,6 +255,11 @@ async function applySubscriptionEvent(
       plan: payload.plan,
       status: incoming,
       currentPeriodEnd: new Date(payload.currentPeriodEnd),
+      // O provedor é a fonte de verdade do cancelamento agendado (F8.4): um
+      // `SUBSCRIPTION_CANCELED` agendado chega como `ACTIVE` + flag, e uma
+      // reativação (`INVOICE_PAID`) chega com a flag limpa. Gravar sempre
+      // evita que a tela perca a verdade no reload.
+      cancelAtPeriodEnd: payload.cancelAtPeriodEnd,
       ...(endedTrial ? { trialEndedAt: now } : {}),
     },
   });
