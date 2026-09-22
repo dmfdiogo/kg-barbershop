@@ -291,10 +291,14 @@ export function incomingStatusForEvent(
       }
       return 'PAST_DUE';
     case 'SUBSCRIPTION_CANCELED':
-      // Imediato: CANCELED. Agendado para o fim do período: ACTIVE com
-      // `cancelAtPeriodEnd`. Sem a flag, qualquer outro status é inconsistente.
+      // Imediato: CANCELED. Agendado para o fim do período: o provedor mantém o
+      // status atual e levanta `cancelAtPeriodEnd` — que pode ser ACTIVE, mas
+      // também TRIALING (cancelou durante a trial de cobrança) ou PAST_DUE.
+      // Exigir ACTIVE aqui recusaria o agendado fora dele com 400: o provedor
+      // registrava, o webhook recusava e a flag nunca era persistida — a mesma
+      // mentira de "segue ativa" que a F8.4 corrige. O provedor é a fonte.
       if (payload.status === 'CANCELED') return 'CANCELED';
-      if (payload.status === 'ACTIVE' && payload.cancelAtPeriodEnd) return 'ACTIVE';
+      if (payload.cancelAtPeriodEnd) return payload.status;
       throw new SubscriptionPayloadError(
         `SUBSCRIPTION_CANCELED com status inconsistente no payload (${payload.status}).`,
       );
@@ -327,6 +331,7 @@ const LOCAL_SUBSCRIPTION_SELECT = {
   stripeSubscriptionId: true,
   currentPeriodEnd: true,
   trialEndedAt: true,
+  cancelAtPeriodEnd: true,
 } as const;
 
 function toLocalSubscription(row: {
@@ -337,6 +342,7 @@ function toLocalSubscription(row: {
   stripeSubscriptionId: string | null;
   currentPeriodEnd: Date | null;
   trialEndedAt: Date | null;
+  cancelAtPeriodEnd: boolean;
 }): LocalSubscription {
   return {
     tenantId: row.tenantId,
@@ -346,10 +352,10 @@ function toLocalSubscription(row: {
     stripeSubscriptionId: row.stripeSubscriptionId,
     currentPeriodEnd: row.currentPeriodEnd,
     trialEndedAt: row.trialEndedAt,
-    // `PlatformSub` não guarda a flag de cancelamento agendado (coluna fora do
-    // escopo da F7.2); o estado local a projeta como `false`. O cancelamento
-    // imediato chega por webhook e vira `CANCELED`.
-    cancelAtPeriodEnd: false,
+    // Flag do cancelamento AGENDADO (F8.4). É persistida a partir do webhook —
+    // sem a coluna, a tela confirmava o cancelamento e a verdade se perdia no
+    // reload. O provedor é a fonte de verdade nos dois sentidos.
+    cancelAtPeriodEnd: row.cancelAtPeriodEnd,
   };
 }
 
@@ -676,8 +682,8 @@ export interface CancelSubscriptionInput {
   tenantId: string;
   /**
    * `true` agenda o cancelamento para o fim do período. O estado local só muda
-   * quando o provedor confirma (webhook); a coluna de "cancelamento agendado"
-   * está fora do escopo da F7.2, então o caminho imediato é o exercitado.
+   * quando o provedor confirma (webhook): o payload de `SUBSCRIPTION_CANCELED`
+   * com status `ACTIVE` e `cancelAtPeriodEnd` grava a flag (F8.4).
    */
   atPeriodEnd?: boolean;
   provider?: BillingProvider;

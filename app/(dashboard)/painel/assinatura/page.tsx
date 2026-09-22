@@ -197,13 +197,22 @@ function PhaseBody({
 
   if (phase === 'TRIALING') {
     const end = subscription?.trialEndedAt ?? subscription?.currentPeriodEnd ?? null;
+    const scheduledToCancel = subscription?.cancelAtPeriodEnd ?? false;
     return (
       <div className="flex flex-col gap-3">
-        <p className="text-sm text-[var(--color-secondary)]">
-          Sua assinatura está em período de teste
-          {end ? ` até ${formatBillingDate(end, timezone)}` : ''}. Depois disso, a
-          mensalidade começa a ser cobrada.
-        </p>
+        {scheduledToCancel ? (
+          <p className="rounded-lg bg-[var(--color-warning-soft)] px-3 py-2 text-sm text-[var(--color-warning)]">
+            {end
+              ? `Cancelamento agendado: a assinatura fica ativa até ${formatBillingDate(end, timezone)} e não será renovada.`
+              : 'Cancelamento agendado: a assinatura não será renovada.'}
+          </p>
+        ) : (
+          <p className="text-sm text-[var(--color-secondary)]">
+            Sua assinatura está em período de teste
+            {end ? ` até ${formatBillingDate(end, timezone)}` : ''}. Depois disso, a
+            mensalidade começa a ser cobrada.
+          </p>
+        )}
         <div>
           <PortalButton label="Trocar cartão ou ver faturas" />
         </div>
@@ -213,13 +222,24 @@ function PhaseBody({
 
   if (phase === 'ACTIVE') {
     const end = subscription?.currentPeriodEnd ?? null;
+    // Cancelamento agendado: a assinatura continua `ACTIVE` — e por isso NÃO se
+    // fala em "próxima cobrança", que seria mentira sobre o dinheiro do dono.
+    const scheduledToCancel = subscription?.cancelAtPeriodEnd ?? false;
     return (
       <div className="flex flex-col gap-3">
-        <p className="text-sm text-[var(--color-secondary)]">
-          {end
-            ? `Próxima cobrança em ${formatBillingDate(end, timezone)}.`
-            : 'Assinatura em dia.'}
-        </p>
+        {scheduledToCancel ? (
+          <p className="rounded-lg bg-[var(--color-warning-soft)] px-3 py-2 text-sm text-[var(--color-warning)]">
+            {end
+              ? `Ativa até ${formatBillingDate(end, timezone)}, sem renovação.`
+              : 'Cancelamento agendado: a assinatura não será renovada.'}
+          </p>
+        ) : (
+          <p className="text-sm text-[var(--color-secondary)]">
+            {end
+              ? `Próxima cobrança em ${formatBillingDate(end, timezone)}.`
+              : 'Assinatura em dia.'}
+          </p>
+        )}
         <div>
           <PortalButton label="Trocar cartão ou ver faturas" />
         </div>

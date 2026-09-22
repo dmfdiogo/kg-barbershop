@@ -218,7 +218,11 @@ describe('billing: ciclo de cobrança', () => {
 
     const canceled = await cancelSubscription({ tenantId: tenant.tenantId, provider });
     expect(canceled.ok).toBe(true);
-    expect((await readSub(tenant.tenantId))?.status).toBe('CANCELED');
+    // Cancelamento imediato NÃO deixa cancelamento agendado para trás.
+    expect(await readSub(tenant.tenantId)).toMatchObject({
+      status: 'CANCELED',
+      cancelAtPeriodEnd: false,
+    });
 
     await expect(
       createHold({
@@ -230,6 +234,63 @@ describe('billing: ciclo de cobrança', () => {
         holdSessionId: 'canceled-blocked',
       }),
     ).rejects.toBeInstanceOf(SubscriptionSuspendedError);
+  });
+
+  it('cancelar ao fim do período persiste a flag e reativar a limpa', async () => {
+    // REGRESSÃO. Sem a coluna, o dono cancelava no fim do período, a tela
+    // confirmava na hora e ao recarregar dizia "Ativa": mentira sobre o
+    // dinheiro dele. O webhook é a fonte de verdade nos dois sentidos.
+    const tenant = await makeTenant('sub-scheduled');
+    const subscribed = await subscribeTenant(tenant.tenantId, 'SOLO');
+    expect(subscribed.ok).toBe(true);
+    if (!subscribed.ok) return;
+
+    const canceled = await cancelSubscription({
+      tenantId: tenant.tenantId,
+      atPeriodEnd: true,
+      provider,
+    });
+    expect(canceled.ok).toBe(true);
+
+    // RELÊ do banco: a flag sobreviveu e a assinatura continua ATIVA.
+    const reread = await readSub(tenant.tenantId);
+    expect(reread).toMatchObject({ status: 'ACTIVE', cancelAtPeriodEnd: true });
+    expect(reread?.currentPeriodEnd).not.toBeNull();
+
+    // Reativação (renovação paga) chega com a flag limpa e some do banco.
+    const paid = await provider.simulateInvoicePaid(subscribed.providerSubscription.id);
+    expect(paid.delivered).toBe(true);
+    expect(await readSub(tenant.tenantId)).toMatchObject({
+      status: 'ACTIVE',
+      cancelAtPeriodEnd: false,
+    });
+  });
+
+  it('cancelar ao fim do período durante a trial de cobrança também persiste', async () => {
+    const tenant = await makeTenant('sub-scheduled-trial');
+    const started = await startSubscriptionCheckout({
+      tenantId: tenant.tenantId,
+      plan: 'SOLO',
+      successUrl: SUCCESS_URL,
+      cancelUrl: CANCEL_URL,
+      trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      provider,
+    });
+    expect(started.ok).toBe(true);
+    if (!started.ok) return;
+    await provider.completeCheckoutSession(started.sessionId);
+    expect((await readSub(tenant.tenantId))?.status).toBe('TRIALING');
+
+    const canceled = await cancelSubscription({
+      tenantId: tenant.tenantId,
+      atPeriodEnd: true,
+      provider,
+    });
+    expect(canceled.ok).toBe(true);
+    expect(await readSub(tenant.tenantId)).toMatchObject({
+      status: 'TRIALING',
+      cancelAtPeriodEnd: true,
+    });
   });
 
   it('abrir o portal do cliente devolve URL e não altera o estado da assinatura', async () => {

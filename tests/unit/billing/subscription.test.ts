@@ -90,7 +90,7 @@ describe('billing: alvo do evento por tipo', () => {
     ).toBe('PAST_DUE');
   });
 
-  it('SUBSCRIPTION_CANCELED aceita imediato e agendado, recusa o resto', () => {
+  it('SUBSCRIPTION_CANCELED aceita imediato e agendado em qualquer status, recusa o resto', () => {
     expect(
       incomingStatusForEvent('SUBSCRIPTION_CANCELED', payload({ status: 'CANCELED' })),
     ).toBe('CANCELED');
@@ -100,6 +100,20 @@ describe('billing: alvo do evento por tipo', () => {
         payload({ status: 'ACTIVE', cancelAtPeriodEnd: true }),
       ),
     ).toBe('ACTIVE');
+    // Agendado fora de ACTIVE (trial de cobrança ou mensalidade atrasada) também
+    // é verdade do provedor e não pode virar 400.
+    expect(
+      incomingStatusForEvent(
+        'SUBSCRIPTION_CANCELED',
+        payload({ status: 'TRIALING', cancelAtPeriodEnd: true }),
+      ),
+    ).toBe('TRIALING');
+    expect(
+      incomingStatusForEvent(
+        'SUBSCRIPTION_CANCELED',
+        payload({ status: 'PAST_DUE', cancelAtPeriodEnd: true }),
+      ),
+    ).toBe('PAST_DUE');
 
     expect(() =>
       incomingStatusForEvent('SUBSCRIPTION_CANCELED', payload({ status: 'PAST_DUE' })),

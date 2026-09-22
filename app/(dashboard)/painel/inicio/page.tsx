@@ -1,3 +1,5 @@
+import type { Route } from 'next';
+import Link from 'next/link';
 import { requireRole } from '@/lib/auth/rbac';
 import { formatCentsToBRL } from '@/lib/catalog/money';
 import type { TrialStatus } from '@/lib/billing/trial';
@@ -26,7 +28,7 @@ export default async function InicioPage() {
         </p>
       </header>
 
-      <TrialBanner trial={overview.trial} />
+      <TrialBanner trial={overview.trial} isOwner={context.role === 'OWNER'} />
       <RevenueCards overview={overview} />
       <OccupancyCard occupancy={overview.occupancy} />
       <AgendaCard agenda={overview.agenda} timezone={context.tenant.timezone} />
@@ -39,8 +41,12 @@ export default async function InicioPage() {
  * convidado a escolher um plano; no 11º o tom muda para explicar que só os
  * agendamentos NOVOS estão bloqueados — os existentes seguem disponíveis.
  * Some quando não há nada a avisar (trial no começo ou já convertido).
+ *
+ * O link para `/painel/assinatura` é o funil da trial para o pagamento (F8.4):
+ * sem ele, só chegava quem digitava a URL. Fica visível só para o OWNER — STAFF
+ * não assina nada (e o portão da própria tela já exige OWNER).
  */
-function TrialBanner({ trial }: { trial: TrialStatus }) {
+function TrialBanner({ trial, isOwner }: { trial: TrialStatus; isOwner: boolean }) {
   if (!trial.message) return null;
 
   const exhausted = trial.phase === 'EXHAUSTED';
@@ -55,6 +61,14 @@ function TrialBanner({ trial }: { trial: TrialStatus }) {
         <p className="mt-1 text-xs opacity-90">
           Plano {trial.upgrade.name} — {formatCentsToBRL(trial.upgrade.priceCents)}/mês.
         </p>
+      ) : null}
+      {isOwner ? (
+        <Link
+          href={'/painel/assinatura' as Route}
+          className="mt-2 inline-block text-xs font-semibold underline underline-offset-2"
+        >
+          Escolher um plano
+        </Link>
       ) : null}
     </aside>
   );
