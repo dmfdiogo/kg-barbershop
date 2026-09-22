@@ -187,6 +187,8 @@ type DeliveryResolution =
 
 interface DeliveryContext {
   tenantName: string;
+  /** Endereço físico; `null` enquanto o dono não preencher. */
+  tenantAddress: string | null;
   timezone: string;
   customerName: string;
   customerPhone: string | null;
@@ -202,7 +204,7 @@ async function loadDeliveryContext(
 ): Promise<DeliveryContext | null> {
   const tenant = await tx.tenant.findUnique({
     where: { id: tenantId },
-    select: { name: true, timezone: true },
+    select: { name: true, timezone: true, address: true },
   });
   if (!tenant) return null;
 
@@ -243,6 +245,7 @@ async function loadDeliveryContext(
 
   return {
     tenantName: tenant.name,
+    tenantAddress: tenant.address,
     timezone: tenant.timezone,
     customerName: customerUser?.name ?? '',
     customerPhone: customerUser?.phone ?? null,
@@ -270,9 +273,10 @@ function formatStartsAt(date: Date, timezone: string): string {
  * é intencional: uma variável a mais o provider recusaria
  * (`UNKNOWN_TEMPLATE_VARIABLE`) em produção, então a recusa já vale aqui.
  *
- * `address` não existe como coluna no schema congelado da F0; usa-se o nome do
- * estabelecimento como fallback e o Maps busca por esse nome. Quando o produto
- * tiver endereço estruturado, só este ponto muda.
+ * `address` usa o endereço do estabelecimento quando ele existe. Enquanto o
+ * dono não preencher, cai para o NOME e o Maps busca por ele — degrada em vez
+ * de mandar campo vazio, porque mensagem com "Endereço:" seguido de nada
+ * parece defeito para o cliente.
  */
 export function buildTemplateVariables(
   template: JobTemplateName,
@@ -287,9 +291,9 @@ export function buildTemplateVariables(
     starts_at: startsAt,
     new_starts_at: startsAt,
     old_starts_at: '',
-    address: context.tenantName,
+    address: context.tenantAddress ?? context.tenantName,
     maps_url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      context.tenantName,
+      context.tenantAddress ?? context.tenantName,
     )}`,
     confirmation_url: `${appBaseUrl()}/confirmacao/${booking.id}`,
   };

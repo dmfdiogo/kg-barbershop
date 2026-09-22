@@ -53,6 +53,10 @@ export const TENANT_ROUTING_SELECT = {
   status: true,
   timezone: true,
   logoUrl: true,
+  // O endereço entra na projeção de roteamento porque o portal o exibe no
+  // cabeçalho, junto do nome — buscá-lo à parte custaria uma consulta a mais
+  // em toda página do portal.
+  address: true,
   colorPrimary: true,
   colorSecondary: true,
   colorBackground: true,

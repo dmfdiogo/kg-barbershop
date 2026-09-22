@@ -26,6 +26,7 @@ export default async function PortalCatalogPage({
   return (
     <PortalCatalog
       tenantName={lookup.tenant.name}
+      tenantAddress={lookup.tenant.address}
       services={services}
       basePath={portalBasePath(lookup)}
     />

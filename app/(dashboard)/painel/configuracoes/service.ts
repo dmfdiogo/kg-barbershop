@@ -104,6 +104,39 @@ export async function loadPortalSettings(
   };
 }
 
+/**
+ * Endereço físico do estabelecimento.
+ *
+ * Campo único e livre: o onboarding tem meta de dez minutos e seis campos de
+ * endereço afugentam quem está preenchendo no celular. O que o produto faz com
+ * ele é montar busca no Maps, e o Maps entende texto livre.
+ */
+export async function loadTenantAddress(
+  tx: TenantTransaction,
+  tenantId: string,
+): Promise<string> {
+  const tenant = await tx.tenant.findUniqueOrThrow({
+    where: { id: tenantId },
+    select: { address: true },
+  });
+  return tenant.address ?? '';
+}
+
+export async function updateTenantAddress(
+  tx: TenantTransaction,
+  tenantId: string,
+  address: string,
+): Promise<void> {
+  const limpo = address.trim();
+  await tx.tenant.update({
+    where: { id: tenantId },
+    // Vazio vira `null`, e não string vazia: quem lê precisa distinguir "não
+    // preenchido" de "preenchido em branco" para decidir o fallback da
+    // mensagem de confirmação.
+    data: { address: limpo.length > 0 ? limpo.slice(0, 200) : null },
+  });
+}
+
 export type PortalAddressUpdateResult =
   | { ok: true }
   | { ok: false; code: 'PRO_REQUIRED' | 'SLUG_TAKEN' | 'DOMAIN_TAKEN' };

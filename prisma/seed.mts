@@ -103,6 +103,7 @@ async function seedTenantA(tx: TenantTransaction): Promise<void> {
       maxAdvanceMinutes: 60 * 24 * 60,
       noShowPolicyText: 'Faltas sem aviso podem reter o sinal pago.',
       membershipRequiresDeposit: false,
+      address: 'Rua Felipe Schmidt, 390 — Centro, Florianópolis/SC',
     },
   });
 

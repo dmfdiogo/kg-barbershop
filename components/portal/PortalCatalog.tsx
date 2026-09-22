@@ -58,10 +58,13 @@ function ServiceCard({ service, basePath }: { service: PortalService; basePath: 
 
 export function PortalCatalog({
   tenantName,
+  tenantAddress,
   services,
   basePath,
 }: {
   tenantName: string;
+  /** Endereço físico; ausente enquanto o dono não preencher. */
+  tenantAddress?: string | null;
   services: PortalService[];
   basePath: string;
 }) {
@@ -72,6 +75,21 @@ export function PortalCatalog({
         <p className="mt-2 text-sm text-[var(--color-secondary)]">
           Escolha um serviço para agendar seu horário.
         </p>
+        {/* Quem abre o link quer saber, antes de escolher horário, se o lugar
+            é perto. Sem endereço o portal pede um compromisso no escuro. O
+            link abre o Maps em aba nova: sair do fluxo de agendamento para
+            consultar o mapa e ter que recomeçar seria pior do que não ter. */}
+        {tenantAddress ? (
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tenantAddress)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex items-start gap-2 text-sm text-[var(--color-secondary)] underline decoration-dotted underline-offset-4"
+          >
+            <span aria-hidden>📍</span>
+            <span>{tenantAddress}</span>
+          </a>
+        ) : null}
       </section>
 
       <section aria-labelledby="catalogo-titulo" className="flex flex-col gap-3">

@@ -5,6 +5,7 @@ import { AuthError, requireRole } from '@/lib/auth/rbac';
 import {
   loadPortalSettings,
   updatePortalAddress,
+  updateTenantAddress,
   updateTenantPolicies,
   type PortalSettings,
 } from './service';
@@ -84,6 +85,35 @@ export async function savePoliciesAction(input: PoliciesFormInput): Promise<Poli
   revalidatePath(CONFIG_PATH);
 
   return { ok: true, policies: validation.value };
+}
+
+export type TenantAddressActionResult =
+  | { ok: true; address: string }
+  | { ok: false; code: 'FORBIDDEN'; message: string };
+
+/**
+ * Grava o endereço físico do estabelecimento.
+ *
+ * Sem validação de formato de propósito: endereço brasileiro é irregular
+ * demais — "ao lado do mercado", "Rua X, s/n", zona rural sem CEP —, e recusar
+ * o que o dono digitou porque não parece endereço é pior do que aceitar. O
+ * único limite é o tamanho, no serviço.
+ */
+export async function saveTenantAddressAction(
+  address: string,
+): Promise<TenantAddressActionResult> {
+  const context = await ownerOrNull();
+  if (!context) {
+    return { ok: false, code: 'FORBIDDEN', message: 'Apenas o dono edita o endereço.' };
+  }
+
+  await context.forTenant((tx) => updateTenantAddress(tx, context.tenant.id, address));
+  revalidatePath(CONFIG_PATH);
+  // O portal mostra o endereço no cabeçalho; sem revalidar, o cliente
+  // continuaria vendo o anterior.
+  revalidatePath('/[slug]', 'layout');
+
+  return { ok: true, address: address.trim() };
 }
 
 export async function savePortalAddressAction(input: {

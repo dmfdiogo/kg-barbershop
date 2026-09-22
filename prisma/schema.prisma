@@ -242,6 +242,17 @@ model Tenant {
   document                  String // CPF ou CNPJ do estabelecimento
   timezone                  String       @default("America/Sao_Paulo")
   logoUrl                   String?      @map("logo_url")
+
+  /// Endereço físico, em texto livre e num campo só.
+  ///
+  /// Campo único e não estruturado de propósito: o onboarding tem meta de dez
+  /// minutos (spec §9.2), e seis campos de endereço afugentam um barbeiro no
+  /// celular. O Google Maps resolve texto livre bem, e é para lá que o link da
+  /// mensagem de confirmação aponta.
+  ///
+  /// Sem ele, a confirmação mandava o NOME do salão no lugar do endereço —
+  /// o cliente lia "Endereço: Barbearia do Carlos" e não sabia para onde ir.
+  address                   String?
   colorPrimary              String?      @map("color_primary")
   colorSecondary            String?      @map("color_secondary")
   colorBackground           String?      @map("color_background")
